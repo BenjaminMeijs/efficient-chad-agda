@@ -33,6 +33,24 @@ zero-LEnv : (Γ : Env Pr) -> LEtup (map D2τ' Γ)
 zero-LEnv [] = tt
 zero-LEnv (x ∷ env) = fst ( zerov $ D2τ' x) , zero-LEnv env
 
+-- TODO: voor D2τ' een normaal vorm maken
+-- Vanwege sumtypes, just (nothing, nothing) -> nothing . Zo sparse mogelijk, in plaats van zo dense mogelijk.
+
+snf : {τ : LTyp} → LinRep τ → LinRep τ
+snf {(σ1 :*! σ2) :*! (τ1 :*! τ2)} (just (nothing , nothing)) = nothing
+snf {(σ1 :+! σ2) :*! (τ1 :*! τ2)} (just (nothing , nothing)) = nothing
+snf {(σ1 :*! σ2) :*! (τ1 :+! τ2)} (just (nothing , nothing)) = nothing
+snf {(σ1 :+! σ2) :*! (τ1 :+! τ2)} (just (nothing , nothing)) = nothing
+snf {(σ1 :*! σ2) :+! (τ1 :*! τ2)} (just (inj₁ nothing)) = nothing
+snf {(σ1 :*! σ2) :+! (τ1 :*! τ2)} (just (inj₂ nothing)) = nothing
+snf {(σ1 :+! σ2) :+! (τ1 :*! τ2)} (just (inj₁ nothing)) = nothing
+snf {(σ1 :+! σ2) :+! (τ1 :*! τ2)} (just (inj₂ nothing)) = nothing
+snf {(σ1 :*! σ2) :+! (τ1 :+! τ2)} (just (inj₁ nothing)) = nothing
+snf {(σ1 :*! σ2) :+! (τ1 :+! τ2)} (just (inj₂ nothing)) = nothing
+snf {(σ1 :+! σ2) :+! (τ1 :+! τ2)} (just (inj₁ nothing)) = nothing
+snf {(σ1 :+! σ2) :+! (τ1 :+! τ2)} (just (inj₂ nothing)) = nothing
+snf {τ} x = x
+
 -- Question, Is it smart to base the proof around Environment Vector addition?
 _ev+_ : {Γ : Env Pr} -> LEtup (map D2τ' Γ) -> LEtup (map D2τ' Γ) -> LEtup (map D2τ' Γ)
 _ev+_ {[]} tt tt = tt
@@ -41,6 +59,8 @@ _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = fst (plusv (D2τ' typ) vL vR) , (evL 
 postulate
     primFloatPlus-comm : (x : Float) → (y : Float) → primFloatPlus x y ≡ primFloatPlus y x
     primFloatPlus-zeroR : (x : Float) → primFloatPlus x (primNatToFloat 0) ≡ x
+    primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
+                          → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
 
 plusv-comm : (τ : LTyp) -> (a : LinRep τ) -> (b : LinRep τ) -> fst (plusv τ a b) ≡ fst (plusv τ b a)
 plusv-comm LUn tt tt = refl
@@ -64,7 +84,7 @@ ev+comm {x ∷ Γ} (vL , evL) (vR , evR) = cong₂ (_,_) (plusv-comm (D2τ' x) v
 plusv-zeroR : (τ : LTyp) -> (v : LinRep τ) -> fst (plusv τ v (fst (zerov τ))) ≡ v
 plusv-zeroR LUn tt = refl
 plusv-zeroR LR v = primFloatPlus-zeroR v
-plusv-zeroR (τ :*! τ₁) (just (x , y)) = refl
+plusv-zeroR (σ :*! τ) (just (x , y)) = refl
 plusv-zeroR (σ :*! τ) nothing = refl
 plusv-zeroR (σ :+! τ) (just (inj₁ x)) = refl
 plusv-zeroR (σ :+! τ) (just (inj₂ x)) = refl
@@ -77,11 +97,56 @@ ev+zeroR {Γ = x ∷ Γ} (v , ev) = cong₂ (_,_) (plusv-zeroR (D2τ' x) v)  (ev
 ev+zeroL : {Γ : Env Pr} → (a : LEtup (map D2τ' Γ)) → (zero-LEnv Γ) ev+ a ≡ a
 ev+zeroL {Γ} v = trans (ev+comm (zero-LEnv Γ) v)  (ev+zeroR v)
 
-ev+zeroR' : {Γ : Env Pr} {b : LEtup (map D2τ' Γ)} → (a : LEtup (map D2τ' Γ)) → b ≡ zero-LEnv Γ  → a ev+ b ≡ a
-ev+zeroR' {Γ} {b} a w = trans (cong₂ _ev+_ refl w) (ev+zeroR a)
+ev+zeroR' : {Γ : Env Pr} {a : LEtup (map D2τ' Γ)} {b : LEtup (map D2τ' Γ)} → b ≡ zero-LEnv Γ  → a ev+ b ≡ a
+ev+zeroR' {Γ} {a} {b} w = trans (cong₂ _ev+_ refl w) (ev+zeroR a)
+ev+zeroL' : {Γ : Env Pr} {a : LEtup (map D2τ' Γ)} → {b : LEtup (map D2τ' Γ)} → a ≡ zero-LEnv Γ  → a ev+ b ≡ b
+ev+zeroL' {Γ} {a} {b} w = trans (cong₂ _ev+_ w refl) (ev+zeroL b)
+
+plusv-assoc : (τ : LTyp) → (a : LinRep τ) → (b : LinRep τ) (c : LinRep τ)
+          →  fst (plusv τ (fst (plusv τ a b)) c) ≡ fst (plusv τ a (fst (plusv τ b c)))
+plusv-assoc LUn tt tt tt = refl
+plusv-assoc LR a b c = primFloatPlus-assoc a b c
+plusv-assoc (σ :*! τ) nothing b c = refl
+plusv-assoc (σ :*! τ) (just a) nothing c = refl
+plusv-assoc (σ :*! τ) (just a) (just b) nothing = refl
+plusv-assoc (σ :*! τ) (just a) (just b) (just c) = cong₂ (λ x y → just (x , y)) (plusv-assoc σ (a .fst) (b .fst) (c .fst)) (plusv-assoc τ (a .snd) (b .snd) (c .snd))
+plusv-assoc (σ :+! τ) nothing nothing nothing = refl
+plusv-assoc (σ :+! τ) nothing nothing (just c) = refl
+plusv-assoc (σ :+! τ) nothing (just b) nothing = refl
+plusv-assoc (σ :+! τ) (just a) nothing (just x) = refl
+plusv-assoc (σ :+! τ) (just a) nothing nothing = refl
+plusv-assoc (σ :+! τ) (just a) (just b) nothing = refl
+plusv-assoc (σ :+! τ) nothing (just (inj₁ b)) (just (inj₁ c)) = refl
+plusv-assoc (σ :+! τ) nothing (just (inj₁ b)) (just (inj₂ c)) = refl
+plusv-assoc (σ :+! τ) nothing (just (inj₂ b)) (just (inj₁ c)) = refl
+plusv-assoc (σ :+! τ) nothing (just (inj₂ b)) (just (inj₂ c)) = refl
+plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₁ b)) (just (inj₁ c)) = cong (λ x → just (inj₁ x)) (plusv-assoc σ a b c) 
+plusv-assoc (σ :+! τ) (just (inj₂ a)) (just (inj₂ b)) (just (inj₂ c)) = cong (λ x → just (inj₂ x)) (plusv-assoc τ a b c) 
+-- Question: These are impossible to prove due to the "wrong" definition of LinRep σ :+! τ
+plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₁ b)) (just (inj₂ c)) = {!   !}
+plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₂ b)) (just (inj₁ c)) = {!   !}
+plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₂ b)) (just (inj₂ c)) = {!   !}
+plusv-assoc (σ :+! τ) (just (inj₂ a)) (just (inj₁ b)) (just (inj₁ c)) = {!   !}
+plusv-assoc (σ :+! τ) (just (inj₂ a)) (just (inj₁ b)) (just (inj₂ c)) = {!   !}
+plusv-assoc (σ :+! τ) (just (inj₂ a)) (just (inj₂ b)) (just (inj₁ c)) = {!   !}
+
+ev+assoc : {Γ : Env Pr} → (a : LEtup (map D2τ' Γ)) → (b : LEtup (map D2τ' Γ)) → (c : LEtup (map D2τ' Γ))
+          → (a ev+ b) ev+ c ≡ a ev+ (b ev+ c)
+ev+assoc {[]} a b c = refl
+ev+assoc {τ ∷ Γ} a b c = cong₂ (_,_) (plusv-assoc (D2τ' τ) (a .fst) (b .fst) (c .fst))  (ev+assoc (a .snd) (b .snd) (c .snd))
+
+
+interp-zerot≡zerov : {Γ : Env Du} {env : Val Du Γ}
+                            → (τ : Typ Pr)
+                            → interp env (zerot τ) ≡ zerov (D2τ' τ) .fst
+interp-zerot≡zerov Un = refl
+interp-zerot≡zerov Inte = refl
+interp-zerot≡zerov R = refl
+interp-zerot≡zerov (σ :* τ) = refl
+interp-zerot≡zerov (σ :+ τ) = refl 
 
 -- LACM.run, only returning the environment
--- Folowing the naming of the haskell state monad
+-- Folowing the naming of the haskell state monad (MTL)
 LACMexec : ∀ {Γ : LEnv} {a : Set} -> LACM Γ a -> LEtup Γ -> LEtup Γ
 LACMexec {Γ} f e = let _ , e' , _ = LACM.run f e in e'
 
@@ -138,8 +203,6 @@ LACMexec-sequence-unchanged m1 m2 ev w = trans (LACMexec-sequence m1 m2 ev) (con
 
 
 
--- TODO: voor D2τ' een normaal vorm maken
--- Vanwege sumtypes, just (nothing, nothing) -> nothing . Zo sparse mogelijk, in plaats van zo dense mogelijk.
 
 postulate
     DSem : {Γ : Env Pr} {τ : Typ Pr} 
@@ -153,6 +216,21 @@ postulate
             → (env : Val Du (D1Γ Γ)) → (ctg : Rep (D2τ τ))
             → ctg ≡ fst (zerov (D2τ' τ))
             → DSem f env ctg ≡ zero-LEnv Γ
+
+    -- question: Is this an acceptable way to define DSem for pairs?
+    DSem-pair : {Γ : Env Pr} {τ σ : Typ Pr}
+            → (f : Val Pr Γ →  Rep σ) 
+            → (g : Val Pr Γ →  Rep τ) 
+            → (env : Val Du (D1Γ Γ))
+            → (ctg-f : Rep (D2τ σ))
+            → (ctg-g : Rep (D2τ τ))
+            → let h : Val Pr Γ → Rep (σ :* τ)
+                  h e = (f e , g e)
+                  ctg : LinRep (D2τ' (σ :* τ))
+                  ctg = just (ctg-f , ctg-g)
+              in DSem {τ = σ :* τ} h env ctg
+                 ≡ (DSem f env ctg-f) ev+ (DSem g env ctg-g)
+
 
 -- Derived lemmas of DSem
 DSem-unit : {Γ : Env Pr}
@@ -181,7 +259,7 @@ chad-equiv-DSem {Γ = Γ} env evIn ctg unit =
   LACMexec (fst (interp env (snd' $ chad unit) ctg)) evIn 
   ≡⟨ LACMexec-pure _ evIn ⟩
   evIn
-  ≡⟨ sym (ev+zeroR' evIn (DSem-ctg-zero' refl)) ⟩
+  ≡⟨ sym (ev+zeroR' (DSem-ctg-zero' refl)) ⟩
   evIn ev+ (DSem (flip interp unit) env ctg) 
   ∎
 chad-equiv-DSem {Γ = Γ} env evIn nothing (pair l r) = 
@@ -189,38 +267,73 @@ chad-equiv-DSem {Γ = Γ} env evIn nothing (pair l r) =
       m2 = snd (interp env (chad r)) _ .fst
       ihl = chad-equiv-DSem env evIn _ l
       ihr = chad-equiv-DSem env evIn _ r
-      ihl' = trans ihl (ev+zeroR' evIn (DSem-ctg-zero' refl))
-      ihr' = trans ihr (ev+zeroR' evIn (DSem-ctg-zero' refl))
+      ihl' = trans ihl (ev+zeroR' (DSem-ctg-zero' refl))
+      ihr' = trans ihr (ev+zeroR' (DSem-ctg-zero' refl))
   in begin
       LACMexec (LACMsequence m1 m2) evIn
       ≡⟨ LACMexec-sequence-unchanged m1 m2 evIn ihl' ⟩
       LACMexec m2 evIn
       ≡⟨ ihr' ⟩
       evIn
-      ≡⟨ sym (ev+zeroR' evIn (DSem-ctg-zero' refl)) ⟩
+      ≡⟨ sym (ev+zeroR' (DSem-ctg-zero' refl)) ⟩
       evIn ev+ DSem (flip interp (pair l r)) env nothing 
       ∎
-chad-equiv-DSem {Γ = Γ} env evIn ctg@(just (ctgL , ctgR)) (pair l r) = {!   !}
-        -- let m1 = snd (interp env (chad l)) ctgL .fst
-        --     m2 = snd (interp env (chad r)) ctgR .fst
-        --     m2' = λ _ → m2
-        --     r1 , evOutL , _ = LACM.run m1 (zero-LEnv Γ)
-        --     r2 , evOutR , _ = LACM.run m2 (zero-LEnv Γ)
-        --     ihl = chad-equiv-DSem env ctgL l
-        --     ihr = chad-equiv-DSem env ctgR r
-        -- in begin
-        --    LACMexec (LACMbind m1 m2') (zero-LEnv Γ)
-        --    ≡⟨ LACMexec-bind→sum m1 m2' ⟩
-        --    evOutL ev+ evOutR
-        --    ≡⟨ cong₂ _ev+_ ihl ihr ⟩ -- Apply induction hypothesis
-        --    (DSem (flip interp l) env ctgL)
-        --    ev+
-        --    (DSem (flip interp r) env ctgR)
-        --    ≡⟨ {!  !} ⟩ -- chad rule for pairs 
-        --    DSem (flip interp (pair l r)) env (just (ctgL , ctgR))
-        --    ∎
-chad-equiv-DSem {Γ = Γ} env evIn ctg (fst' t) = {!   !}
-chad-equiv-DSem {Γ = Γ} env evIn ctg (snd' t) = {!   !}
+chad-equiv-DSem {Γ = Γ} env evIn ctg@(just (ctgL , ctgR)) (pair l r) = 
+        let m1 = snd (interp env (chad l)) ctgL .fst
+            m2 = snd (interp env (chad r)) ctgR .fst
+            evL  = LACMexec m1 evIn
+            evLR = LACMexec m2 evL
+            dsemL = DSem (flip interp l) env ctgL
+            dsemR = DSem (flip interp r) env ctgR
+        in begin
+           LACMexec (LACMsequence m1 m2) evIn
+           ≡⟨ LACMexec-sequence m1 m2 evIn ⟩
+           evLR
+           ≡⟨ chad-equiv-DSem env evL ctgR r ⟩
+           evL ev+ dsemR
+           ≡⟨ cong₂ _ev+_ (chad-equiv-DSem env evIn ctgL l) refl ⟩ 
+           (evIn ev+ dsemL) ev+ dsemR
+           ≡⟨ ev+assoc evIn dsemL dsemR ⟩ 
+           evIn ev+ (dsemL ev+ dsemR)
+           ≡⟨ cong₂ _ev+_ refl (sym (DSem-pair (flip interp l) (flip interp r) env ctgL ctgR)) ⟩
+           evIn ev+ (DSem (flip interp (pair l r)) env (just (ctgL , ctgR)))
+           ∎
+chad-equiv-DSem {Γ = Γ} {τ = τ} env evIn ctg (fst' t) =
+  let zeroR = zerov (D2τ' _) .fst
+      ctg' = just (ctg , zeroR)
+      f = flip interp (fst' t)
+      g = flip interp (snd' t)
+      dsemL = DSem f env ctg
+      dsemR = DSem g env zeroR
+  in begin
+  LACMexec (fst (interp env (snd' $ chad (fst' t)) ctg)) evIn
+  ≡⟨ cong (λ x →  LACMexec (interp env (chad t) .snd (just (ctg , x)) .fst) evIn ) (interp-zerot≡zerov _) ⟩
+  LACMexec (interp env (chad t) .snd ctg' .fst) evIn
+  ≡⟨ chad-equiv-DSem env evIn ctg' t ⟩
+  evIn ev+ DSem (flip interp t) env ctg'
+  ≡⟨ cong₂ _ev+_ refl (DSem-pair f g env ctg zeroR) ⟩
+  (evIn ev+ (dsemL ev+ dsemR))
+  ≡⟨ cong₂ _ev+_ refl (ev+zeroR' (DSem-ctg-zero' refl)) ⟩
+  evIn ev+ dsemL
+  ∎
+chad-equiv-DSem {Γ = Γ} env evIn ctg (snd' t) =
+  let zeroL = zerov (D2τ' _) .fst
+      ctg' = just (zeroL , ctg)
+      f = flip interp (fst' t)
+      g = flip interp (snd' t)
+      dsemL = DSem f env zeroL
+      dsemR = DSem g env ctg
+  in begin
+  LACMexec (fst (interp env (snd' $ chad (snd' t)) ctg)) evIn
+  ≡⟨ cong (λ x →  LACMexec (interp env (chad t) .snd (just (x , ctg)) .fst) evIn ) (interp-zerot≡zerov _) ⟩
+  LACMexec (interp env (chad t) .snd ctg' .fst) evIn
+  ≡⟨ chad-equiv-DSem env evIn ctg' t ⟩
+  evIn ev+ DSem (flip interp t) env ctg'
+  ≡⟨ cong₂ _ev+_ refl (DSem-pair f g env zeroL ctg) ⟩
+  (evIn ev+ (dsemL ev+ dsemR))
+  ≡⟨ cong₂ _ev+_ refl (ev+zeroL' (DSem-ctg-zero' refl)) ⟩
+  evIn ev+ dsemR
+  ∎
 chad-equiv-DSem {Γ = Γ} env evIn ctg (var x) = {!   !}
 chad-equiv-DSem {Γ = Γ} env evIn ctg (let' e t) = {!   !}
 chad-equiv-DSem {Γ = Γ} env evIn ctg (prim op t) = {!   !}
