@@ -28,8 +28,11 @@ LinRep : LTyp -> Set
 LinRep LUn = ⊤
 LinRep LR = Float
 LinRep (σ :*! τ) = Maybe (LinRep σ × LinRep τ)
+
 -- Note: Perhaps we need to change this representation to
 -- Maybe (LinRep σ × LinRep τ)
+-- Or perhaps:
+-- Maybe ( (LinRep σ ⊎ LinRep τ)  ⊎  (LinRep σ × LinRep τ))
 LinRep (σ :+! τ) = Maybe (LinRep σ ⊎ LinRep τ)
 
 -- Linear environment tuple: a tuple of all the types in a linear environment.

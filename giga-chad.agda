@@ -1,3 +1,4 @@
+module giga-chad where
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Data.List using (List; []; _∷_)
