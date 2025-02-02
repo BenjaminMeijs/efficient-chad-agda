@@ -112,7 +112,7 @@ module environment-vector-addition where
     plusv-assoc (σ :+! τ) nothing (just (inj₂ b)) (just (inj₂ c)) = refl
     plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₁ b)) (just (inj₁ c)) = cong (λ x → just (inj₁ x)) (plusv-assoc σ a b c) 
     plusv-assoc (σ :+! τ) (just (inj₂ a)) (just (inj₂ b)) (just (inj₂ c)) = cong (λ x → just (inj₂ x)) (plusv-assoc τ a b c) 
-    -- Question: These are impossible to prove due to the "wrong" definition of LinRep σ :+! τ
+    -- Note: These are impossible to prove due to the "wrong" definition of LinRep σ :+! τ
     plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₁ b)) (just (inj₂ c)) = {!   !}
     plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₂ b)) (just (inj₁ c)) = {!   !}
     plusv-assoc (σ :+! τ) (just (inj₁ a)) (just (inj₂ b)) (just (inj₂ c)) = {!   !}

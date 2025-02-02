@@ -1,8 +1,10 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module utility0 where
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Unit using (⊤; tt)
 open import Agda.Builtin.Maybe
+open import Data.Bool
 import Data.Maybe as Maybe
 open import Agda.Builtin.Float
 open import Data.List using (List; []; _∷_; map)
@@ -12,6 +14,11 @@ open import Data.Fin as Fin
 open import Data.Empty
 open import Data.Integer using (ℤ)
 open import Data.Product using (_×_)
+open import Relation.Binary.Definitions
+open import Relation.Nullary.Decidable hiding (map)
+open import Relation.Nullary.Negation
+open import Data.Empty
+open import Data.Float.Properties
 open import Level using (Level)
 
 open import Relation.Binary.PropositionalEquality
@@ -74,6 +81,7 @@ module Basics where
     sparse-normal-form {(σ1 :*! σ2) :+! (τ1 :+! τ2)} (just (inj₂ nothing)) = nothing
     sparse-normal-form {(σ1 :+! σ2) :+! (τ1 :+! τ2)} (just (inj₁ nothing)) = nothing
     sparse-normal-form {(σ1 :+! σ2) :+! (τ1 :+! τ2)} (just (inj₂ nothing)) = nothing
+    sparse-normal-form {(σ1 :+! σ2) :+! (τ1 :+! τ2)} (just (inj₂ x)) = nothing
     sparse-normal-form {τ} x = x
 open Basics public
 
@@ -131,6 +139,10 @@ module environment-value-tuple where
     D1Etup-to-val : {Γ : Env Pr} → Rep (D1τ (Etup Pr Γ)) → Val Du (D1Γ Γ)
     D1Etup-to-val {[]} x = empty
     D1Etup-to-val {τ ∷ Γ} (x , xs) = push x (D1Etup-to-val xs) 
+
+    Etup-to-val-primal : {Γ : Env Pr} → Rep (Etup Pr Γ) → Val Du (D1Γ Γ) 
+    Etup-to-val-primal {[]} x = empty
+    Etup-to-val-primal {τ ∷ Γ} (x , xs) = push (primal τ x) (Etup-to-val-primal xs)
     
     Etup-to-LEtup : {Γ : Env Pr} → LinRep (D2τ' (Etup Pr Γ)) → LEtup (map D2τ' Γ)
     Etup-to-LEtup {[]} _ = tt
@@ -222,17 +234,114 @@ module DenseLinRepresentation where
     LinRepDense (σ :*! τ) = LinRepDense σ × LinRepDense τ
     LinRepDense (σ :+! τ) = LinRepDense σ × LinRepDense τ
 
+    LinRepDense≟ : {τ : LTyp} → DecidableEquality (LinRepDense τ)
+    LinRepDense≟ {LUn} tt tt = yes refl 
+    LinRepDense≟ {LR} x y = x Data.Float.Properties.≟ y
+    LinRepDense≟ {σ :*! τ} (a , b) (c , d) with LinRepDense≟ a c | LinRepDense≟ b d
+    ... | no ¬w | no ¬v = no λ x → ¬w (cong fst x)
+    ... | no ¬w | yes v = no λ x → ¬w (cong fst x)
+    ... | yes w | no ¬v = no λ x → ¬v (cong snd x)
+    ... | yes w | yes v = yes (cong₂ (_,_) w v)
+    LinRepDense≟ {σ :+! τ} (a , b) (c , d) with LinRepDense≟ a c | LinRepDense≟ b d
+    ... | no ¬w | no ¬v = no λ x → ¬w (cong fst x)
+    ... | no ¬w | yes v = no λ x → ¬w (cong fst x)
+    ... | yes w | no ¬v = no λ x → ¬v (cong snd x)
+    ... | yes w | yes v = yes (cong₂ (_,_) w v)
+
     zerovDense : (τ : LTyp) -> LinRepDense τ 
     zerovDense LUn = tt
     zerovDense LR = 0.0
     zerovDense (σ :*! τ) = zerovDense σ , zerovDense τ
     zerovDense (σ :+! τ) = zerovDense σ , zerovDense τ
 
-    to-LinRepDense : (τ : LTyp) → LinRep τ → LinRepDense τ
-    to-LinRepDense LUn tt = tt
-    to-LinRepDense LR x = x
-    to-LinRepDense (σ :*! τ) (just (x , y)) = to-LinRepDense σ x , to-LinRepDense τ y 
-    to-LinRepDense (σ :*! τ) nothing = zerovDense (σ :*! τ) 
-    to-LinRepDense (σ :+! τ) (just (inj₁ x)) = to-LinRepDense σ x , zerovDense τ
-    to-LinRepDense (σ :+! τ) (just (inj₂ y)) = zerovDense σ , to-LinRepDense τ y 
-    to-LinRepDense (σ :+! τ) nothing = zerovDense (σ :*! τ) 
+    to-LinRepDense : { τ : LTyp } → LinRep τ → LinRepDense τ
+    to-LinRepDense {LUn} tt = tt
+    to-LinRepDense {LR} x = x
+    to-LinRepDense {σ :*! τ} (just (x , y)) = to-LinRepDense {σ} x , to-LinRepDense {τ} y 
+    to-LinRepDense {σ :*! τ} nothing = zerovDense (σ :*! τ) 
+    to-LinRepDense {σ :+! τ} (just (inj₁ x)) = to-LinRepDense {σ} x , zerovDense τ
+    to-LinRepDense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , to-LinRepDense {τ} y 
+    to-LinRepDense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
+
+    -- TODO rewrite as comparison to zerov-Dense (Lawrence)
+    equals-zero : {τ : LTyp} → (x : LinRepDense τ) → Dec (x ≡ zerovDense τ)
+    equals-zero {τ} x = LinRepDense≟ {τ} x (zerovDense τ)
+
+    zero-equals-zero : ( τ : LTyp ) → LinRepDense≟ {τ} (zerovDense τ) (zerovDense τ) ≡ yes refl
+    zero-equals-zero ( LUn ) = refl
+    zero-equals-zero ( LR ) = refl
+    zero-equals-zero ( σ :*! τ ) with zero-equals-zero σ | zero-equals-zero τ
+    ... | w | v rewrite w rewrite v = refl
+    zero-equals-zero ( σ :+! τ ) with zero-equals-zero σ | zero-equals-zero τ
+    ... | w | v rewrite w rewrite v = refl
+
+    from-LinRepDense : { τ : LTyp } → LinRepDense τ → LinRep τ
+    from-LinRepDense { LUn } x = tt
+    from-LinRepDense { LR } x = x
+    from-LinRepDense { σ :*! τ } (x , y) with equals-zero {σ :*! τ} (x , y) 
+    ... | yes _ = nothing
+    ... | _     = just ((from-LinRepDense {σ} x) , (from-LinRepDense {τ} y))
+    from-LinRepDense { σ :+! τ } (x , y) with equals-zero x | equals-zero y
+    ... | no  _ | no  _ = nothing -- Invalid, proper implementation would error here
+    ... | no  _ | yes _ = just (inj₁ (from-LinRepDense {σ} x))
+    ... | yes _ | no  _ = just (inj₂ (from-LinRepDense {τ} y))
+    ... | yes _ | yes _ = nothing -- Valid, both are zero
+
+    snf : { τ : LTyp } → LinRep τ → LinRep τ
+    snf {τ} x = from-LinRepDense (to-LinRepDense x)
+
+    snf-nothing-product : ( σ τ : LTyp ) → snf { σ :*! τ } nothing ≡ nothing
+    snf-nothing-product σ τ with LinRepDense≟ {σ :*! τ} (zerovDense σ , zerovDense τ) (zerovDense σ , zerovDense τ)
+    ... | no ¬a = ⊥-elim (¬a refl)
+    ... | yes a = refl
+
+    snf-nothing-sum : ( σ τ : LTyp ) → snf { σ :+! τ } nothing ≡ nothing
+    snf-nothing-sum σ τ with LinRepDense≟ {σ} (zerovDense σ) (zerovDense σ) | LinRepDense≟ {τ} (zerovDense τ) (zerovDense τ) 
+    ... | no ¬a | no ¬b = refl
+    ... | no ¬a | yes b = ⊥-elim (¬a refl)
+    ... | yes a | no ¬b = ⊥-elim (¬b refl)
+    ... | yes a | yes b = refl
+
+    -- The equivalence lemma between LinRep (sparse) and LinRepDense
+    -- ONLY WHEN WE IGNORE SUM TYPES
+    LinRepEquiv1 : {τ : LTyp} → (x : LinRepDense τ) → to-LinRepDense (from-LinRepDense x) ≡ x
+    LinRepEquiv1 {LUn} x = refl
+    LinRepEquiv1 {LR} x = refl
+    LinRepEquiv1 {σ :*! τ} (x , y) with (LinRepDense≟ {σ :*! τ} (x , y) (zerovDense σ , zerovDense τ))
+    ... | no ¬a = cong₂ _,_ (LinRepEquiv1 x) (LinRepEquiv1 y)
+    ... | yes a = sym a
+    LinRepEquiv1 {σ :+! τ} (x , y) = {!   !} -- incorrect, but okay if we ignore sum-types
+
+
+    -- The equivalence relation between LinRep (sparse) and LinRepDense
+    LinRepEquiv2 : {τ : LTyp} → (x : LinRep τ) → to-LinRepDense (snf x) ≡ to-LinRepDense x
+    LinRepEquiv2 {LUn} x = refl
+    LinRepEquiv2 {LR} x = refl
+    LinRepEquiv2 {σ :*! τ} (just (x , y)) 
+        with LinRepDense≟ (to-LinRepDense x) (zerovDense σ)
+        | LinRepDense≟ (to-LinRepDense y) (zerovDense τ)
+    ... | no ¬a | no ¬b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
+    ... | no ¬a | yes b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
+    ... | yes a | no ¬b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
+    ... | yes a | yes b = cong₂ _,_ (sym a) (sym b)
+    LinRepEquiv2 {σ :*! τ} nothing = cong (to-LinRepDense {σ :*! τ}) (snf-nothing-product σ τ)
+    LinRepEquiv2 {σ :+! τ} (just (inj₁ x)) 
+        rewrite (zero-equals-zero τ)
+        with LinRepDense≟ (to-LinRepDense x) (zerovDense σ) 
+    ... | no ¬a = cong₂ _,_ (LinRepEquiv2 x) refl
+    ... | yes a = cong₂ _,_ (sym a) refl
+    LinRepEquiv2 {σ :+! τ} (just (inj₂ x))
+        rewrite (zero-equals-zero σ)
+        with LinRepDense≟ (to-LinRepDense x) (zerovDense τ) 
+    ... | no ¬a = cong₂ _,_ refl (LinRepEquiv2 x)
+    ... | yes a = cong₂ _,_ refl (sym a) 
+    LinRepEquiv2 {σ :+! τ} nothing = cong (to-LinRepDense {σ :+! τ}) (snf-nothing-sum σ τ)
+
+
+    snf-idempotence : {τ : LTyp} → ( x : LinRep τ ) → snf {τ} (snf {τ} x) ≡ snf {τ} x
+    snf-idempotence x = cong from-LinRepDense (LinRepEquiv2 x)
+
+ 
+
+ 
+ 

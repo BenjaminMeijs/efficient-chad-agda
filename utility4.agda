@@ -39,11 +39,16 @@ module environment-value-tuple-dense where
 
     LEtup-to-LEtupDense : { Γ : LEnv } → LEtup Γ → LEtupDense Γ
     LEtup-to-LEtupDense {[]} tt = tt
-    LEtup-to-LEtupDense {(τ ∷ Γ)} (x , xs) = to-LinRepDense τ x , LEtup-to-LEtupDense {Γ} xs 
+    LEtup-to-LEtupDense {(τ ∷ Γ)} (x , xs) = to-LinRepDense {τ} x , LEtup-to-LEtupDense {Γ} xs 
+
+    LEtupDense-to-LEtup : { Γ : LEnv } → LEtupDense Γ → LEtup Γ
+    LEtupDense-to-LEtup {[]} tt = tt
+    LEtupDense-to-LEtup {(τ ∷ Γ)} (x , xs) = from-LinRepDense {τ} x , LEtupDense-to-LEtup {Γ} xs 
 
     Etup-to-LEtupDense : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → LEtupDense (map D2τ' Γ)
     Etup-to-LEtupDense {[]} tt = tt
     Etup-to-LEtupDense {τ ∷ Γ} (x , xs) = x , Etup-to-LEtupDense xs 
+
 open environment-value-tuple-dense public
 
 module environment-vector-addition where
@@ -61,6 +66,14 @@ module environment-vector-addition where
     zero-LEnvDense : (Γ : Env Pr) -> LEtupDense (map D2τ' Γ)
     zero-LEnvDense [] = tt
     zero-LEnvDense (x ∷ env) = zerovDense  (D2τ' x) , zero-LEnvDense env 
+
+    zerov-is-zerovDense : ( τ : Typ Pr ) 
+                        → to-LinRepDense {D2τ' τ} (fst (zerov (D2τ' τ))) ≡ zerovDense (D2τ' τ)
+    zerov-is-zerovDense Un = refl
+    zerov-is-zerovDense Inte = refl
+    zerov-is-zerovDense R = refl
+    zerov-is-zerovDense (τ :* τ₁) = refl
+    zerov-is-zerovDense (τ :+ τ₁) = refl
 
     -- Plusv theorems
     postulate
@@ -91,9 +104,16 @@ module environment-vector-addition where
     ev+congL : {Γ : Env Pr} {x : LEtupDense (map D2τ' Γ)} {y : LEtupDense (map D2τ' Γ)} {z : LEtupDense (map D2τ' Γ)} → x ≡ z
               → x ev+ y ≡ z ev+ y
     zerovDense-on-Etup-is-zeroLEnv2 : {Γ : Env Pr} → Etup-to-LEtupDense (zerovDense (D2τ' (Etup Pr Γ))) ≡ zero-LEnvDense Γ
+    zerov-LEnvDense-is-zero-LEnv : {Γ : Env Pr} → zero-LEnvDense Γ ≡ LEtup-to-LEtupDense (zero-LEnv Γ) 
     evplus-on-Etup-is-plusv : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
                         → Etup-to-LEtupDense x ev+ Etup-to-LEtupDense y
                         ≡ Etup-to-LEtupDense (plusvDense (D2τ' (Etup Pr Γ)) x y)
+    interp-zerot≡zerov : {Γ : Env Du} {env : Val Du Γ}
+                                → (τ : Typ Pr)
+                                → interp env (zerot τ) ≡ zerov (D2τ' τ) .fst
+    interp-zerot≡zerovDense : {Γ : Env Du} {env : Val Du Γ}
+                                → (τ : Typ Pr)
+                                → to-LinRepDense {D2τ' τ} (interp env (zerot τ)) ≡ zerovDense (D2τ' τ)
     
     -- proofs of plusvDense theorems
     plusvDense-zeroR LUn v = refl
@@ -125,11 +145,17 @@ module environment-vector-addition where
     ev+zeroR' {Γ} {a} {b} w = trans (ev+congR w) (ev+zeroR a)
     ev+zeroL' {Γ} {a} {b} w = trans (ev+congL w) (ev+zeroL b)
 
-    -- interp-zerot≡zerovDense {Γ} {val} Un = refl
-    -- interp-zerot≡zerovDense {Γ} {val} Inte = refl
-    -- interp-zerot≡zerovDense {Γ} {val} R = refl
-    -- interp-zerot≡zerovDense {Γ} {val} (σ :* τ) = refl
-    -- interp-zerot≡zerovDense {Γ} {val} (σ :+ τ) = refl
+    interp-zerot≡zerov Un = refl
+    interp-zerot≡zerov Inte = refl
+    interp-zerot≡zerov R = refl
+    interp-zerot≡zerov (σ :* τ) = refl
+    interp-zerot≡zerov (σ :+ τ) = refl 
+
+    interp-zerot≡zerovDense Un = refl
+    interp-zerot≡zerovDense Inte = refl
+    interp-zerot≡zerovDense R = refl
+    interp-zerot≡zerovDense (σ :* τ) = refl
+    interp-zerot≡zerovDense (σ :+ τ) = refl
 
     ev+comm {[]} a b = refl 
     ev+comm {τ ∷ Γ} a b = cong₂ (_,_) (plusvDense-comm (D2τ' τ) (a .fst) (b .fst)) (ev+comm (a .snd) (b .snd)) 
@@ -138,6 +164,9 @@ module environment-vector-addition where
 
     zerovDense-on-Etup-is-zeroLEnv2 {[]} = refl
     zerovDense-on-Etup-is-zeroLEnv2 {τ ∷ Γ} = cong₂ (_,_) refl zerovDense-on-Etup-is-zeroLEnv2
+
+    zerov-LEnvDense-is-zero-LEnv {[]} = refl
+    zerov-LEnvDense-is-zero-LEnv {τ ∷ Γ} = cong₂ (_,_) (sym (zerov-is-zerovDense τ)) zerov-LEnvDense-is-zero-LEnv 
 
     evplus-on-Etup-is-plusv {[]} x y = refl
     evplus-on-Etup-is-plusv {τ ∷ t} (x , xs) (y , ys) = cong₂ (_,_) refl (evplus-on-Etup-is-plusv xs ys)

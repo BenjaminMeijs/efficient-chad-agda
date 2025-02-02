@@ -50,7 +50,7 @@ module Representation2 where
     from-LinRepDense (σ :*! τ) (x , y) = just (from-LinRepDense σ x , from-LinRepDense τ y)
     from-LinRepDense (σ :+! τ) (x , y) = {!    !}
 
-    from-to-LinRepDense-equiv-id : (τ : LTyp) → (x : LinRepDense τ) → to-LinRepDense τ (from-LinRepDense τ x) ≡ x
+    from-to-LinRepDense-equiv-id : (τ : LTyp) → (x : LinRepDense τ) → to-LinRepDense {τ} (from-LinRepDense τ x) ≡ x
     from-to-LinRepDense-equiv-id LUn x = refl
     from-to-LinRepDense-equiv-id LR x = refl
     from-to-LinRepDense-equiv-id (σ :*! τ) (x , y) = cong₂ (_,_) (from-to-LinRepDense-equiv-id σ x) (from-to-LinRepDense-equiv-id τ y)
@@ -77,7 +77,7 @@ module Representation2 where
     to-Rep2 (σ :+ τ) (inj₂ y) = inj₂ (to-Rep2 τ y)
     to-Rep2 (σ :-> τ ) f = λ x → to-Rep2 τ (f (from-Rep2 σ x) .fst)
     to-Rep2 (EVM Γ τ ) m = LACMmap (to-Rep2 τ) m
-    to-Rep2 (Lin τ ) x = to-LinRepDense τ x
+    to-Rep2 (Lin τ ) x = to-LinRepDense {τ} x
 
     primal2 : (τ : Typ Pr) -> Rep2 τ -> Rep2 (D1τ τ)
     primal2 τ x = to-Rep2 (D1τ τ) (primal τ (from-Rep2 τ x))
@@ -109,7 +109,7 @@ module environment-value-tuple where
     from-LEtup2 [] tt = tt
     from-LEtup2 (τ ∷ Γ) (x , xs) = from-LinRepDense τ x , from-LEtup2 Γ xs
     to-LEtup2 [] tt = tt
-    to-LEtup2 (τ ∷ Γ) (x , xs) = to-LinRepDense τ x , to-LEtup2 Γ xs 
+    to-LEtup2 (τ ∷ Γ) (x , xs) = to-LinRepDense {τ} x , to-LEtup2 Γ xs 
 
     Etup-to-LEtup2 : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → LEtup2 (map D2τ' Γ)
     Etup-to-LEtup2 {[]} tt = tt
