@@ -74,17 +74,13 @@ module environment-vector-addition where
     zerov-is-zerovDense (σ :*! τ) = refl
     zerov-is-zerovDense (σ :+! τ) = refl
 
-    -- zerov-is-zerovDense-snf : ( τ : LTyp ) 
-    --                     → to-LinRepDense {τ} (snf (zerov τ .fst)) ≡ zerovDense τ
-    -- zerov-is-zerovDense-snf LUn = refl
-    -- zerov-is-zerovDense-snf LR = refl
-    -- zerov-is-zerovDense-snf (σ :*! τ)
-    --     rewrite (zero-equals-zero σ)
-    --     rewrite (zero-equals-zero τ) = refl
-    -- zerov-is-zerovDense-snf (σ :+! τ)
-    --     rewrite (zero-equals-zero σ)
-    --     rewrite (zero-equals-zero τ) = refl
-        
+    -- onehot-LEnv : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
+    --               (idx : Idx Γ' τ) → (val : LinRep τ) → LEtup Γ'
+    -- onehot-LEnv {Γ} {τ} idx val = addLEτ {Γ = map D2τ' Γ} idx val (zero-LEnv Γ)
+    -- plusvDense-is-plusv : {τ : LTyp} {x y : LinRep τ} → plusvDense τ (to-LinRepDense x) (to-LinRepDense y) ≡ to-LinRepDense (plusv τ x y .fst)
+    -- addLEτ-to-onehot : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
+    --                   (idx : Idx Γ' τ) -> (val : LinRep τ) -> (evIn : LEtup Γ')
+    --                   -> LEtup-to-LEtupDense (addLEτ idx val evIn) ≡ LEtup-to-LEtupDense evIn ev+ LEtup-to-LEtupDense (onehot-LEnv idx val)
 
     -- Plusv theorems
     postulate
@@ -125,6 +121,7 @@ module environment-vector-addition where
     interp-zerot≡zerovDense : {Γ : Env Du} {env : Val Du Γ}
                                 → (τ : Typ Pr)
                                 → to-LinRepDense {D2τ' τ} (interp env (zerot τ)) ≡ zerovDense (D2τ' τ)
+
     
     -- proofs of plusvDense theorems
     plusvDense-zeroR LUn v = refl
