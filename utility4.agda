@@ -67,13 +67,24 @@ module environment-vector-addition where
     zero-LEnvDense [] = tt
     zero-LEnvDense (x ∷ env) = zerovDense  (D2τ' x) , zero-LEnvDense env 
 
-    zerov-is-zerovDense : ( τ : Typ Pr ) 
-                        → to-LinRepDense {D2τ' τ} (fst (zerov (D2τ' τ))) ≡ zerovDense (D2τ' τ)
-    zerov-is-zerovDense Un = refl
-    zerov-is-zerovDense Inte = refl
-    zerov-is-zerovDense R = refl
-    zerov-is-zerovDense (τ :* τ₁) = refl
-    zerov-is-zerovDense (τ :+ τ₁) = refl
+    zerov-is-zerovDense : ( τ : LTyp ) 
+                        → to-LinRepDense {τ} (fst (zerov τ)) ≡ zerovDense τ
+    zerov-is-zerovDense LUn = refl
+    zerov-is-zerovDense LR = refl
+    zerov-is-zerovDense (σ :*! τ) = refl
+    zerov-is-zerovDense (σ :+! τ) = refl
+
+    -- zerov-is-zerovDense-snf : ( τ : LTyp ) 
+    --                     → to-LinRepDense {τ} (snf (zerov τ .fst)) ≡ zerovDense τ
+    -- zerov-is-zerovDense-snf LUn = refl
+    -- zerov-is-zerovDense-snf LR = refl
+    -- zerov-is-zerovDense-snf (σ :*! τ)
+    --     rewrite (zero-equals-zero σ)
+    --     rewrite (zero-equals-zero τ) = refl
+    -- zerov-is-zerovDense-snf (σ :+! τ)
+    --     rewrite (zero-equals-zero σ)
+    --     rewrite (zero-equals-zero τ) = refl
+        
 
     -- Plusv theorems
     postulate
@@ -166,7 +177,7 @@ module environment-vector-addition where
     zerovDense-on-Etup-is-zeroLEnv2 {τ ∷ Γ} = cong₂ (_,_) refl zerovDense-on-Etup-is-zeroLEnv2
 
     zerov-LEnvDense-is-zero-LEnv {[]} = refl
-    zerov-LEnvDense-is-zero-LEnv {τ ∷ Γ} = cong₂ (_,_) (sym (zerov-is-zerovDense τ)) zerov-LEnvDense-is-zero-LEnv 
+    zerov-LEnvDense-is-zero-LEnv {τ ∷ Γ} = cong₂ (_,_) (sym (zerov-is-zerovDense (D2τ' τ))) zerov-LEnvDense-is-zero-LEnv 
 
     evplus-on-Etup-is-plusv {[]} x y = refl
     evplus-on-Etup-is-plusv {τ ∷ t} (x , xs) (y , ys) = cong₂ (_,_) refl (evplus-on-Etup-is-plusv xs ys)
