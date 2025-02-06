@@ -77,7 +77,7 @@ module environment-vector-addition where
     -- onehot-LEnv : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
     --               (idx : Idx Γ' τ) → (val : LinRep τ) → LEtup Γ'
     -- onehot-LEnv {Γ} {τ} idx val = addLEτ {Γ = map D2τ' Γ} idx val (zero-LEnv Γ)
-    -- plusvDense-is-plusv : {τ : LTyp} {x y : LinRep τ} → plusvDense τ (to-LinRepDense x) (to-LinRepDense y) ≡ to-LinRepDense (plusv τ x y .fst)
+    -- -- plusvDense-is-plusv : {τ : LTyp} {x y : LinRep τ} → plusvDense τ (to-LinRepDense x) (to-LinRepDense y) ≡ to-LinRepDense (plusv τ x y .fst)
     -- addLEτ-to-onehot : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
     --                   (idx : Idx Γ' τ) -> (val : LinRep τ) -> (evIn : LEtup Γ')
     --                   -> LEtup-to-LEtupDense (addLEτ idx val evIn) ≡ LEtup-to-LEtupDense evIn ev+ LEtup-to-LEtupDense (onehot-LEnv idx val)
@@ -95,6 +95,8 @@ module environment-vector-addition where
     plusvDense-comm : (τ : LTyp) -> (a : LinRepDense τ) -> (b : LinRepDense τ) -> plusvDense τ a b ≡ plusvDense τ b a
     plusvDense-assoc : (τ : LTyp) → (a : LinRepDense τ) → (b : LinRepDense τ) (c : LinRepDense τ)
               →  plusvDense τ (plusvDense τ a b) c ≡ plusvDense τ a (plusvDense τ b c)
+    plusvDense-congR : { τ : LTyp } -> { a b c : LinRepDense τ } → b ≡ c → plusvDense τ a b ≡ plusvDense τ a c
+    plusvDense-congL : { τ : LTyp } -> { a b c : LinRepDense τ } → a ≡ c → plusvDense τ a b ≡ plusvDense τ c b
 
     -- ev+ theorems
     ev+comm : {Γ : Env Pr} → (a : LEtupDense (map D2τ' Γ)) → (b : LEtupDense (map D2τ' Γ)) → a ev+ b ≡ b ev+ a
@@ -121,7 +123,6 @@ module environment-vector-addition where
     interp-zerot≡zerovDense : {Γ : Env Du} {env : Val Du Γ}
                                 → (τ : Typ Pr)
                                 → to-LinRepDense {D2τ' τ} (interp env (zerot τ)) ≡ zerovDense (D2τ' τ)
-
     
     -- proofs of plusvDense theorems
     plusvDense-zeroR LUn v = refl
@@ -142,6 +143,9 @@ module environment-vector-addition where
     plusvDense-assoc LR a b c = primFloatPlus-assoc a b c
     plusvDense-assoc (σ :*! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2) 
     plusvDense-assoc (σ :+! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2)
+
+    plusvDense-congR refl = refl
+    plusvDense-congL refl = refl
 
 
     -- proofs of ev+ theorems

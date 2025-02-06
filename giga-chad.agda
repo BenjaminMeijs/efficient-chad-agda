@@ -41,9 +41,6 @@ interp-sink-commute-Copy-Skip-End : ∀ {tag} {Γ : Env tag} {σ τ ρ : Typ tag
 interp-sink-commute-Copy-Skip-End x env e = sym $
     interp-sink-commute (push x env) (push x (push _ env)) (WCopy (WSkip WEnd)) (refl , forall-fin-trivial (λ _ → refl )) e
    
-    -- interp-sink-commute
-                --   (push interp-rhs-giga env) (push interp-rhs-giga (push interp-rhs-chad env))
-                --   (WCopy (WSkip WEnd)) (refl , forall-fin-trivial (λ _ → refl)) (chad t)
 
 D1Term : {Γ : Env Pr} {τ : Typ Pr}
         -> Term Pr Γ τ -> Term Du (D1Γ Γ) (D1τ τ)

@@ -141,8 +141,7 @@ module environment-value-tuple where
     D1Etup-to-val {τ ∷ Γ} (x , xs) = push x (D1Etup-to-val xs) 
 
     Etup-to-val-primal : {Γ : Env Pr} → Rep (Etup Pr Γ) → Val Du (D1Γ Γ) 
-    Etup-to-val-primal {[]} x = empty
-    Etup-to-val-primal {τ ∷ Γ} (x , xs) = push (primal τ x) (Etup-to-val-primal xs)
+    Etup-to-val-primal x = primalVal (Etup-to-val x) 
     
     Etup-to-LEtup : {Γ : Env Pr} → LinRep (D2τ' (Etup Pr Γ)) → LEtup (map D2τ' Γ)
     Etup-to-LEtup {[]} _ = tt
