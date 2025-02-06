@@ -128,19 +128,20 @@ DSem5-chain-app f g a ctg = cong-app (DSem5-chain f g a) ctg
 DSem5-inj₁-lemma : {σ τ ρ : Typ Pr}
         → (f : Rep σ →  Rep τ) 
         → (a : Rep σ)
-        → (ctg : LinRepDense (D2τ' τ))
+        → (ctgL : LinRepDense (D2τ' τ))
+        → (ctgR : LinRepDense (D2τ' ρ))
         → let g : Rep σ → Rep τ ⊎ Rep ρ
               g = inj₁ ∘ f
-          in DSem5 {σ} {τ} f a ctg -- DSem f a ctg 
-              ≡ DSem5 {σ} {τ :+ ρ} g a ( ctg , zerovDense (D2τ' ρ) ) 
-DSem5-inj₁-lemma {σ} {τ} {ρ} f a ctg =
-  let ctg' = ctg , zerovDense (D2τ' ρ)
+          in DSem5 {σ} {τ} f a ctgL -- DSem f a ctg 
+              ≡ DSem5 {σ} {τ :+ ρ} g a ( ctgL , ctgR ) 
+DSem5-inj₁-lemma {σ} {τ} {ρ} f a ctgL ctgR =
+  let ctg' = ctgL , ctgR
   in begin
-  DSem5 f a ctg
+  DSem5 f a ctgL
     ≡⟨ cong (DSem5 f a) (cong-app (sym (DSem5-inj₁ (f a))) ctg') ⟩
   DSem5 {σ} {τ} f a (DSem5 inj₁ (f a) ctg')
     ≡⟨ sym (DSem5-chain-app {σ} {τ} {τ :+ ρ} inj₁ f a ctg') ⟩
-  DSem5 {σ} {τ :+ ρ} (inj₁ ∘ f) a (ctg , zerovDense (D2τ' ρ))
+  DSem5 {σ} {τ :+ ρ} (inj₁ ∘ f) a ctg'
   ∎
 
 
@@ -233,12 +234,15 @@ chad-equiv-DSem5 {Γ = Γ} a evIn ctg (var x) =
   let idx = convIdx D2τ' x
   in begin
   LEtup-to-LEtupDense (LACMexec (interp (Etup-to-val-primal a) (chad (var x)) .snd ctg .fst) evIn)
-  ≡⟨⟩ LEtup-to-LEtupDense (LACMexec (LACM.add idx ctg) evIn)
-  ≡⟨ cong LEtup-to-LEtupDense (LACMexec-add idx ctg evIn) ⟩
+    ≡⟨⟩
+  LEtup-to-LEtupDense (LACMexec (LACM.add idx ctg) evIn)
+    ≡⟨ cong LEtup-to-LEtupDense (LACMexec-add idx ctg evIn) ⟩
+  LEtup-to-LEtupDense evIn ev+ LEtup-to-LEtupDense (LACMexec (LACM.add idx ctg) evIn)
+    ≡⟨ {!   !} ⟩
   LEtup-to-LEtupDense (addLEτ idx ctg evIn)
   -- ≡⟨ cong LEtup-to-LEtupDense (addLEτ-to-onehot idx ctg evIn) ⟩
   -- LEtup-to-LEtupDense evIn ev+ onehot-LEnv (convIdx D2τ' x) ctg
-  ≡⟨ {!   !} ⟩
+    ≡⟨ {!   !} ⟩
   LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp (var x) ∘ Etup-to-val) a (to-LinRepDense ctg))
   ∎
 chad-equiv-DSem5 {Γ = Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) =
@@ -336,8 +340,12 @@ chad-equiv-DSem5 {Γ = Γ} a evIn nothing (inl {σ = σ} {τ = τ} t) =
   let zero-σ = zerov (D2τ' σ) .fst
   in begin
   LEtup-to-LEtupDense (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd zero-σ .fst) evIn)
-    ≡⟨ {!   !} ⟩
-  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp (inl t) ∘ Etup-to-val) a (to-LinRepDense nothing))
+    ≡⟨ chad-equiv-DSem5 a evIn zero-σ t ⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp t ∘ Etup-to-val) a (to-LinRepDense zero-σ))
+    ≡⟨ ev+congR (DSem5-ctg-zeroLEnv' {{zerov-is-zerovDense (D2τ' σ)}}) ⟩
+  LEtup-to-LEtupDense evIn ev+ zero-LEnvDense Γ
+    ≡⟨ ev+congR (sym DSem5-ctg-zeroLEnv') ⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (inj₁ ∘ flip interp t ∘ Etup-to-val) a (to-LinRepDense {D2τ' σ :*! D2τ' τ} nothing))
   ∎
 chad-equiv-DSem5 {Γ = Γ} a evIn ctg'@(just (inj₁ ctg)) (inl {σ = σ} {τ = τ} t) = 
   begin
@@ -346,9 +354,25 @@ chad-equiv-DSem5 {Γ = Γ} a evIn ctg'@(just (inj₁ ctg)) (inl {σ = σ} {τ = 
   LEtup-to-LEtupDense (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd ctg .fst) evIn)
     ≡⟨ chad-equiv-DSem5 a evIn ctg t ⟩
   LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp t ∘ Etup-to-val) a (to-LinRepDense ctg))
-    ≡⟨ ev+congR (cong Etup-to-LEtupDense (DSem5-inj₁-lemma (flip interp t ∘ Etup-to-val) a (to-LinRepDense ctg))) ⟩
+    ≡⟨ ev+congR (cong Etup-to-LEtupDense (DSem5-inj₁-lemma (flip interp t ∘ Etup-to-val) a (to-LinRepDense ctg) (zerovDense (D2τ' τ)) )) ⟩
   LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (inj₁ ∘ flip interp t ∘ Etup-to-val) a (to-LinRepDense {D2τ' σ :+! D2τ' τ} ctg'))
   ∎
-chad-equiv-DSem5 {Γ = Γ} a evIn ctg'@(just (inj₂ ctg)) (inl t) = {!   !}
+chad-equiv-DSem5 {Γ = Γ} a evIn ctg'@(just (inj₂ ctg)) (inl {σ = σ} {τ = τ} t) = 
+  let zero-σ = zerov (D2τ' σ) .fst
+  in begin
+  LEtup-to-LEtupDense (LACMexec (interp (Etup-to-val-primal a) (chad (inl t)) .snd (just (inj₂ ctg)) .fst) evIn)
+    ≡⟨⟩
+  LEtup-to-LEtupDense (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd zero-σ .fst) evIn)
+    ≡⟨ chad-equiv-DSem5 a evIn zero-σ t ⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp t ∘ Etup-to-val) a (to-LinRepDense zero-σ))
+    ≡⟨ ev+congR (DSem5-ctg-zeroLEnv' {{zerov-is-zerovDense (D2τ' σ)}}) ⟩
+  LEtup-to-LEtupDense evIn ev+ zero-LEnvDense Γ
+    ≡⟨ ev+congR (sym DSem5-ctg-zeroLEnv' ) ⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (flip interp t ∘ Etup-to-val) a (zerovDense (D2τ' σ)))
+    ≡⟨ ev+congR (cong Etup-to-LEtupDense (DSem5-inj₁-lemma (flip interp t ∘ Etup-to-val) a (zerovDense (D2τ' σ)) (to-LinRepDense ctg))) ⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (inj₁ ∘ flip interp t ∘ Etup-to-val) a (zerovDense (D2τ' σ) , to-LinRepDense ctg))
+    ≡⟨⟩
+  LEtup-to-LEtupDense evIn ev+ Etup-to-LEtupDense (DSem5 (inj₁ ∘ flip interp t ∘ Etup-to-val) a (to-LinRepDense {D2τ' σ :+! D2τ' τ} (just (inj₂ ctg))))
+  ∎
 chad-equiv-DSem5 {Γ = Γ} a evIn ctg t = {!   !}
  
