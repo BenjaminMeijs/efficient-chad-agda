@@ -11,6 +11,7 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Function.Base using (id; _∘_; _$_; case_of_; flip)
 open import Data.Fin as Fin
 open import Data.Empty
+open import Data.Bool
 open import Data.Integer using (ℤ)
 open import Data.Product using (_×_)
 open import Level using (Level)
@@ -32,22 +33,81 @@ open utility0.environment-value-tuple public
 open utility0.LACMconvenience public  
 open utility0.DenseLinRepresentation public
 
+module sparse-LTyp-harmony where
+    _≃₁_ : {τ : LTyp} → LinRep τ → LinRep τ → Bool
+    _≃₁_ {LUn} x y = true
+    _≃₁_ {LR} x y = true
+
+    _≃₁_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = x1 ≃₁ y1 ∧ x2 ≃₁ y2
+    _≃₁_ {σ :*! τ} x y = true
+
+    _≃₁_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃₁ y
+    _≃₁_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = false
+    _≃₁_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = false
+    _≃₁_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃₁ y
+    _≃₁_ {σ :+! τ} x y = true
+
+    _≃_ : {τ : LTyp} → LinRep τ → LinRep τ → Set
+    _≃_ {LUn} x y = ⊤
+    _≃_ {LR} x y = ⊤
+    _≃_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = (x1 ≃ y1) × (x2 ≃ y2) 
+    _≃_ {σ :*! τ} (just x) nothing = ⊤
+    _≃_ {σ :*! τ} nothing (just x) = ⊤
+    _≃_ {σ :*! τ} nothing nothing = ⊤
+
+    _≃_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃ y
+    _≃_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = ⊥
+    _≃_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = ⊥
+    _≃_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃ y
+    _≃_ {σ :+! τ} (just x) nothing = ⊤
+    _≃_ {σ :+! τ} nothing (just x) = ⊤
+    _≃_ {σ :+! τ} nothing nothing = ⊤
+
+    refl≃ : {τ : LTyp} → (x : LinRep τ) → x ≃ x
+    refl≃ {LUn} x = tt
+    refl≃ {LR} x = tt
+    refl≃ {σ :*! τ} (just (x , y)) = refl≃ x , refl≃ y
+    refl≃ {σ :*! τ} nothing = tt
+    refl≃ {σ :+! τ} (just (inj₁ x)) = refl≃ x
+    refl≃ {σ :+! τ} (just (inj₂ x)) = refl≃ x
+    refl≃ {σ :+! τ} nothing = tt
+    
+    sym≃ : {τ : LTyp} → ( x : LinRep τ ) → ( y : LinRep τ ) 
+            → x ≃ y → y ≃ x
+    sym≃ {LUn} _ _ _ = tt
+    sym≃ {LR} _ _ _ = tt
+    sym≃ {σ :*! τ} ( just (x1 , x2) ) ( just (y1 , y2) ) (w1 , w2) = ( sym≃ x1 y1 w1 , sym≃ x2 y2 w2 )
+    sym≃ {σ :*! τ} ( just _ ) nothing _ = tt
+    sym≃ {σ :*! τ} nothing ( just _ ) _ = tt
+    sym≃ {σ :*! τ} nothing nothing _ = tt
+    sym≃ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) w = sym≃ x y w
+    sym≃ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) w = sym≃ x y w
+    sym≃ {σ :+! τ} ( just _ ) nothing _ = tt
+    sym≃ {σ :+! τ} nothing ( just (inj₁ _) ) _ = tt
+    sym≃ {σ :+! τ} nothing ( just (inj₂ _) ) _ = tt
+    sym≃ {σ :+! τ} nothing nothing _ = tt
+
+
 module environment-value-tuple-dense where
     LEtupDense : LEnv -> Set
     LEtupDense [] = ⊤
     LEtupDense (τ ∷ Γ) = LinRepDense τ × LEtupDense Γ
 
-    LEtup-to-LEtupDense : { Γ : LEnv } → LEtup Γ → LEtupDense Γ
-    LEtup-to-LEtupDense {[]} tt = tt
-    LEtup-to-LEtupDense {(τ ∷ Γ)} (x , xs) = to-LinRepDense {τ} x , LEtup-to-LEtupDense {Γ} xs 
+    EVs2d : { Γ : LEnv } → LEtup Γ → LEtupDense Γ
+    EVs2d {[]} tt = tt
+    EVs2d {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , EVs2d {Γ} xs 
 
     LEtupDense-to-LEtup : { Γ : LEnv } → LEtupDense Γ → LEtup Γ
     LEtupDense-to-LEtup {[]} tt = tt
-    LEtupDense-to-LEtup {(τ ∷ Γ)} (x , xs) = from-LinRepDense {τ} x , LEtupDense-to-LEtup {Γ} xs 
+    LEtupDense-to-LEtup {(τ ∷ Γ)} (x , xs) = dense2sparse {τ} x , LEtupDense-to-LEtup {Γ} xs 
 
-    Etup-to-LEtupDense : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → LEtupDense (map D2τ' Γ)
-    Etup-to-LEtupDense {[]} tt = tt
-    Etup-to-LEtupDense {τ ∷ Γ} (x , xs) = x , Etup-to-LEtupDense xs 
+    etup2EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → LEtupDense (map D2τ' Γ)
+    etup2EV {[]} tt = tt
+    etup2EV {τ ∷ Γ} (x , xs) = x , etup2EV xs 
+
+    etup2EV≡ : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ LEtupDense (map D2τ' Γ)
+    etup2EV≡ {[]} = refl
+    etup2EV≡ {x ∷ Γ} = cong₂ _×_ refl etup2EV≡
 
 open environment-value-tuple-dense public
 
@@ -68,19 +128,19 @@ module environment-vector-addition where
     zero-LEnvDense (x ∷ env) = zerovDense  (D2τ' x) , zero-LEnvDense env 
 
     zerov-is-zerovDense : ( τ : LTyp ) 
-                        → to-LinRepDense {τ} (fst (zerov τ)) ≡ zerovDense τ
+                        → sparse2dense {τ} (fst (zerov τ)) ≡ zerovDense τ
     zerov-is-zerovDense LUn = refl
     zerov-is-zerovDense LR = refl
     zerov-is-zerovDense (σ :*! τ) = refl
     zerov-is-zerovDense (σ :+! τ) = refl
 
-    -- onehot-LEnv : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
-    --               (idx : Idx Γ' τ) → (val : LinRep τ) → LEtup Γ'
-    -- onehot-LEnv {Γ} {τ} idx val = addLEτ {Γ = map D2τ' Γ} idx val (zero-LEnv Γ)
-    -- -- plusvDense-is-plusv : {τ : LTyp} {x y : LinRep τ} → plusvDense τ (to-LinRepDense x) (to-LinRepDense y) ≡ to-LinRepDense (plusv τ x y .fst)
-    -- addLEτ-to-onehot : {Γ : Env Pr} {τ : LTyp} → let Γ' = map D2τ' Γ in 
-    --                   (idx : Idx Γ' τ) -> (val : LinRep τ) -> (evIn : LEtup Γ')
-    --                   -> LEtup-to-LEtupDense (addLEτ idx val evIn) ≡ LEtup-to-LEtupDense evIn ev+ LEtup-to-LEtupDense (onehot-LEnv idx val)
+    -- Almost the same as addLEτ, but then in Dense space.
+    onehot : {Γ : Env Pr} {τ : Typ Pr}
+            → (idx : Idx Γ τ)
+            → (x : LinRepDense (D2τ' τ))
+            → LinRepDense (D2τ' (Etup Pr Γ))
+    onehot {ρ ∷ Γ} {τ} Z       x = x , zerovDense _
+    onehot {ρ ∷ Γ} {τ} (S idx) x = zerovDense _ , onehot idx x
 
     -- Plusv theorems
     postulate
@@ -89,6 +149,7 @@ module environment-vector-addition where
         primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
                               → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
     plusvDense-zeroR : (τ : LTyp) -> (v : LinRepDense τ) -> plusvDense τ v (zerovDense τ) ≡ v
+    plusvSparse-zeroR : (τ : LTyp) -> (v : LinRep τ) -> plusv τ v (zerov τ .fst) .fst ≡ v
     plusvDense-zeroL : (τ : LTyp) -> (v : LinRepDense τ) -> plusvDense τ (zerovDense τ) v ≡ v
     plusvDense-zeroR' : { τ : LTyp } { a b : LinRepDense τ } →  {{b ≡ zerovDense τ}} → plusvDense τ a b ≡ a
     plusvDense-zeroL' : { τ : LTyp } { a b : LinRepDense τ } →  {{a ≡ zerovDense τ}} → plusvDense τ a b ≡ b
@@ -112,18 +173,23 @@ module environment-vector-addition where
               → x ev+ y ≡ x ev+ z
     ev+congL : {Γ : Env Pr} {x : LEtupDense (map D2τ' Γ)} {y : LEtupDense (map D2τ' Γ)} {z : LEtupDense (map D2τ' Γ)} → x ≡ z
               → x ev+ y ≡ z ev+ y
-    zerovDense-on-Etup-is-zeroLEnv2 : {Γ : Env Pr} → Etup-to-LEtupDense (zerovDense (D2τ' (Etup Pr Γ))) ≡ zero-LEnvDense Γ
-    zerov-LEnvDense-is-zero-LEnv : {Γ : Env Pr} → zero-LEnvDense Γ ≡ LEtup-to-LEtupDense (zero-LEnv Γ) 
+    zerovDense-on-Etup-is-zeroLEnv2 : {Γ : Env Pr} → etup2EV (zerovDense (D2τ' (Etup Pr Γ))) ≡ zero-LEnvDense Γ
+    zerov-LEnvDense-is-zero-LEnv : {Γ : Env Pr} → zero-LEnvDense Γ ≡ EVs2d (zero-LEnv Γ) 
     evplus-on-Etup-is-plusv : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
-                        → Etup-to-LEtupDense x ev+ Etup-to-LEtupDense y
-                        ≡ Etup-to-LEtupDense (plusvDense (D2τ' (Etup Pr Γ)) x y)
+                        → etup2EV x ev+ etup2EV y
+                        ≡ etup2EV (plusvDense (D2τ' (Etup Pr Γ)) x y)
     interp-zerot≡zerov : {Γ : Env Du} {env : Val Du Γ}
                                 → (τ : Typ Pr)
                                 → interp env (zerot τ) ≡ zerov (D2τ' τ) .fst
     interp-zerot≡zerovDense : {Γ : Env Du} {env : Val Du Γ}
                                 → (τ : Typ Pr)
-                                → to-LinRepDense {D2τ' τ} (interp env (zerot τ)) ≡ zerovDense (D2τ' τ)
-    
+                                → sparse2dense {D2τ' τ} (interp env (zerot τ)) ≡ zerovDense (D2τ' τ)
+    onehot-equiv-addLEτ : {Γ : Env Pr} {τ : Typ Pr}
+                        → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
+                        in (ctg : LinRep (D2τ' τ))
+                        → EVs2d (addLEτ idx' ctg (zero-LEnv Γ))
+                          ≡ etup2EV (onehot idx (sparse2dense ctg))
+
     -- proofs of plusvDense theorems
     plusvDense-zeroR LUn v = refl
     plusvDense-zeroR LR v = primFloatPlus-zeroR v
@@ -182,5 +248,16 @@ module environment-vector-addition where
 
     evplus-on-Etup-is-plusv {[]} x y = refl
     evplus-on-Etup-is-plusv {τ ∷ t} (x , xs) (y , ys) = cong₂ (_,_) refl (evplus-on-Etup-is-plusv xs ys)
+
+    plusvSparse-zeroR LUn v = refl
+    plusvSparse-zeroR LR v = primFloatPlus-zeroR v
+    plusvSparse-zeroR (σ :*! τ) (just x) = refl
+    plusvSparse-zeroR (σ :*! τ) nothing = refl
+    plusvSparse-zeroR (σ :+! τ) v = refl
+
+    onehot-equiv-addLEτ {σ ∷ Γ} {τ} Z ctg = cong₂ _,_ 
+                                                (cong sparse2dense (plusvSparse-zeroR _ ctg))
+                                                (trans (sym zerov-LEnvDense-is-zero-LEnv) (sym zerovDense-on-Etup-is-zeroLEnv2))
+    onehot-equiv-addLEτ {σ ∷ Γ} {τ} (S idx) ctg = cong₂ _,_ (zerov-is-zerovDense (D2τ' σ)) (onehot-equiv-addLEτ idx ctg)
  
 open environment-vector-addition public

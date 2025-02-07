@@ -253,14 +253,14 @@ module DenseLinRepresentation where
     zerovDense (σ :*! τ) = zerovDense σ , zerovDense τ
     zerovDense (σ :+! τ) = zerovDense σ , zerovDense τ
 
-    to-LinRepDense : { τ : LTyp } → LinRep τ → LinRepDense τ
-    to-LinRepDense {LUn} tt = tt
-    to-LinRepDense {LR} x = x
-    to-LinRepDense {σ :*! τ} (just (x , y)) = to-LinRepDense {σ} x , to-LinRepDense {τ} y 
-    to-LinRepDense {σ :*! τ} nothing = zerovDense (σ :*! τ) 
-    to-LinRepDense {σ :+! τ} (just (inj₁ x)) = to-LinRepDense {σ} x , zerovDense τ
-    to-LinRepDense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , to-LinRepDense {τ} y 
-    to-LinRepDense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
+    sparse2dense : { τ : LTyp } → LinRep τ → LinRepDense τ
+    sparse2dense {LUn} tt = tt
+    sparse2dense {LR} x = x
+    sparse2dense {σ :*! τ} (just (x , y)) = sparse2dense {σ} x , sparse2dense {τ} y 
+    sparse2dense {σ :*! τ} nothing = zerovDense (σ :*! τ) 
+    sparse2dense {σ :+! τ} (just (inj₁ x)) = sparse2dense {σ} x , zerovDense τ
+    sparse2dense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , sparse2dense {τ} y 
+    sparse2dense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
 
     -- TODO rewrite as comparison to zerov-Dense (Lawrence)
     equals-zero : {τ : LTyp} → (x : LinRepDense τ) → Dec (x ≡ zerovDense τ)
@@ -274,20 +274,20 @@ module DenseLinRepresentation where
     zero-equals-zero ( σ :+! τ ) with zero-equals-zero σ | zero-equals-zero τ
     ... | w | v rewrite w rewrite v = refl
 
-    from-LinRepDense : { τ : LTyp } → LinRepDense τ → LinRep τ
-    from-LinRepDense { LUn } x = tt
-    from-LinRepDense { LR } x = x
-    from-LinRepDense { σ :*! τ } (x , y) with equals-zero {σ :*! τ} (x , y) 
+    dense2sparse : { τ : LTyp } → LinRepDense τ → LinRep τ
+    dense2sparse { LUn } x = tt
+    dense2sparse { LR } x = x
+    dense2sparse { σ :*! τ } (x , y) with equals-zero {σ :*! τ} (x , y) 
     ... | yes _ = nothing
-    ... | _     = just ((from-LinRepDense {σ} x) , (from-LinRepDense {τ} y))
-    from-LinRepDense { σ :+! τ } (x , y) with equals-zero x | equals-zero y
+    ... | _     = just ((dense2sparse {σ} x) , (dense2sparse {τ} y))
+    dense2sparse { σ :+! τ } (x , y) with equals-zero x | equals-zero y
     ... | no  _ | no  _ = nothing -- Invalid, proper implementation would error here
-    ... | no  _ | yes _ = just (inj₁ (from-LinRepDense {σ} x))
-    ... | yes _ | no  _ = just (inj₂ (from-LinRepDense {τ} y))
+    ... | no  _ | yes _ = just (inj₁ (dense2sparse {σ} x))
+    ... | yes _ | no  _ = just (inj₂ (dense2sparse {τ} y))
     ... | yes _ | yes _ = nothing -- Valid, both are zero
 
     snf : { τ : LTyp } → LinRep τ → LinRep τ
-    snf {τ} x = from-LinRepDense (to-LinRepDense x)
+    snf {τ} x = dense2sparse (sparse2dense x)
 
     snf-nothing-product : ( σ τ : LTyp ) → snf { σ :*! τ } nothing ≡ nothing
     snf-nothing-product σ τ with LinRepDense≟ {σ :*! τ} (zerovDense σ , zerovDense τ) (zerovDense σ , zerovDense τ)
@@ -303,7 +303,7 @@ module DenseLinRepresentation where
 
     -- The equivalence lemma between LinRep (sparse) and LinRepDense
     -- ONLY WHEN WE IGNORE SUM TYPES
-    LinRepEquiv1 : {τ : LTyp} → (x : LinRepDense τ) → to-LinRepDense (from-LinRepDense x) ≡ x
+    LinRepEquiv1 : {τ : LTyp} → (x : LinRepDense τ) → sparse2dense (dense2sparse x) ≡ x
     LinRepEquiv1 {LUn} x = refl
     LinRepEquiv1 {LR} x = refl
     LinRepEquiv1 {σ :*! τ} (x , y) with (LinRepDense≟ {σ :*! τ} (x , y) (zerovDense σ , zerovDense τ))
@@ -313,32 +313,32 @@ module DenseLinRepresentation where
 
 
     -- The equivalence relation between LinRep (sparse) and LinRepDense
-    LinRepEquiv2 : {τ : LTyp} → (x : LinRep τ) → to-LinRepDense (snf x) ≡ to-LinRepDense x
+    LinRepEquiv2 : {τ : LTyp} → (x : LinRep τ) → sparse2dense (snf x) ≡ sparse2dense x
     LinRepEquiv2 {LUn} x = refl
     LinRepEquiv2 {LR} x = refl
     LinRepEquiv2 {σ :*! τ} (just (x , y)) 
-        with LinRepDense≟ (to-LinRepDense x) (zerovDense σ)
-        | LinRepDense≟ (to-LinRepDense y) (zerovDense τ)
+        with LinRepDense≟ (sparse2dense x) (zerovDense σ)
+        | LinRepDense≟ (sparse2dense y) (zerovDense τ)
     ... | no ¬a | no ¬b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
     ... | no ¬a | yes b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
     ... | yes a | no ¬b = cong₂ _,_ (LinRepEquiv2 x) (LinRepEquiv2 y) 
     ... | yes a | yes b = cong₂ _,_ (sym a) (sym b)
-    LinRepEquiv2 {σ :*! τ} nothing = cong (to-LinRepDense {σ :*! τ}) (snf-nothing-product σ τ)
+    LinRepEquiv2 {σ :*! τ} nothing = cong (sparse2dense {σ :*! τ}) (snf-nothing-product σ τ)
     LinRepEquiv2 {σ :+! τ} (just (inj₁ x)) 
         rewrite (zero-equals-zero τ)
-        with LinRepDense≟ (to-LinRepDense x) (zerovDense σ) 
+        with LinRepDense≟ (sparse2dense x) (zerovDense σ) 
     ... | no ¬a = cong₂ _,_ (LinRepEquiv2 x) refl
     ... | yes a = cong₂ _,_ (sym a) refl
     LinRepEquiv2 {σ :+! τ} (just (inj₂ x))
         rewrite (zero-equals-zero σ)
-        with LinRepDense≟ (to-LinRepDense x) (zerovDense τ) 
+        with LinRepDense≟ (sparse2dense x) (zerovDense τ) 
     ... | no ¬a = cong₂ _,_ refl (LinRepEquiv2 x)
     ... | yes a = cong₂ _,_ refl (sym a) 
-    LinRepEquiv2 {σ :+! τ} nothing = cong (to-LinRepDense {σ :+! τ}) (snf-nothing-sum σ τ)
+    LinRepEquiv2 {σ :+! τ} nothing = cong (sparse2dense {σ :+! τ}) (snf-nothing-sum σ τ)
 
 
     snf-idempotence : {τ : LTyp} → ( x : LinRep τ ) → snf {τ} (snf {τ} x) ≡ snf {τ} x
-    snf-idempotence x = cong from-LinRepDense (LinRepEquiv2 x)
+    snf-idempotence x = cong dense2sparse (LinRepEquiv2 x)
 
  
 

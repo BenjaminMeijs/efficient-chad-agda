@@ -44,17 +44,17 @@ module Representation2 where
     Rep2 (Lin τ) = LinRepDense τ
 
 
-    from-LinRepDense : (τ : LTyp) → LinRepDense τ → LinRep τ
-    from-LinRepDense LUn tt = tt
-    from-LinRepDense LR x = x
-    from-LinRepDense (σ :*! τ) (x , y) = just (from-LinRepDense σ x , from-LinRepDense τ y)
-    from-LinRepDense (σ :+! τ) (x , y) = {!    !}
+    dense2sparse : (τ : LTyp) → LinRepDense τ → LinRep τ
+    dense2sparse LUn tt = tt
+    dense2sparse LR x = x
+    dense2sparse (σ :*! τ) (x , y) = just (dense2sparse σ x , dense2sparse τ y)
+    dense2sparse (σ :+! τ) (x , y) = {!    !}
 
-    from-to-LinRepDense-equiv-id : (τ : LTyp) → (x : LinRepDense τ) → to-LinRepDense {τ} (from-LinRepDense τ x) ≡ x
-    from-to-LinRepDense-equiv-id LUn x = refl
-    from-to-LinRepDense-equiv-id LR x = refl
-    from-to-LinRepDense-equiv-id (σ :*! τ) (x , y) = cong₂ (_,_) (from-to-LinRepDense-equiv-id σ x) (from-to-LinRepDense-equiv-id τ y)
-    from-to-LinRepDense-equiv-id (σ :+! τ) (x , y) = cong₂ (_,_) {!   !} {!   !}
+    from-sparse2dense-equiv-id : (τ : LTyp) → (x : LinRepDense τ) → sparse2dense {τ} (dense2sparse τ x) ≡ x
+    from-sparse2dense-equiv-id LUn x = refl
+    from-sparse2dense-equiv-id LR x = refl
+    from-sparse2dense-equiv-id (σ :*! τ) (x , y) = cong₂ (_,_) (from-sparse2dense-equiv-id σ x) (from-sparse2dense-equiv-id τ y)
+    from-sparse2dense-equiv-id (σ :+! τ) (x , y) = cong₂ (_,_) {!   !} {!   !}
 
     from-Rep2 : ∀ {tag} → (τ : Typ tag) → Rep2 τ → Rep τ
     to-Rep2 : ∀ {tag} → ( τ : Typ tag ) → Rep τ → Rep2 τ
@@ -67,7 +67,7 @@ module Representation2 where
     from-Rep2 (τ :+ τ₁) (inj₂ y) = inj₂ (from-Rep2 τ₁ y)
     from-Rep2 (σ :-> τ) f = λ x → from-Rep2 τ (f (to-Rep2 σ x)) , ℤ.pos 0
     from-Rep2 (EVM Γ τ) m = LACMmap (from-Rep2 τ) m
-    from-Rep2 (Lin τ) x = from-LinRepDense τ x
+    from-Rep2 (Lin τ) x = dense2sparse τ x
 
     to-Rep2 Un  x = x
     to-Rep2 Inte  x = x
@@ -77,7 +77,7 @@ module Representation2 where
     to-Rep2 (σ :+ τ) (inj₂ y) = inj₂ (to-Rep2 τ y)
     to-Rep2 (σ :-> τ ) f = λ x → to-Rep2 τ (f (from-Rep2 σ x) .fst)
     to-Rep2 (EVM Γ τ ) m = LACMmap (to-Rep2 τ) m
-    to-Rep2 (Lin τ ) x = to-LinRepDense {τ} x
+    to-Rep2 (Lin τ ) x = sparse2dense {τ} x
 
     primal2 : (τ : Typ Pr) -> Rep2 τ -> Rep2 (D1τ τ)
     primal2 τ x = to-Rep2 (D1τ τ) (primal τ (from-Rep2 τ x))
@@ -107,9 +107,9 @@ module environment-value-tuple where
     from-LEtup2 : (Γ : LEnv) → LEtup2 Γ → LEtup Γ
     to-LEtup2 : (Γ : LEnv) → LEtup Γ → LEtup2 Γ
     from-LEtup2 [] tt = tt
-    from-LEtup2 (τ ∷ Γ) (x , xs) = from-LinRepDense τ x , from-LEtup2 Γ xs
+    from-LEtup2 (τ ∷ Γ) (x , xs) = dense2sparse τ x , from-LEtup2 Γ xs
     to-LEtup2 [] tt = tt
-    to-LEtup2 (τ ∷ Γ) (x , xs) = to-LinRepDense {τ} x , to-LEtup2 Γ xs 
+    to-LEtup2 (τ ∷ Γ) (x , xs) = sparse2dense {τ} x , to-LEtup2 Γ xs 
 
     Etup-to-LEtup2 : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → LEtup2 (map D2τ' Γ)
     Etup-to-LEtup2 {[]} tt = tt
