@@ -1,0 +1,148 @@
+module correctness.spec where
+
+open import Agda.Builtin.Float using (Float; primFloatPlus)
+open import Agda.Builtin.Maybe using (just; nothing)
+open import Agda.Builtin.Sigma using (_,_; fst)
+open import Agda.Builtin.Unit using (⊤; tt)
+
+open import Data.Empty using (⊥)
+open import Data.List using (List; []; _∷_; map)
+open import Data.Product using (_×_)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+
+open import spec
+import spec.LACM as LACM
+open LACM using (LACM)
+
+-- eval from 'Spec' with the following conveniences:
+-- -> ignoring the complexity cost
+-- -> flipping the arguments
+interp : ∀ {tag} {Γ : Env tag} {τ : Typ tag} → Term tag Γ τ → Val tag Γ → Rep τ
+interp e env = fst (eval env e)
+
+-- LACM.run, only returning the environment
+-- Folowing the naming of the haskell state monad (MTL)
+LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
+LACMexec {Γ} f e = let _ , e' , _ = LACM.run f e in e'
+
+module environment-value-tuple where
+    Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag
+    Etup _ [] = Un
+    Etup tag (τ ∷ Γ) = τ :* Etup tag Γ
+
+    Etup-to-val : ∀ {tag} {Γ : Env tag} → Rep (Etup tag Γ) → Val tag Γ 
+    Etup-to-val {_} {[]} _ = empty
+    Etup-to-val {_} {τ ∷ Γ} (x , xs) = push x (Etup-to-val xs)
+
+    Etup-to-val-primal : {Γ : Env Pr} → Rep (Etup Pr Γ) → Val Du (D1Γ Γ) 
+    Etup-to-val-primal x = primalVal (Etup-to-val x) 
+
+open environment-value-tuple public
+
+module dense-linear-representation where
+    LinRepDense : LTyp → Set
+    LinRepDense LUn = ⊤
+    LinRepDense LR = Float
+    LinRepDense (σ :*! τ) = LinRepDense σ × LinRepDense τ
+    LinRepDense (σ :+! τ) = LinRepDense σ × LinRepDense τ
+
+    zerovDense : (τ : LTyp) → LinRepDense τ 
+    zerovDense LUn = tt
+    zerovDense LR = 0.0
+    zerovDense (σ :*! τ) = zerovDense σ , zerovDense τ
+    zerovDense (σ :+! τ) = zerovDense σ , zerovDense τ
+
+    sparse2dense : { τ : LTyp } → LinRep τ → LinRepDense τ
+    sparse2dense {LUn} tt = tt
+    sparse2dense {LR} x = x
+    sparse2dense {σ :*! τ} (just (x , y)) = sparse2dense {σ} x , sparse2dense {τ} y 
+    sparse2dense {σ :*! τ} nothing = zerovDense (σ :*! τ) 
+    sparse2dense {σ :+! τ} (just (inj₁ x)) = sparse2dense {σ} x , zerovDense τ
+    sparse2dense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , sparse2dense {τ} y 
+    sparse2dense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
+
+    plusvDense : (τ : LTyp) → LinRepDense τ → LinRepDense τ → LinRepDense τ
+    plusvDense LUn tt tt = tt
+    plusvDense LR x y = primFloatPlus x y
+    plusvDense (σ :*! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
+    plusvDense (σ :+! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
+
+open dense-linear-representation public
+
+module environment-vector where
+    EV : LEnv → Set
+    EV [] = ⊤
+    EV (τ ∷ Γ) = LinRepDense τ × EV Γ
+
+    LEtup2EV : { Γ : LEnv } → LEtup Γ → EV Γ
+    LEtup2EV {[]} tt = tt
+    LEtup2EV {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LEtup2EV {Γ} xs 
+
+    Etup2EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
+    Etup2EV {[]} tt = tt
+    Etup2EV {τ ∷ Γ} (x , xs) = x , Etup2EV xs 
+
+    zero-EV : (Γ : LEnv) → EV Γ
+    zero-EV [] = tt
+    zero-EV (x ∷ env) = zerovDense x , zero-EV env 
+
+
+    _ev+_ : {Γ : LEnv} → EV Γ → EV Γ → EV Γ
+    _ev+_ {[]} tt tt = tt
+    _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = plusvDense _ vL vR , (evL ev+ evR)
+
+open environment-vector public
+
+module sparse-LTyp-harmony where
+    -- Overall
+    -- x ≃ y is a witness to the fact that x and y are congruent (of the same shape) in their constructors for sum types.
+    -- i.e. whenever x is inj₁, y is also inj₁
+
+    _≃₁_ : {τ : Typ Pr} → LinRep (D2τ' τ) → Rep τ  → Set
+    _≃₁_ {Un} x y = ⊤
+    _≃₁_ {Inte} x y = ⊤
+    _≃₁_ {R} x y = ⊤
+    _≃₁_ {σ :* τ} (just (x1 , x2)) (y1 , y2) = x1 ≃₁ y1 × x2 ≃₁ y2
+    _≃₁_ {σ :* τ} nothing _ = ⊤
+    _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₁ y) = x ≃₁ y
+    _≃₁_ {σ :+ τ} (just (inj₂ x)) (inj₁ y) = ⊥
+    _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
+    _≃₁_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃₁ y
+    _≃₁_ {σ :+ τ} nothing _ = ⊤
+
+    _≃₂_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
+    _≃₂_ {[]} x y = ⊤
+    _≃₂_ {Un ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
+    _≃₂_ {Inte ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
+    _≃₂_ {R ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
+    _≃₂_ {(σ :* τ) ∷ Γ} (x , xs) (push y ys) = (_≃₁_ {σ :* τ} x y) × xs ≃₂ ys
+    _≃₂_ {(σ :+ τ) ∷ Γ} (x , xs) (push y ys) = (_≃₁_ {σ :+ τ} x y) × xs ≃₂ ys
+
+
+    -- Note that _≃₃_ and _≃₄_ are not really part of the specification for the correctnessproof
+    -- These witnesses are only used as preconditions for (internal) lemmas.
+    _≃₃_ : {τ : LTyp} → LinRep τ → LinRep τ → Set
+    _≃₃_ {LUn} x y = ⊤
+    _≃₃_ {LR} x y = ⊤
+    _≃₃_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = (x1 ≃₃ y1) × (x2 ≃₃ y2) 
+    _≃₃_ {σ :*! τ} (just x) nothing = ⊤
+    _≃₃_ {σ :*! τ} nothing (just x) = ⊤
+    _≃₃_ {σ :*! τ} nothing nothing = ⊤
+    _≃₃_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃₃ y
+    _≃₃_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = ⊥
+    _≃₃_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = ⊥
+    _≃₃_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃₃ y
+    _≃₃_ {σ :+! τ} (just x) nothing = ⊤
+    _≃₃_ {σ :+! τ} nothing (just x) = ⊤
+    _≃₃_ {σ :+! τ} nothing nothing = ⊤
+
+    _≃₄_ : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
+    _≃₄_ {Γ} {τ} (Z , x) (y , ys) = x ≃₃ y
+    _≃₄_ {Γ} {τ} (S idx , x) (y , ys) = (idx , x) ≃₄ ys
+
+    _≃₅_ : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
+    _≃₅_ {Γ} {τ} (Z , x) (push y ys) = x ≃₁ y 
+    _≃₅_ {Γ} {τ} (S idx , x) (push y ys) = (idx , x) ≃₅ ys
+
+  
+open sparse-LTyp-harmony public

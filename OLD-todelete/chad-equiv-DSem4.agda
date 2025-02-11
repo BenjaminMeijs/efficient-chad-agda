@@ -207,18 +207,18 @@ chad-equiv-DSem5 : {Γ : Env Pr} {τ : Typ Pr}
                   (t : Term Pr Γ τ)
                 → EVs2d {LΓ} (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd ctg .fst ) evIn)
                   ≡ EVs2d {LΓ} evIn ev+ etup2EV {Γ} (DSem5 {σ} {τ}  (flip interp t ∘ Etup-to-val) a (sparse2dense {D2τ' τ} ctg))
-chad-equiv-DSem5 {Γ = Γ} a evIn ctg unit
-  rewrite (LACMexec-pure tt evIn)
-  rewrite (DSem5-ctg-zeroLEnv {Γ} {Un} (flip (interp {Γ = Γ}) unit ∘ Etup-to-val) a)
-  rewrite (ev+zeroR {Γ} (EVs2d evIn))
-  = refl
-  -- begin
-  -- EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad unit) .snd ctg .fst) evIn)
-  -- ≡⟨ cong EVs2d (LACMexec-pure tt evIn) ⟩
-  -- EVs2d evIn
-  -- ≡⟨ sym (ev+zeroR' DSem5-ctg-zeroLEnv') ⟩
-  -- EVs2d evIn ev+ etup2EV (DSem5 (flip (interp {Γ = Γ}) unit ∘ Etup-to-val) a (sparse2dense {D2τ' Un} (snf ctg)))
-  -- ∎
+chad-equiv-DSem5 {Γ = Γ} a evIn ctg unit = 
+  -- rewrite (LACMexec-pure tt evIn)
+  -- rewrite (DSem5-ctg-zeroLEnv {Γ} {Un} (flip (interp {Γ = Γ}) unit ∘ Etup-to-val) a)
+  -- rewrite (ev+zeroR {Γ} (EVs2d evIn))
+  -- = refl
+  begin
+  EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad unit) .snd ctg .fst) evIn)
+    ≡⟨ cong EVs2d (LACMexec-pure tt evIn) ⟩
+  EVs2d evIn
+    ≡⟨ sym (ev+zeroR' DSem5-ctg-zeroLEnv') ⟩
+  EVs2d evIn ev+ etup2EV (DSem5 (flip (interp {Γ = Γ}) unit ∘ Etup-to-val) a (sparse2dense {D2τ' Un} (snf ctg)))
+  ∎
 chad-equiv-DSem5 {Γ = Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) =
   let ctgL = _ ; ctgR = _
       m1 = interp (Etup-to-val-primal a) (chad l) .snd ctgL .fst
@@ -262,7 +262,7 @@ chad-equiv-DSem5 {Γ = Γ} a evIn ctg (fst' {σ = σ} {τ = τ} t) =
       dsemR = DSem5 {Etup Pr Γ} {τ} g a (sparse2dense zeroR)
   in begin
   EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad (fst' t)) .snd ctg .fst) evIn)
-    ≡⟨ cong ( λ ▰ → EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd (just (ctg , ▰)) .fst) evIn) ) (interp-zerot≡zerov _) ⟩
+    ≡⟨ cong ( λ ▰ → EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd (just (ctg , ▰)) .fst) evIn) ) (interp-zerot≡zerov {?} {?} τ) ⟩
   EVs2d (LACMexec (interp (Etup-to-val-primal a) (chad t) .snd ctg' .fst) evIn)
     ≡⟨ chad-equiv-DSem5 a evIn ctg' t ⟩
   EVs2d evIn ev+ etup2EV (DSem5 (flip interp t ∘ Etup-to-val) a (sparse2dense {D2τ' σ :*! D2τ' τ} ctg'))

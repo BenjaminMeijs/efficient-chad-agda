@@ -163,8 +163,6 @@ module environment-vector-addition where
     ev+comm : {Γ : Env Pr} → (a : LEtupDense (map D2τ' Γ)) → (b : LEtupDense (map D2τ' Γ)) → a ev+ b ≡ b ev+ a
     ev+assoc : {Γ : Env Pr} → (a : LEtupDense (map D2τ' Γ)) → (b : LEtupDense (map D2τ' Γ)) → (c : LEtupDense (map D2τ' Γ))
               → (a ev+ b) ev+ c ≡ a ev+ (b ev+ c)
-    -- interp-zerot≡zerovDense : {Γ : Env Du} {env : Val Du Γ} → (τ : Typ Pr)
-    --                             → interp env (zerot τ) ≡ zerovDense (D2τ' τ)
     ev+zeroR : {Γ : Env Pr} → (a : LEtupDense (map D2τ' Γ)) → a ev+ (zero-LEnvDense Γ) ≡ a
     ev+zeroL : {Γ : Env Pr} → (a : LEtupDense (map D2τ' Γ)) → (zero-LEnvDense Γ) ev+ a ≡ a
     ev+zeroL' : {Γ : Env Pr} {a : LEtupDense (map D2τ' Γ)} → {b : LEtupDense (map D2τ' Γ)} → a ≡ zero-LEnvDense Γ  → a ev+ b ≡ b
