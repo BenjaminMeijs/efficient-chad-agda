@@ -10,15 +10,28 @@ open import Data.Integer using (ℤ)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Product using (_×_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Function.Base using (_$_; _∘_)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
+open import Function.Base using (_$_; _∘_; id)
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; cong-app)
+open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import spec
 open import correctness.spec
 open import correctness.dsem
 import spec.LACM as LACM
 open LACM using (LACM)
+open import chad-preserves-primal
+open import eval-sink-commute
 
+module todo-misc where
+    interp-zerot-equiv-zerov : {Γ : Env Du} { env : Val Du Γ }
+                                → (τ : Typ Pr)
+                                → interp (zerot τ) env ≡ zerov (D2τ' τ) .fst
+    interp-zerot-equiv-zerov Un = refl
+    interp-zerot-equiv-zerov Inte = refl
+    interp-zerot-equiv-zerov R = refl
+    interp-zerot-equiv-zerov (σ :* τ) = refl
+    interp-zerot-equiv-zerov (σ :+ τ) = refl 
+open todo-misc public
 
 module plusv-lemmas where
     -- Floats
@@ -152,6 +165,9 @@ module environment-vector-lemmas where
 
     Etup-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ EV (map D2τ' Γ)
     Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → Etup2EV (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
+    plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
+                        → Etup2EV (plusvDense (D2τ' (Etup Pr Γ)) x y)
+                          ≡ Etup2EV x ev+ Etup2EV y
 
     ev+congR w = cong₂ _ev+_ refl w
     ev+congL w = cong₂ _ev+_ w refl
@@ -173,6 +189,9 @@ module environment-vector-lemmas where
 
     Etup-zerovDense-equiv-zero-EV {[]} = refl
     Etup-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl Etup-zerovDense-equiv-zero-EV
+
+    plusvDense-equiv-ev+ {[]} x y = refl
+    plusvDense-equiv-ev+ {τ ∷ Γ} x y = cong₂ _,_ refl (plusvDense-equiv-ev+ (x .snd) (y .snd))
 
 open environment-vector-lemmas public
 
@@ -241,8 +260,10 @@ open LACM-exec-lemmas public
 
 module dsem-lemmas where 
     DSemᵀ-lemma-ctg-zero' : {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
-            → DSemᵀ {σ} {τ} f a (zerovDense (D2τ' τ)) ≡ zerovDense (D2τ' σ)
-    DSemᵀ-lemma-ctg-zero' {f = f} {a = a} = DSemᵀ-ctg-zero f a
+                    { ctg : LinRepDense (D2τ' τ) }
+                    → {{ ctg ≡ zerovDense (D2τ' τ) }}
+            → DSemᵀ {σ} {τ} f a ctg ≡ zerovDense (D2τ' σ)
+    DSemᵀ-lemma-ctg-zero' {f = f} {a = a} {{ refl }} = DSemᵀ-ctg-zero f a
 
     DSemᵀ-lemma-ctg-zeroLEnv : {Γ : Env Pr} {τ : Typ Pr}
                     → let σ = Etup Pr Γ in
@@ -263,6 +284,91 @@ module dsem-lemmas where
                     →  {{ ctg ≡ zerovDense (D2τ' τ) }}
                     → Etup2EV (DSemᵀ {σ} {τ} f a ctg) ≡ zero-EV (map D2τ' Γ) 
     DSemᵀ-lemma-ctg-zeroLEnv' {σ} {τ} {f} {a} {ctg} {{w}} = DSemᵀ-lemma-ctg-zeroLEnv f a ctg w
+
+    DSemᵀ-lemma-pair : {Γ : Env Pr} {τ1 τ2 : Typ Pr}
+            → let σ  = Etup Pr Γ 
+            in (f : Rep σ →  Rep τ1) 
+            → (g : Rep σ →  Rep τ2) 
+            → (a : Rep σ)
+            → (ctg-f : LinRepDense (D2τ' τ1))
+            → (ctg-g : LinRepDense (D2τ' τ2))
+            → let dsem-f = DSemᵀ {σ} {τ1} f a ctg-f
+                  dsem-g = DSemᵀ {σ} {τ2} g a ctg-g
+                  h : Rep σ → Rep (τ1 :* τ2)
+                  h e = (f e , g e)
+                  ctg : LinRepDense (D2τ' (τ1 :* τ2))
+                  ctg = (ctg-f , ctg-g)
+              in Etup2EV dsem-f ev+ Etup2EV dsem-g
+                 ≡ Etup2EV (DSemᵀ {σ} {τ1 :* τ2} h a ctg)
+    DSemᵀ-lemma-pair f g a ctg-f ctg-g = sym $ trans (cong Etup2EV (DSemᵀ-pair f g a ctg-f ctg-g))
+                                                (plusvDense-equiv-ev+ (DSemᵀ f a ctg-f) (DSemᵀ g a ctg-g))
+
+    DSemᵀ-lemma-fst : {Γ : Env Pr} {τ1 τ2 : Typ Pr}
+            → let σ  = Etup Pr Γ 
+            in (f : Rep σ →  Rep τ1) 
+            → (g : Rep σ →  Rep τ2) 
+            → (a : Rep σ)
+            → (ctg-f : LinRepDense (D2τ' τ1))
+            → let ctg-g = sparse2dense (zerov (D2τ' τ2) .fst)
+                  ctg : LinRepDense (D2τ' (τ1 :* τ2))
+                  ctg = (ctg-f , ctg-g)
+                  h : Rep σ → Rep (τ1 :* τ2)
+                  h e = (f e , g e)
+              in DSemᵀ {σ} {τ1 :* τ2} h a ctg 
+                 ≡ DSemᵀ {σ} {τ1} f a ctg-f
+    DSemᵀ-lemma-fst {Γ} {τ1} {τ2} f g a ctg-f =
+      let ctg-g = (sparse2dense (zerov (D2τ' τ2) .fst))
+      in trans (DSemᵀ-pair f g a ctg-f ctg-g) (plusvDense-zeroR' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ2)}}}})
+
+    DSemᵀ-lemma-snd : {Γ : Env Pr} {τ1 τ2 : Typ Pr}
+            → let σ  = Etup Pr Γ 
+            in (f : Rep σ →  Rep τ1) 
+            → (g : Rep σ →  Rep τ2) 
+            → (a : Rep σ)
+            → (ctg-g : LinRepDense (D2τ' τ2))
+            → let ctg-f = sparse2dense (zerov (D2τ' τ1) .fst)
+                  ctg : LinRepDense (D2τ' (τ1 :* τ2))
+                  ctg = (ctg-f , ctg-g)
+                  h : Rep σ → Rep (τ1 :* τ2)
+                  h e = (f e , g e)
+              in DSemᵀ {σ} {τ1 :* τ2} h a ctg 
+                 ≡ DSemᵀ {σ} {τ2} g a ctg-g
+    DSemᵀ-lemma-snd {Γ} {τ1} {τ2} f g a ctg-g = 
+      let ctg-f = (sparse2dense (zerov (D2τ' τ1) .fst))
+      in trans (DSemᵀ-pair f g a ctg-f ctg-g) (plusvDense-zeroL' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ1)}}}}) 
+    
+
+    DSemᵀ-lemma-let : {Γ : Env Pr} {σ τ : Typ Pr}
+      → (a : Rep (Etup Pr Γ))
+      → (ctg : LinRepDense (D2τ' τ))
+      → (rhs : Term Pr Γ σ)
+      → (body : Term Pr (σ ∷ Γ) τ)
+      → let a' = (interp rhs (Etup-to-val a)) , a
+            dsem-body = DSemᵀ {σ = σ :* (Etup Pr Γ)} {τ = τ} (interp body ∘ Etup-to-val) a' ctg
+            dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (interp rhs ∘ Etup-to-val) a (Etup2EV dsem-body .fst)
+        in (Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd)
+           ≡ Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
+    DSemᵀ-lemma-let {Γ} {σ} {τ} a ctg rhs body =
+      let -- Expressions used for applying the chain rule
+          f : (env : Rep (Etup Pr (σ ∷ Γ))) → Rep τ
+          f = interp body ∘ Etup-to-val
+          g : (env : Rep (Etup Pr Γ)) → Rep σ × Rep (Etup Pr Γ) -- Note that g constructs a pair, thus we can use the pair rule of DSem on it
+          g = (λ env → (interp rhs (Etup-to-val env) , env))
+
+          dsem-body = DSemᵀ {σ = σ :* (Etup Pr Γ)} {τ = τ} f (g a) ctg
+          dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (fst ∘ g) a (Etup2EV dsem-body .fst)
+      in begin
+      Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd
+        ≡⟨ ev+congR (sym (cong Etup2EV (cong-app (DSemᵀ-identity a) (dsem-body .snd)))) ⟩
+      Etup2EV dsem-rhs ev+ Etup2EV (DSemᵀ id a (dsem-body .snd))
+        ≡⟨ DSemᵀ-lemma-pair (interp rhs ∘ Etup-to-val) id a (dsem-body .fst) (dsem-body .snd) ⟩
+      Etup2EV ((DSemᵀ {σ = Etup Pr Γ} {τ = σ :* Etup Pr Γ} g a ∘ DSemᵀ {σ = σ :* Etup Pr Γ} {τ = τ} f (g a)) ctg)
+        ≡⟨ cong Etup2EV (sym (cong-app (DSemᵀ-chain f g a) ctg)) ⟩
+      Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (f ∘ g) a ctg)
+        ≡⟨⟩
+      Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
+      ∎
+                                 
 
 open dsem-lemmas public
 
@@ -286,10 +392,11 @@ module sparse-LTyp-harmony-lemmas where
     ≃₁-transL {σ :+ τ} {nothing} {y} {inj₁ z} refl w = tt
     ≃₁-transL {σ :+ τ} {nothing} {y} {inj₂ z} refl w = tt
 
-    -- ≃₂-transL : {Γ : Env Pr} → ( x : LEtup (map D2τ' Γ) ) → ( y : LEtup (map D2τ' Γ) ) → ( z : Val Pr Γ )
-    --         → x ≡ y → x ≃₂ z → y ≃₂ z
-    -- ≃₂-transL {[]} x y z x≡y w = tt
-    -- ≃₂-transL {τ ∷ Γ} x y z refl w = w
+    ≃₂-transL : {Γ : Env Pr} {τ : Typ Pr} 
+            → ( x : LEtup (map D2τ' Γ) ) → ( y : LEtup (map D2τ' Γ) ) → ( z : Val Pr Γ )
+            → x ≡ y → x ≃₂ z → y ≃₂ z
+    ≃₂-transL {[]}    {τ} _ _ _ _    _ = tt
+    ≃₂-transL {σ ∷ Γ} {τ} _ _ _ refl w = w
 
     ≃₂-fst : {Γ' : Env Pr} {τ : Typ Pr} 
         → let Γ = τ ∷ Γ' in ( x : LEtup (map D2τ' Γ) )
@@ -310,6 +417,17 @@ module sparse-LTyp-harmony-lemmas where
     ≃₂-snd {Γ} {R} (x , xs) y ys w = w
     ≃₂-snd {Γ} {σ :* τ} (x , xs) y ys w = w .snd
     ≃₂-snd {Γ} {σ :+ τ} (x , xs) y ys w = w .snd
+
+    ≃₂-intro-zero : {Γ : Env Pr} {τ : Typ Pr}
+                → (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
+                → evIn ≃₂ val
+                → (zerov (D2τ' τ) .fst , evIn) ≃₂ push x val
+    ≃₂-intro-zero {Γ} {Un}     _ _ _ w = w
+    ≃₂-intro-zero {Γ} {Inte}   _ _ _ w = w
+    ≃₂-intro-zero {Γ} {R}      _ _ _ w = w
+    ≃₂-intro-zero {Γ} {σ :* τ} _ _ _ w = tt , w
+    ≃₂-intro-zero {Γ} {σ :+ τ} _ _ _ w = tt , w
+    
 
     x≃₁z-and-y≃₁z-implies-x≃₃y : {τ : Typ Pr}
         → (x : LinRep (D2τ' τ)) (y : LinRep (D2τ' τ)) (z : Rep τ)
@@ -387,17 +505,151 @@ module sparse-LTyp-harmony-lemmas where
     addLEτ-preserves-≃₂ {R ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃₂ idx ctg xs val w1 w2 w3 
     addLEτ-preserves-≃₂ {(σ :* τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃₂ idx ctg xs val (w1 .snd) w2 w3 
     addLEτ-preserves-≃₂ {(σ :+ τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃₂ idx ctg xs val (w1 .snd) w2 w3
+
 open sparse-LTyp-harmony-lemmas public
 
+module interp-sink where
+    interp-sink-commute : ∀ {tag} {Γ Γ' : Env tag} {τ : Typ tag}
+                    -> (env : Val tag Γ) (env2 : Val tag Γ')
+                    -> (w : Weakening Γ Γ')
+                    -> sinks-to w env env2
+                    -> (e : Term tag Γ τ)
+                    -> interp e env ≡ interp (sink w e) env2
+    interp-sink-commute env env2 w s e = cong fst (eval-sink-commute env env2 w s e)
 
-module exec-chad-lemmas where
+    -- Lemma using interp-sink-commute on a weakening of Copy-Skip-End
+    -- This ends up being used for the let' and case' constructors.
+    interp-sink-commute-Copy-Skip-End : ∀ {tag} {Γ : Env tag} {σ τ ρ : Typ tag} {y : Rep ρ}
+                                → (x : Rep σ)
+                                → (env : Val tag Γ)
+                                → (t : Term tag (σ ∷ Γ) τ )
+                                → let env' : Val tag (σ ∷ ρ ∷ Γ)
+                                      env' = push x (push y env)
+                                  in interp (sink (WCopy (WSkip WEnd)) t) env'
+                                    ≡ interp t (push x env)
+    interp-sink-commute-Copy-Skip-End x env t = sym $
+        interp-sink-commute (push x env) (push x (push _ env)) (WCopy (WSkip WEnd)) (refl , forall-fin-trivial (λ _ → refl )) t
+    
+    interp-sink-commute-Copy-Copy-Cut : ∀ {tag} {Γ : Env tag} {σ1 σ2 τ : Typ tag}
+                                → ( x : Rep σ1 )
+                                → ( y : Rep σ2 )
+                                → (env : Val tag Γ)
+                                → ( t : Term tag (σ1 ∷ σ2 ∷ []) τ )
+                                → let env1 : Val tag (σ1 ∷ σ2 ∷ Γ) 
+                                      env1 = push x (push y env)
+                                      env2 : Val tag  (σ1 ∷ σ2 ∷ [])
+                                      env2 = push x (push y empty)
+                                  in interp (sink (WCopy (WCopy WCut)) t) env1
+                                     ≡ interp t env2
+    interp-sink-commute-Copy-Copy-Cut x y env t =
+      let env1 = push x (push y env)
+          env2 = push x (push y empty)
+      in sym (interp-sink-commute env2 env1 (WCopy (WCopy WCut)) (refl , refl , tt) t)
+open interp-sink public
 
-module todo-misc where
-    interp-zerot-equiv-zerov : {Γ : Env Du} {env : Val Du Γ}
-                                → (τ : Typ Pr)
-                                → interp (zerot τ) env ≡ zerov (D2τ' τ) .fst
-    interp-zerot-equiv-zerov Un = refl
-    interp-zerot-equiv-zerov Inte = refl
-    interp-zerot-equiv-zerov R = refl
-    interp-zerot-equiv-zerov (σ :* τ) = refl
-    interp-zerot-equiv-zerov (σ :+ τ) = refl 
+module simplify-exec-chad where
+  simplify-exec-chad-fst : {Γ : Env Pr} {σ τ : Typ Pr} 
+      → (val : Val Pr Γ)
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' σ))
+        (t : Term Pr Γ (σ :* τ))
+      → LACMexec (interp (chad (fst' t)) (primalVal val) .snd ctg .fst ) evIn
+        ≡ LACMexec (interp (chad t) (primalVal val) .snd (just (ctg , zerov (D2τ' τ) .fst)) .fst) evIn
+  simplify-exec-chad-fst {Γ} {σ} {τ} val evIn ctg t 
+    using ρ ← D1τ (σ :* τ) :* (D2τ (σ :* τ) :-> D2Γ Γ)
+    using val2 ← (push {Du} {ρ ∷ []} {Lin (D2τ' σ)} ctg (push {Du} {[]} {ρ} (interp (chad t) (primalVal val))  empty))
+    rewrite interp-zerot-equiv-zerov {Lin (D2τ' σ) ∷ ρ ∷ []} {val2} τ
+    = refl
+
+  simplify-exec-chad-snd : {Γ : Env Pr} {σ τ : Typ Pr} 
+      → (val : Val Pr Γ)
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' τ))
+        (t : Term Pr Γ (σ :* τ))
+      → LACMexec (interp (chad (snd' t)) (primalVal val) .snd ctg .fst ) evIn
+        ≡ LACMexec (interp (chad t) (primalVal val) .snd (just (zerov (D2τ' σ) .fst , ctg)) .fst) evIn
+  simplify-exec-chad-snd {Γ} {σ} {τ} val evIn ctg t 
+    using ρ ← D1τ (σ :* τ) :* (D2τ (σ :* τ) :-> D2Γ Γ)
+    using val2 ← (push {Du} {ρ ∷ []} {Lin (D2τ' τ)} ctg (push {Du} {[]} {ρ} (interp (chad t) (primalVal val))  empty))
+    rewrite interp-zerot-equiv-zerov {Lin (D2τ' τ) ∷ ρ ∷ []} {val2} σ
+    = refl
+
+  simplify-exec-chad-let : {Γ : Env Pr} {τ σ : Typ Pr} 
+      → (a : Rep (Etup Pr Γ))
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' τ))
+      → (rhs : Term Pr Γ σ)
+        (body : Term Pr (σ ∷ Γ) τ)
+      → let a' = (interp rhs (Etup-to-val a)) , a
+            body' = interp (chad body) (Etup-to-val-primal a') .snd ctg .fst
+            ev-body = LACMexec body' (zerov (D2τ' σ) .fst , evIn)
+        in LACMexec (interp (chad (let' rhs body)) (Etup-to-val-primal a) .snd ctg .fst ) evIn
+            ≡ LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd)
+  simplify-exec-chad-let {Γ} {τ} {σ} a evIn ctg rhs body
+    using val ← Etup-to-val a
+    using ρ1 ← D1τ σ :* (D2τ σ :-> D2Γ Γ)
+    using ρ2 ← D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))
+    using ρ3 ← Lin (D2τ' τ)
+    rewrite chad-preserves-primal val rhs
+    rewrite interp-sink-commute-Copy-Skip-End {ρ = ρ1} {y = interp (chad rhs) (primalVal val)} (primal σ (interp rhs val)) (primalVal val) (chad body)
+    using val-verbose ← 
+      (push {Du} {ρ2 ∷ ρ1 ∷ []} {ρ3} ctg
+      (push {Du} {ρ1 ∷ []} {ρ2} (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)))
+      (push {Du} {[]} {ρ1} (interp (chad rhs) (primalVal val)) empty)))
+    rewrite interp-zerot-equiv-zerov {ρ3 ∷ ρ2 ∷ ρ1 ∷ []} {val-verbose} σ
+    using m1 ← λ x → ( snd (interp (chad rhs) (primalVal val)) (fst x) .fst , ℤ.pos 5 Data.Integer.+ snd (interp (chad rhs) (primalVal val)) (fst x) .snd )
+    using m2 ← (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)
+    using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
+    rewrite elim-bind
+    using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
+    rewrite elim-scope-fst
+    rewrite elim-scope-snd
+    = refl
+
+  simplify-exec-chad-let-val : {Γ : Env Pr} {τ σ : Typ Pr} 
+      → (val : Val Pr Γ)
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' τ))
+      → (rhs : Term Pr Γ σ)
+        (body : Term Pr (σ ∷ Γ) τ)
+      → let val' = primalVal (push (interp rhs val) val)
+            body' = interp (chad body) val' .snd ctg .fst
+            ev-body = LACMexec body' (zerov (D2τ' σ) .fst , evIn)
+        in LACMexec (interp (chad (let' rhs body)) (primalVal val) .snd ctg .fst ) evIn
+            ≡ LACMexec (interp (chad rhs) (primalVal val) .snd (ev-body .fst) .fst) (ev-body .snd)
+  simplify-exec-chad-let-val {Γ} {τ} {σ} val evIn ctg rhs body
+    using ρ1 ← D1τ σ :* (D2τ σ :-> D2Γ Γ)
+    using ρ2 ← D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))
+    using ρ3 ← Lin (D2τ' τ)
+    rewrite chad-preserves-primal val rhs
+    rewrite interp-sink-commute-Copy-Skip-End {ρ = ρ1} {y = interp (chad rhs) (primalVal val)} (primal σ (interp rhs val)) (primalVal val) (chad body)
+    using val-verbose ← 
+      (push {Du} {ρ2 ∷ ρ1 ∷ []} {ρ3} ctg
+      (push {Du} {ρ1 ∷ []} {ρ2} (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)))
+      (push {Du} {[]} {ρ1} (interp (chad rhs) (primalVal val)) empty)))
+    rewrite interp-zerot-equiv-zerov {ρ3 ∷ ρ2 ∷ ρ1 ∷ []} {val-verbose} σ
+    using m1 ← λ x → ( snd (interp (chad rhs) (primalVal val)) (fst x) .fst , ℤ.pos 5 Data.Integer.+ snd (interp (chad rhs) (primalVal val)) (fst x) .snd )
+    using m2 ← (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)
+    using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
+    rewrite elim-bind
+    using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
+    rewrite elim-scope-fst
+    rewrite elim-scope-snd
+    = refl
+    
+  simplify-exec-chad-primop : {Γ : Env Pr} {σ τ : Typ Pr} 
+      → (val : Val Pr Γ)
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' τ))
+        (t : Term Pr Γ σ)
+        (op : Primop Pr σ τ )
+      → let ctg-op = (interp (dprim' op) (push ctg (push (primal σ (interp t val)) empty)))
+        in LACMexec (interp (chad (prim op t)) (primalVal val) .snd ctg .fst ) evIn
+           ≡ LACMexec (interp (chad t) (primalVal val) .snd ctg-op .fst) evIn
+  simplify-exec-chad-primop {Γ} {σ} {τ} val evIn ctg t op 
+    using val-ignore ← push {Du} {(D1τ σ :* (D2τ σ :-> D2Γ Γ)) ∷ []} {Lin (D2τ' τ)} ctg (push {Du} {[]} {D1τ σ :* (D2τ σ :-> D2Γ Γ)} (interp (chad t) (primalVal val)) empty)
+    rewrite chad-preserves-primal val t
+    rewrite interp-sink-commute-Copy-Copy-Cut ctg (primal σ (interp t val)) val-ignore (dprim' op)
+    = refl
+  
+open simplify-exec-chad public

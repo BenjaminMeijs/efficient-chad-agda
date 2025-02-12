@@ -2,7 +2,7 @@ module correctness.spec where
 
 open import Agda.Builtin.Float using (Float; primFloatPlus)
 open import Agda.Builtin.Maybe using (just; nothing)
-open import Agda.Builtin.Sigma using (_,_; fst)
+open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
 
 open import Data.Empty using (⊥)
@@ -23,7 +23,7 @@ interp e env = fst (eval env e)
 -- LACM.run, only returning the environment
 -- Folowing the naming of the haskell state monad (MTL)
 LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
-LACMexec {Γ} f e = let _ , e' , _ = LACM.run f e in e'
+LACMexec {Γ} f e = LACM.run f e .snd .fst
 
 module environment-value-tuple where
     Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag
