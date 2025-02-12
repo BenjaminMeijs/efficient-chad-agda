@@ -10,7 +10,7 @@ open import Data.List using (map; _∷_; [])
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_)
 open import Function.Base using (_∘_; flip)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; cong-app)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import spec
@@ -102,6 +102,21 @@ onehot-equiv-addLEτ-lemma {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym
 
 gnoc : {A B : Set} {x y : A} → (x ≡ y) → (f : A → B ) → f x ≡ f y
 gnoc refl f = refl
+
+evalprim-equiv-DSem : {σ τ : Typ Pr}
+                      → (x : Rep σ)
+                      → (ctg : LinRep (D2τ' τ))
+                      → (op : Primop Pr σ τ )
+                      → sparse2dense (interp (dprim' op) (push ctg (push (primal σ x) empty)))
+                        ≡ DSemᵀ (evalprim op) x (sparse2dense ctg)
+evalprim-equiv-DSem (x , y) ctg ADD = sym (DSemᵀ-prim-floatPlus (x , y) ctg) 
+evalprim-equiv-DSem (x , y) ctg MUL = sym (DSemᵀ-prim-floatTimes (x , y) ctg) 
+evalprim-equiv-DSem {σ} {τ} x ctg NEG = sym (DSemᵀ-prim-floatNegate x ctg) 
+evalprim-equiv-DSem tt ctg (LIT x) = refl
+evalprim-equiv-DSem x ctg IADD = cong₂ _,_ refl refl 
+evalprim-equiv-DSem x ctg IMUL = cong₂ _,_ refl refl 
+evalprim-equiv-DSem x tt INEG = refl
+evalprim-equiv-DSem x ctg SIGN = sym DSemᵀ-lemma-ctg-zero'
 
 chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr} 
                   → let σ  = Etup Pr Γ 
@@ -204,11 +219,56 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2 =
   LEtup2EV (LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd))
     ≡⟨ trans ih (sym (ev+assoc _ _ _)) ⟩
   (Etup2EV dsem-rhs  ev+ Etup2EV dsem-body .snd ) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL (DSemᵀ-lemma-let a (sparse2dense ctg) rhs body) ⟩
+    ≡⟨ ev+congL (DSemᵀ-lemma-interp-let a (sparse2dense ctg) rhs body) ⟩
   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
   ∎
--- chad-equiv-DSemᵀ {Γ} a evIn ctg (prim op t) w1 w2 = {!   !}
--- chad-equiv-DSemᵀ {Γ} a evIn ctg (inl t) w1 w2 = {!   !}
--- chad-equiv-DSemᵀ {Γ} a evIn ctg (inr t) w1 w2 = {!   !}
--- chad-equiv-DSemᵀ {Γ} a evIn ctg (case' e l r) w1 w2 = {!   !}
-chad-equiv-DSemᵀ {Γ} a evIn ctg t w1 w2 = {!   !}
+chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) w1 w2 =
+  let d-op = interp (dprim' op) (Etup-to-val (ctg , (primal σ (interp t (Etup-to-val a)), tt))) 
+  in begin
+  LEtup2EV (LACMexec (interp (chad (prim op t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
+    ≡⟨ gnoc (simplify-exec-chad-primop (Etup-to-val a) evIn ctg t op) LEtup2EV ⟩
+  LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd d-op .fst) evIn)
+    ≡⟨ chad-equiv-DSemᵀ a evIn d-op t (dprim'-preserves-≃₁ (Etup-to-val a) ctg op t w1) w2 ⟩
+  Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense d-op)) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (gnoc (gnoc (evalprim-equiv-DSem (interp t (Etup-to-val a)) ctg op) (DSemᵀ _ a)) Etup2EV) ⟩
+  Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = σ} (interp t ∘ Etup-to-val) a (DSemᵀ {σ = σ} {τ = τ} (evalprim op) (interp t (Etup-to-val a)) (sparse2dense ctg))) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (gnoc (sym (cong-app (DSemᵀ-chain (evalprim op) (interp t ∘ Etup-to-val) a) (sparse2dense ctg))) Etup2EV) ⟩
+  Etup2EV (DSemᵀ (evalprim op ∘ interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn nothing (inl {σ = σ} {τ = τ} t) w1 w2 = 
+  begin
+  LEtup2EV (LACMexec (interp (chad (inl {σ = σ} {τ = τ} t)) (Etup-to-val-primal a) .snd nothing .fst) evIn)
+    ≡⟨ chad-equiv-DSemᵀ a evIn (zerov (D2τ' σ) .fst) t (≃₁-zerov σ (interp t (Etup-to-val a))) w2 ⟩
+  Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense (zerov (D2τ' σ) .fst))) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' σ)}})  ⟩
+  zero-EV (map D2τ' Γ) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (sym DSemᵀ-lemma-ctg-zeroLEnv')  ⟩
+  Etup2EV (DSemᵀ (interp (inl {σ = σ} {τ = τ} t) ∘ Etup-to-val) a (sparse2dense {D2τ' σ :*! D2τ' τ} nothing)) ev+ LEtup2EV evIn
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn (just (inj₁ ctg)) (inl {σ = σ} {τ = τ} t) w1 w2 =
+  begin
+  LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst) evIn)
+    ≡⟨ chad-equiv-DSemᵀ a evIn ctg t w1 w2 ⟩
+  Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (gnoc (DSemᵀ-lemma-inj₁ (interp t ∘ Etup-to-val) a (sparse2dense ctg) (zerovDense (D2τ' τ))) Etup2EV) ⟩
+  Etup2EV (DSemᵀ (inj₁ ∘ interp t ∘ Etup-to-val) a (sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₁ ctg)))) ev+ LEtup2EV evIn
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn nothing (inr {σ = σ} {τ = τ} t) w1 w2 = 
+  begin
+  LEtup2EV (LACMexec (interp (chad (inr {σ = σ} {τ = τ} t)) (Etup-to-val-primal a) .snd nothing .fst) evIn)
+    ≡⟨ chad-equiv-DSemᵀ a evIn (zerov (D2τ' τ) .fst) t (≃₁-zerov τ (interp t (Etup-to-val a))) w2 ⟩
+  Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense (zerov (D2τ' τ) .fst))) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' τ)}})  ⟩
+  zero-EV (map D2τ' Γ) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (sym DSemᵀ-lemma-ctg-zeroLEnv')  ⟩
+  Etup2EV (DSemᵀ (interp (inr {σ = σ} {τ = τ} t) ∘ Etup-to-val) a (sparse2dense {D2τ' σ :*! D2τ' τ} nothing)) ev+ LEtup2EV evIn
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn (just (inj₂ ctg)) (inr {σ = σ} {τ = τ} t) w1 w2 =
+  begin
+  LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst) evIn)
+    ≡⟨ chad-equiv-DSemᵀ a evIn ctg t w1 w2 ⟩
+  Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (gnoc (DSemᵀ-lemma-inj₂ (interp t ∘ Etup-to-val) a (zerovDense (D2τ' σ)) (sparse2dense ctg)) Etup2EV) ⟩
+  Etup2EV (DSemᵀ (inj₂ ∘ interp t ∘ Etup-to-val) a (sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₂ ctg)))) ev+ LEtup2EV evIn
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn ctg (case' e l r) w1 w2 = {!   !}

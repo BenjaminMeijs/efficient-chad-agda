@@ -338,7 +338,7 @@ module dsem-lemmas where
       in trans (DSemᵀ-pair f g a ctg-f ctg-g) (plusvDense-zeroL' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ1)}}}}) 
     
 
-    DSemᵀ-lemma-let : {Γ : Env Pr} {σ τ : Typ Pr}
+    DSemᵀ-lemma-interp-let : {Γ : Env Pr} {σ τ : Typ Pr}
       → (a : Rep (Etup Pr Γ))
       → (ctg : LinRepDense (D2τ' τ))
       → (rhs : Term Pr Γ σ)
@@ -348,7 +348,7 @@ module dsem-lemmas where
             dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (interp rhs ∘ Etup-to-val) a (Etup2EV dsem-body .fst)
         in (Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd)
            ≡ Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
-    DSemᵀ-lemma-let {Γ} {σ} {τ} a ctg rhs body =
+    DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body =
       let -- Expressions used for applying the chain rule
           f : (env : Rep (Etup Pr (σ ∷ Γ))) → Rep τ
           f = interp body ∘ Etup-to-val
@@ -367,6 +367,34 @@ module dsem-lemmas where
       Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (f ∘ g) a ctg)
         ≡⟨⟩
       Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
+      ∎
+
+    DSemᵀ-lemma-inj₁ : {σ τ ρ : Typ Pr}
+            → (f : Rep σ →  Rep τ) → (a : Rep σ)
+            → (ctgL : LinRepDense (D2τ' τ)) → (ctgR : LinRepDense (D2τ' ρ))
+            → DSemᵀ {σ} {τ} f a ctgL
+              ≡ DSemᵀ {σ} {τ :+ ρ} (inj₁ ∘ f) a ( ctgL , ctgR ) 
+    DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a ctgL ctgR =
+      begin
+      DSemᵀ f a ctgL
+        ≡⟨ cong (DSemᵀ f a) (sym (cong-app (DSemᵀ-inj₁ (f a)) ((ctgL , ctgR)))) ⟩
+      DSemᵀ f a (DSemᵀ inj₁ (f a) (ctgL , ctgR))
+        ≡⟨ sym (cong-app (DSemᵀ-chain inj₁ f a) (ctgL , ctgR)) ⟩
+      DSemᵀ {σ} {τ :+ ρ} (inj₁ ∘ f) a (ctgL , ctgR)
+      ∎
+
+    DSemᵀ-lemma-inj₂ : {σ τ ρ : Typ Pr}
+            → (f : Rep σ →  Rep τ) → (a : Rep σ)
+            → (ctgL : LinRepDense (D2τ' ρ)) → (ctgR : LinRepDense (D2τ' τ))
+            → DSemᵀ {σ} {τ} f a ctgR
+              ≡ DSemᵀ {σ} {ρ :+ τ} (inj₂ ∘ f) a ( ctgL , ctgR ) 
+    DSemᵀ-lemma-inj₂ {σ} {τ} {ρ} f a ctgL ctgR =
+      begin
+      DSemᵀ f a ctgR
+        ≡⟨ cong (DSemᵀ f a) (sym (cong-app (DSemᵀ-inj₂ (f a)) ((ctgL , ctgR)))) ⟩
+      DSemᵀ f a (DSemᵀ inj₂ (f a) (ctgL , ctgR))
+        ≡⟨ sym (cong-app (DSemᵀ-chain inj₂ f a) (ctgL , ctgR)) ⟩
+      DSemᵀ {σ} {ρ :+ τ} (inj₂ ∘ f) a (ctgL , ctgR)
       ∎
                                  
 
