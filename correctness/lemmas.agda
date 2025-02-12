@@ -31,6 +31,15 @@ module todo-misc where
     interp-zerot-equiv-zerov R = refl
     interp-zerot-equiv-zerov (σ :* τ) = refl
     interp-zerot-equiv-zerov (σ :+ τ) = refl 
+
+    un-D1τ : ( τ : Typ Pr ) → (Rep (D1τ τ)) → (Rep τ)
+    un-D1τ Un x = tt
+    un-D1τ Inte x = x
+    un-D1τ R x = x
+    un-D1τ ( σ :* τ ) x = un-D1τ σ (x .fst) , un-D1τ τ (x .snd)
+    un-D1τ ( σ :+ τ ) (inj₁ x) = inj₁ (un-D1τ σ x)
+    un-D1τ ( σ :+ τ ) (inj₂ y) = inj₂ (un-D1τ τ y)
+    
 open todo-misc public
 
 module plusv-lemmas where
@@ -408,6 +417,15 @@ module sparse-LTyp-harmony-lemmas where
     ≃₁-zerov ( σ :* τ ) _ = tt
     ≃₁-zerov ( σ :+ τ ) _ = tt
 
+    ≃₁-inj₁ : ( σ τ : Typ Pr ) 
+        → ( x : LinRep (D2τ' σ)) (y : Rep σ)
+        → (x ≃₁ y) → _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₁ y)
+    ≃₁-inj₁ Un _ _ _ _ = tt
+    ≃₁-inj₁ Inte _ _ _ _ = tt
+    ≃₁-inj₁ R _ _ _ _ = tt
+    ≃₁-inj₁ ( _ :* _ ) _ _ _ w = w
+    ≃₁-inj₁ ( _ :+ _ ) _ _ _ w = w
+
     ≃₁-transL : {τ : Typ Pr} → { x : LinRep (D2τ' τ) } → { y : LinRep (D2τ' τ) } → { z : Rep τ }
             → x ≡ y → x ≃₁ z → y ≃₁ z
     ≃₁-transL {Un} {x} {y} {z} x≡y w = tt
@@ -679,5 +697,5 @@ module simplify-exec-chad where
     rewrite chad-preserves-primal val t
     rewrite interp-sink-commute-Copy-Copy-Cut ctg (primal σ (interp t val)) val-ignore (dprim' op)
     = refl
-  
+   
 open simplify-exec-chad public

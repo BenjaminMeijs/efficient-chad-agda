@@ -1,3 +1,4 @@
+{-# OPTIONS --show-implicit #-}
 module correctness.chad-equiv-dsem where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -88,7 +89,34 @@ chad-preserves-≃₂ {Γ} val evIn nothing (inr {σ = σ} {τ = τ} t) w1 w2
   = chad-preserves-≃₂ val evIn (zerov (D2τ' τ) .fst) t (≃₁-zerov τ (interp t val)) w2
 chad-preserves-≃₂ {Γ} val evIn (just (inj₂ ctg)) (inr t) w1 w2
   = chad-preserves-≃₂ val evIn ctg t w1 w2
-chad-preserves-≃₂ {Γ} val evIn ctg (case' t t₁ t₂) w1 w2 = {!   !}
+chad-preserves-≃₂ {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l r) w1 w2
+  rewrite chad-preserves-primal val e
+  with interp e val
+... | inj₁ x 
+  rewrite interp-sink-commute-Copy-Skip-End {ρ = D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)} {y = (interp (chad e) (primalVal val))} (primal σ x) (primalVal val) (chad l)
+  using τ1 ← D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)
+  using τ2 ← D1τ ρ :* (D2τ ρ :-> D2Γ (σ ∷ Γ))
+  using val2 ← push {Du} {τ2 ∷ τ1 ∷ []} {Lin (D2τ' ρ)} ctg (push {Du} {τ1 ∷ []} {τ2} (interp  (chad l) (push (primal σ x) (primalVal val)) ) (push {Du} {[]} {τ1} (interp (chad e) (primalVal val) ) empty) )
+  rewrite interp-zerot-equiv-zerov {Lin (D2τ' ρ) ∷ τ2 ∷ τ1 ∷ []} {val2} σ
+  using m1 ← λ y → ( interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .fst , ℤ.pos 6 Data.Integer.+ interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .snd )
+  using m2 ← interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst
+  using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
+  rewrite elim-bind
+  using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
+  rewrite elim-scope-fst
+  rewrite elim-scope-snd
+--   -- TODO - deze rewrite zooi omzetten naar een los lemma
+--   -- Ik moet nog uitzoeken wat de 'begin waarde' is, maar het einde van al deze rewrite zooi is:
+--   --   let l' = LACMexec (interp (chad l) (push x (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
+--   --   in LACMexec (interp (chad e) (primalVal val) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd)
+  = let l' = LACMexec m2 (zerov (D2τ' σ) .fst , evIn)
+--      --   -- ih = chad-preserves-≃₂ (push {! x  !} val) (zerov (D2τ' σ) .fst , evIn) ctg l {!   !} {!   !} -- (≃₂-intro-zero evIn val (un-D1τ σ x) w2)
+        ih = chad-preserves-≃₂ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃₂-intro-zero evIn val x w2)
+        foo = (≃₂-fst l' x val ih)
+    in chad-preserves-≃₂ val (l' .snd) (just (inj₁ (l' .fst))) e ({! ≃₁-inj₁ ? ? ? ? foo  !}) (≃₂-snd l' x val ih)
+... | inj₂ x  = {! chad-preserves-primal val e  !}
+
+
 
 onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
     → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
@@ -270,5 +298,5 @@ chad-equiv-DSemᵀ {Γ} a evIn (just (inj₂ ctg)) (inr {σ = σ} {τ = τ} t) w
   Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
     ≡⟨ ev+congL (gnoc (DSemᵀ-lemma-inj₂ (interp t ∘ Etup-to-val) a (zerovDense (D2τ' σ)) (sparse2dense ctg)) Etup2EV) ⟩
   Etup2EV (DSemᵀ (inj₂ ∘ interp t ∘ Etup-to-val) a (sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₂ ctg)))) ev+ LEtup2EV evIn
-  ∎
+  ∎  
 chad-equiv-DSemᵀ {Γ} a evIn ctg (case' e l r) w1 w2 = {!   !}
