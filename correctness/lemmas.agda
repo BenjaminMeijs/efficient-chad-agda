@@ -426,17 +426,13 @@ module sparse-LTyp-harmony-lemmas where
     ≃₁-inj₁ ( _ :* _ ) _ _ _ w = w
     ≃₁-inj₁ ( _ :+ _ ) _ _ _ w = w
 
-    ≃₁-transL : {τ : Typ Pr} → { x : LinRep (D2τ' τ) } → { y : LinRep (D2τ' τ) } → { z : Rep τ }
+    ≃₁-transL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
             → x ≡ y → x ≃₁ z → y ≃₁ z
-    ≃₁-transL {Un} {x} {y} {z} x≡y w = tt
-    ≃₁-transL {Inte} {x} {y} {z} x≡y w = tt
-    ≃₁-transL {R} {x} {y} {z} x≡y w = tt
-    ≃₁-transL {σ :* τ} {just (x1 , x2)} {just (y1 , y2)} {z1 , z2} refl (w1 , w2) = w1 , w2
-    ≃₁-transL {σ :* τ} {nothing} {nothing} {y1 , y2} x≡y w = tt
-    ≃₁-transL {σ :+ τ} {just x} {y} {inj₁ z} refl w = w
-    ≃₁-transL {σ :+ τ} {just x} {y} {inj₂ z} refl w = w
-    ≃₁-transL {σ :+ τ} {nothing} {y} {inj₁ z} refl w = tt
-    ≃₁-transL {σ :+ τ} {nothing} {y} {inj₂ z} refl w = tt
+    ≃₁-transL τ x y z refl w2 = w2
+
+    ≃₁-transR : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : Rep τ ) → ( z : Rep τ )
+            → y ≡ z → x ≃₁ y → x ≃₁ z
+    ≃₁-transR τ x y z refl w = w
 
     ≃₂-transL : {Γ : Env Pr} {τ : Typ Pr} 
             → ( x : LEtup (map D2τ' Γ) ) → ( y : LEtup (map D2τ' Γ) ) → ( z : Val Pr Γ )
@@ -626,11 +622,11 @@ module simplify-exec-chad where
         (ctg : LinRep (D2τ' τ))
       → (rhs : Term Pr Γ σ)
         (body : Term Pr (σ ∷ Γ) τ)
-      → let a' = (interp rhs (Etup-to-val a)) , a
-            body' = interp (chad body) (Etup-to-val-primal a') .snd ctg .fst
+      → let val' = Etup-to-val-primal ((interp rhs (Etup-to-val a)) , a)
+            body' = interp (chad body) val' .snd ctg .fst
             ev-body = LACMexec body' (zerov (D2τ' σ) .fst , evIn)
         in LACMexec (interp (chad (let' rhs body)) (Etup-to-val-primal a) .snd ctg .fst ) evIn
-            ≡ LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd)
+           ≡ LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd)
   simplify-exec-chad-let {Γ} {τ} {σ} a evIn ctg rhs body
     using val ← Etup-to-val a
     using ρ1 ← D1τ σ :* (D2τ σ :-> D2Γ Γ)
@@ -696,6 +692,60 @@ module simplify-exec-chad where
     using val-ignore ← push {Du} {(D1τ σ :* (D2τ σ :-> D2Γ Γ)) ∷ []} {Lin (D2τ' τ)} ctg (push {Du} {[]} {D1τ σ :* (D2τ σ :-> D2Γ Γ)} (interp (chad t) (primalVal val)) empty)
     rewrite chad-preserves-primal val t
     rewrite interp-sink-commute-Copy-Copy-Cut ctg (primal σ (interp t val)) val-ignore (dprim' op)
+    = refl
+
+  -- This lemma is used to simplify LACMexec of a case' after having done:
+  -- 1. a rewrite using: rewrite chad-preserves-primal val e
+  -- 2. a with and case distinction on: interp e val
+  -- Then, you can use this lemma (for example with a rewrite) in the case where interp e val is (inj₁ x)
+  -- note, 
+  simplify-exec-chad-case-inl : {Γ : Env Pr} {σ τ ρ : Typ Pr} 
+      → (val : Val Pr Γ)
+        (evIn : LEtup (map D2τ' Γ) )
+        (ctg : LinRep (D2τ' ρ))
+        (e : Term Pr Γ (σ :+ τ))
+        (l : Term Pr (σ ∷ Γ) ρ)
+        (x : Rep σ)
+      → let τ1 = D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)
+            τ2 = D1τ ρ :* (D2τ ρ :-> D2Γ (σ ∷ Γ))
+            zerot-σ = (interp
+                        (zerot σ)
+                          (push {Du} {τ2 ∷ τ1 ∷ []} {Lin (D2τ' ρ)}
+                            ctg
+                            (push {Du} {τ1 ∷ []} {τ2}
+                              (interp 
+                                (sink (WCopy (WSkip WEnd)) (chad l))
+                                (push {Du} {τ1 ∷ map D1τ Γ} {D1τ σ} (primal σ x) (push {Du} {map D1τ Γ} {τ1} (interp {τ = τ1} (chad e) (primalVal val)) (primalVal val)))
+                              )
+                              (push {Du} {[]} {τ1} (interp (chad e) (primalVal val)) empty)
+                            )
+                          )
+                      )
+            m2 = ( (interp
+                      (sink (WCopy (WSkip WEnd)) (chad l))
+                      (push {Du} {τ1 ∷ map D1τ Γ} {D1τ σ} (primal σ x) (push {Du} {map D1τ Γ} {τ1} (interp (chad e) (primalVal val)) (primalVal val)))
+                    ) .snd ctg .fst
+                 )
+            m3 = (λ y → ( interp (chad e) (primalVal val) .snd (just (inj₁ (fst y))) .fst )
+                         , (ℤ.pos 6 Data.Integer.+ (interp (chad e) (primalVal val)) .snd (just (inj₁ (fst y))) .snd)
+                 )
+            l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
+        in LACMexec (LACM.bind (LACM.scope zerot-σ m2) m3) evIn
+           ≡ LACMexec (interp (chad e) (primalVal val) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd)
+    
+  simplify-exec-chad-case-inl {Γ} {σ} {τ} {ρ} val evIn ctg e l x
+    rewrite interp-sink-commute-Copy-Skip-End {ρ = D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)} {y = (interp (chad e) (primalVal val))} (primal σ x) (primalVal val) (chad l)
+    using τ1 ← D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)
+    using τ2 ← D1τ ρ :* (D2τ ρ :-> D2Γ (σ ∷ Γ))
+    using val2 ← push {Du} {τ2 ∷ τ1 ∷ []} {Lin (D2τ' ρ)} ctg (push {Du} {τ1 ∷ []} {τ2} (interp  (chad l) (push (primal σ x) (primalVal val)) ) (push {Du} {[]} {τ1} (interp (chad e) (primalVal val) ) empty) )
+    rewrite interp-zerot-equiv-zerov {Lin (D2τ' ρ) ∷ τ2 ∷ τ1 ∷ []} {val2} σ
+    using m1 ← λ y → ( interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .fst , ℤ.pos 6 Data.Integer.+ interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .snd )
+    using m2 ← interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst
+    using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
+    rewrite elim-bind
+    using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
+    rewrite elim-scope-fst
+    rewrite elim-scope-snd
     = refl
    
 open simplify-exec-chad public
