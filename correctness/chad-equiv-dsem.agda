@@ -92,29 +92,17 @@ chad-preserves-≃₂ {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e 
   rewrite chad-preserves-primal val e
   with interp e val | inspect (interp e) val
 ... | inj₁ x | [ interp-e-val≡inj₁-x ]
-  rewrite simplify-exec-chad-case-inl val evIn ctg e l x
-  -- rewrite interp-sink-commute-Copy-Skip-End {ρ = D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)} {y = (interp (chad e) (primalVal val))} (primal σ x) (primalVal val) (chad l)
-  -- using τ1 ← D1τ (σ :+ τ) :* (D2τ (σ :+ τ) :-> D2Γ Γ)
-  -- using τ2 ← D1τ ρ :* (D2τ ρ :-> D2Γ (σ ∷ Γ))
-  -- using val2 ← push {Du} {τ2 ∷ τ1 ∷ []} {Lin (D2τ' ρ)} ctg (push {Du} {τ1 ∷ []} {τ2} (interp  (chad l) (push (primal σ x) (primalVal val)) ) (push {Du} {[]} {τ1} (interp (chad e) (primalVal val) ) empty) )
-  -- rewrite interp-zerot-equiv-zerov {Lin (D2τ' ρ) ∷ τ2 ∷ τ1 ∷ []} {val2} σ
-  -- using m1 ← λ y → ( interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .fst , ℤ.pos 6 Data.Integer.+ interp (chad e) (primalVal val) .snd (just (inj₁ (y .fst))) .snd )
-  -- using m2 ← interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst
-  -- using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
-  -- rewrite elim-bind
-  -- using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
-  -- rewrite elim-scope-fst
-  -- rewrite elim-scope-snd
---   -- TODO - deze rewrite zooi omzetten naar een los lemma
---   -- Ik moet nog uitzoeken wat de 'begin waarde' is, maar het einde van al deze rewrite zooi is:
---   --   let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
---   --   in LACMexec (interp (chad e) (primalVal val) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd)
-  = 
-    let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
+  rewrite simplify-exec-chad-case val evIn ctg e l x inj₁
+  = let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
         ih = chad-preserves-≃₂ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃₂-intro-zero {τ = σ} evIn val x w2)
         w1' = ≃₁-transR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj₁-x) (≃₂-fst l' x val ih)
     in chad-preserves-≃₂ val (l' .snd) (just (inj₁ (l' .fst))) e w1' (≃₂-snd l' x val ih)
-... | inj₂ x | [ interp-e-val≡inj₂-x ]  = {! chad-preserves-primal val e  !}
+... | inj₂ x | [ interp-e-val≡inj₂-x ]
+  rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
+  = let r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)
+        ih = chad-preserves-≃₂ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r w1 (≃₂-intro-zero {τ = τ} evIn val x w2)
+        w1' = ≃₁-transR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj₂-x) (≃₂-fst r' x val ih)
+    in chad-preserves-≃₂ val (r' .snd) (just (inj₂ (r' .fst))) e w1' (≃₂-snd r' x val ih)
 
 
 
