@@ -31,14 +31,6 @@ module todo-misc where
     interp-zerot-equiv-zerov R = refl
     interp-zerot-equiv-zerov (σ :* τ) = refl
     interp-zerot-equiv-zerov (σ :+ τ) = refl 
-
-    un-D1τ : ( τ : Typ Pr ) → (Rep (D1τ τ)) → (Rep τ)
-    un-D1τ Un x = tt
-    un-D1τ Inte x = x
-    un-D1τ R x = x
-    un-D1τ ( σ :* τ ) x = un-D1τ σ (x .fst) , un-D1τ τ (x .snd)
-    un-D1τ ( σ :+ τ ) (inj₁ x) = inj₁ (un-D1τ σ x)
-    un-D1τ ( σ :+ τ ) (inj₂ y) = inj₂ (un-D1τ τ y)
     
 open todo-misc public
 
@@ -268,6 +260,16 @@ module LACM-exec-lemmas where
 open LACM-exec-lemmas public
 
 module dsem-lemmas where 
+    onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
+        → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
+        in (ctg : LinRep (D2τ' τ))
+        → (evIn : LEtup (map D2τ' Γ) )
+        → (idx , ctg) ≃₄ evIn
+        → LEtup2EV (addLEτ idx' ctg evIn)
+          ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
+    onehot-equiv-addLEτ-lemma {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' Etup-zerovDense-equiv-zero-EV))
+    onehot-equiv-addLEτ-lemma {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym plusvDense-zeroL') (onehot-equiv-addLEτ-lemma idx ctg xs w)
+
     DSemᵀ-lemma-ctg-zero' : {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
                     { ctg : LinRepDense (D2τ' τ) }
                     → {{ ctg ≡ zerovDense (D2τ' τ) }}
