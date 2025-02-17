@@ -21,7 +21,7 @@ onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
     → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
     in (ctg : LinRep (D2τ' τ))
     → (evIn : LEtup (map D2τ' Γ) )
-    → (idx , ctg) ≃₄ evIn
+    → Compatible-idx-LEtup (idx , ctg) evIn
     → LEtup2EV (addLEτ idx' ctg evIn)
       ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
 onehot-equiv-addLEτ-lemma {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' Etup-zerovDense-equiv-zero-EV))

@@ -75,31 +75,7 @@ open import correctness.spec
 
 -- ===============================
 -- Combining ≃τ's and ≃Γ's to create other kinds of compatibility
--- Note that these other kinds of compatibility are not part of the specification for the correctness proof
--- These witnesses are only used as preconditions for (internal) compatibility lemmas.
 -- ===============================
-Compatible-LinReps : {τ : LTyp} → LinRep τ → LinRep τ → Set
-Compatible-LinReps {LUn} x y = ⊤
-Compatible-LinReps {LR} x y = ⊤
-Compatible-LinReps {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = (Compatible-LinReps x1 y1) × (Compatible-LinReps x2 y2) 
-Compatible-LinReps {σ :*! τ} (just x) nothing = ⊤
-Compatible-LinReps {σ :*! τ} nothing (just x) = ⊤
-Compatible-LinReps {σ :*! τ} nothing nothing = ⊤
-Compatible-LinReps {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = Compatible-LinReps x y
-Compatible-LinReps {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = ⊥
-Compatible-LinReps {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = ⊥
-Compatible-LinReps {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = Compatible-LinReps x y
-Compatible-LinReps {σ :+! τ} (just x) nothing = ⊤
-Compatible-LinReps {σ :+! τ} nothing (just x) = ⊤
-Compatible-LinReps {σ :+! τ} nothing nothing = ⊤
-
-Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
-Compatible-idx-LEtup {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y
-Compatible-idx-LEtup {Γ} {τ} (S idx , x) (y , ys) = Compatible-idx-LEtup (idx , x) ys
-
-Compatible-idx-val : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
-Compatible-idx-val {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 
-Compatible-idx-val {Γ} {τ} (S idx , x) (push y ys) = Compatible-idx-val (idx , x) ys
 
 
 ≃τ's-implies-Compatible-LinReps : {τ : Typ Pr}

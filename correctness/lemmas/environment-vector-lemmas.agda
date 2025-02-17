@@ -45,7 +45,7 @@ module plusv-lemmas where
 
     plusv-equiv-plusvDense : {τ : LTyp}
                             → (x : LinRep τ) (y : LinRep τ)
-                            → (x ≃₃ y)
+                            → (Compatible-LinReps x y)
                             →  sparse2dense (plusv τ x y .fst)
                              ≡ plusvDense τ (sparse2dense x) (sparse2dense y)
     -- ==================

@@ -64,7 +64,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (var x) w1 w2 =
   LEtup2EV (LACMexec (interp (chad (var x)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ gnoc (LACMexec-add idx ctg evIn) LEtup2EV ⟩
   LEtup2EV (addLEτ idx ctg evIn)
-    ≡⟨ onehot-equiv-addLEτ-lemma x ctg evIn (≃τ-and-≃Γ-implies-≃₄ x ctg evIn (Etup-to-val a) w1 w2) ⟩
+    ≡⟨ onehot-equiv-addLEτ-lemma x ctg evIn (≃τ-and-≃Γ-implies-Compatible-idx-LEtup x ctg evIn (Etup-to-val a) w1 w2) ⟩
   Etup2EV (onehot x (sparse2dense ctg)) ev+ LEtup2EV evIn
     ≡⟨ ev+congL (sym (cong Etup2EV (DSemᵀ-var a x (sparse2dense ctg)))) ⟩
   Etup2EV (DSemᵀ (flip valprj x ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
