@@ -1,14 +1,15 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.dsem where
 
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
-open import Data.Sum using (inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.List using (_∷_)
-open import Function.Base using (id; _∘_; flip)
-open import Data.Product.Base using (uncurry)
+open import Function.Base using (id; _∘_; flip; case_of_)
+open import Data.Product.Base using (uncurry; _×_)
 open import Agda.Builtin.Float using (primFloatPlus; primFloatTimes; primFloatNegate)
 
-open import spec using (Typ; Pr; Env; Rep; D2τ' ; _:*_; _:+_; R; valprj)
+open import spec using (Typ; Pr; Env; Rep; D2τ' ; _:*_; _:+_; R; valprj; match-inj)
 open import spec.linear-types using (Idx; S; Z)
 
 open import correctness.spec using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
@@ -42,8 +43,9 @@ postulate
                 → (f : Rep τ2 → Rep τ3)
                 → (g : Rep τ1 → Rep τ2)
                 → (a : Rep τ1)
-                → DSemᵀ {τ1} {τ3} (f ∘ g) a
-                  ≡ DSemᵀ {τ1} {τ2} g a ∘ DSemᵀ {τ2} {τ3} f (g a)
+                → (ctg : LinRepDense (D2τ' τ3))
+                → DSemᵀ {τ1} {τ3} (f ∘ g) a ctg
+                  ≡ DSemᵀ {τ1} {τ2} g a (DSemᵀ {τ2} {τ3} f (g a) ctg)
 
     DSemᵀ-pair : {σ τ1 τ2 : Typ Pr}
             → (f : Rep σ →  Rep τ1) 
@@ -68,23 +70,66 @@ postulate
               → DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a ctg
                 ≡ onehot idx ctg
 
+    DSemᵀ-case : {σ1 σ2 τ : Typ Pr}
+              → (a : Rep (σ1 :+ σ2))
+              → (f : Rep σ1 →  Rep τ) 
+              → (g : Rep σ2 →  Rep τ) 
+              → (ctg : LinRepDense (D2τ' τ))
+              → let h : Rep (σ1 :+ σ2) → Rep τ
+                    h = match-inj σ1 σ2 
+                            (λ x → f x)
+                            (λ y → g y)
+                    k : Rep (σ1 :+ σ2) → LinRepDense (D2τ' σ1) × LinRepDense (D2τ' σ2)
+                    k = match-inj σ1 σ2
+                            (λ x → (DSemᵀ {σ1} {τ} f x ctg) , (zerovDense (D2τ' σ2)))
+                            (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg))
+                in DSemᵀ {σ1 :+ σ2} {τ} h a ctg
+                   ≡ k a
+
+--     DSemᵀ-case2 : {σ ρ1 ρ2 τ : Typ Pr}
+--               → (a : Rep σ)
+--               → (l : Rep σ → Rep ρ1 →  Rep τ) 
+--               → (r : Rep σ → Rep ρ2 →  Rep τ) 
+--               → (ctg : LinRepDense (D2τ' τ))
+--               → let h : Rep σ → Rep τ
+--                     h = λ a' → match-inj ρ1 ρ2 (l a') (r a')
+--                     k : Rep (σ1 :+ σ2) → LinRepDense (D2τ' σ1) × LinRepDense (D2τ' σ2)
+--                     k = match-inj σ1 σ2
+--                             (λ x → (DSemᵀ {σ1} {τ} f x ctg) , (zerovDense (D2τ' σ2)))
+--                             (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg))
+--                 in DSemᵀ {σ} {τ} h a ctg
+--                    ≡ match-inj
+
+    -- Question: Zou een implementatie dit kunnen bewijzen? Ik denk van wel
+    DSemᵀ-extensionality : {σ τ : Typ Pr}
+              → (f : Rep σ →  Rep τ) 
+              → (g : Rep σ →  Rep τ) 
+              → (a : Rep σ)
+              → (ctg : LinRepDense (D2τ' τ))
+              → ( (x : Rep σ) → f x ≡ g x  )
+              → DSemᵀ {σ} {τ} f a ctg
+              ≡ DSemᵀ {σ} {τ} g a ctg
+
     -- ======================
     -- DSem on linear functions (Derivative of a linear function f is f)
     -- ======================
     DSemᵀ-identity : {τ : Typ Pr} 
             → (a : Rep τ)
-            → DSemᵀ {τ} {τ} id a
-              ≡ id
+            → (ctg : LinRepDense (D2τ' τ))
+            → DSemᵀ {τ} {τ} id a ctg
+              ≡ ctg
 
     DSemᵀ-inj₁ : {σ τ : Typ Pr}
             → (a : Rep σ)
-            → DSemᵀ {σ} {σ :+ τ} inj₁ a
-              ≡ fst
+            → (ctg : LinRepDense (D2τ' (σ :+ τ)))
+            → DSemᵀ {σ} {σ :+ τ} inj₁ a ctg
+              ≡ fst ctg
 
     DSemᵀ-inj₂ : {σ τ : Typ Pr}
             → (a : Rep σ)
-            → DSemᵀ {σ} {τ :+ σ} inj₂ a
-              ≡ snd
+            → (ctg : LinRepDense (D2τ' (τ :+ σ)))
+            → DSemᵀ {σ} {τ :+ σ} inj₂ a ctg
+              ≡ snd ctg
 
     -- ======================
     -- (primitive) Operations on Floats

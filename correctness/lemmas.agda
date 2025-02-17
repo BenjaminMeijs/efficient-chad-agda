@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -6,11 +7,11 @@ open import Agda.Builtin.Unit using (tt)
 open import Agda.Builtin.Maybe using (just; nothing)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primNatToFloat)
 
-open import Data.Integer using (ℤ)
+open import Data.Integer using (ℤ; _+_)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Product using (_×_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Function.Base using (_$_; _∘_; id)
+open import Function.Base using (_$_; _∘_; id; case_of_)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; cong-app)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
@@ -22,17 +23,6 @@ open LACM using (LACM)
 open import chad-preserves-primal
 open import eval-sink-commute
 
-module todo-misc where
-    interp-zerot-equiv-zerov : {Γ : Env Du} { env : Val Du Γ }
-                                → (τ : Typ Pr)
-                                → interp (zerot τ) env ≡ zerov (D2τ' τ) .fst
-    interp-zerot-equiv-zerov Un = refl
-    interp-zerot-equiv-zerov Inte = refl
-    interp-zerot-equiv-zerov R = refl
-    interp-zerot-equiv-zerov (σ :* τ) = refl
-    interp-zerot-equiv-zerov (σ :+ τ) = refl 
-    
-open todo-misc public
 
 module plusv-lemmas where
     -- Floats
@@ -314,6 +304,7 @@ module dsem-lemmas where
     DSemᵀ-lemma-pair f g a ctg-f ctg-g = sym $ trans (cong Etup2EV (DSemᵀ-pair f g a ctg-f ctg-g))
                                                 (plusvDense-equiv-ev+ (DSemᵀ f a ctg-f) (DSemᵀ g a ctg-g))
 
+    -- TODO: Betere naam verzinnen, dit zou de naam moeten zijn van een Lemma die zegt dat fst linear is
     DSemᵀ-lemma-fst : {Γ : Env Pr} {τ1 τ2 : Typ Pr}
             → let σ  = Etup Pr Γ 
             in (f : Rep σ →  Rep τ1) 
@@ -370,11 +361,11 @@ module dsem-lemmas where
           dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (fst ∘ g) a (Etup2EV dsem-body .fst)
       in begin
       Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd
-        ≡⟨ ev+congR (sym (cong Etup2EV (cong-app (DSemᵀ-identity a) (dsem-body .snd)))) ⟩
+        ≡⟨ ev+congR (sym (cong Etup2EV (DSemᵀ-identity a (dsem-body .snd)))) ⟩
       Etup2EV dsem-rhs ev+ Etup2EV (DSemᵀ id a (dsem-body .snd))
         ≡⟨ DSemᵀ-lemma-pair (interp rhs ∘ Etup-to-val) id a (dsem-body .fst) (dsem-body .snd) ⟩
       Etup2EV ((DSemᵀ {σ = Etup Pr Γ} {τ = σ :* Etup Pr Γ} g a ∘ DSemᵀ {σ = σ :* Etup Pr Γ} {τ = τ} f (g a)) ctg)
-        ≡⟨ cong Etup2EV (sym (cong-app (DSemᵀ-chain f g a) ctg)) ⟩
+        ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a ctg)) ⟩
       Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (f ∘ g) a ctg)
         ≡⟨⟩
       Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
@@ -388,9 +379,9 @@ module dsem-lemmas where
     DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a ctgL ctgR =
       begin
       DSemᵀ f a ctgL
-        ≡⟨ cong (DSemᵀ f a) (sym (cong-app (DSemᵀ-inj₁ (f a)) ((ctgL , ctgR)))) ⟩
+        ≡⟨ cong (DSemᵀ f a) (sym (DSemᵀ-inj₁ (f a) (ctgL , ctgR))) ⟩
       DSemᵀ f a (DSemᵀ inj₁ (f a) (ctgL , ctgR))
-        ≡⟨ sym (cong-app (DSemᵀ-chain inj₁ f a) (ctgL , ctgR)) ⟩
+        ≡⟨ sym (DSemᵀ-chain inj₁ f a (ctgL , ctgR)) ⟩
       DSemᵀ {σ} {τ :+ ρ} (inj₁ ∘ f) a (ctgL , ctgR)
       ∎
 
@@ -402,11 +393,82 @@ module dsem-lemmas where
     DSemᵀ-lemma-inj₂ {σ} {τ} {ρ} f a ctgL ctgR =
       begin
       DSemᵀ f a ctgR
-        ≡⟨ cong (DSemᵀ f a) (sym (cong-app (DSemᵀ-inj₂ (f a)) ((ctgL , ctgR)))) ⟩
+        ≡⟨ cong (DSemᵀ f a) (sym (DSemᵀ-inj₂ (f a) (ctgL , ctgR))) ⟩
       DSemᵀ f a (DSemᵀ inj₂ (f a) (ctgL , ctgR))
-        ≡⟨ sym (cong-app (DSemᵀ-chain inj₂ f a) (ctgL , ctgR)) ⟩
+        ≡⟨ sym (DSemᵀ-chain inj₂ f a (ctgL , ctgR)) ⟩
       DSemᵀ {σ} {ρ :+ τ} (inj₂ ∘ f) a (ctgL , ctgR)
       ∎
+
+    fst-case : {A B : Set} {σ τ : Typ Pr}
+            → (x : Rep (σ :+ τ))
+            → (a₁ : Rep σ → A) (a₂ : Rep τ → A)
+            → (b₁ : Rep σ → B) (b₂ : Rep τ → B)
+            → let f : (Rep (σ :+ τ)) → A × B
+                  f = λ where (inj₁ z) → (a₁ z , b₁ z)
+                              (inj₂ z) → (a₂ z , b₂ z)
+                      
+                  g : (Rep (σ :+ τ)) → A
+                  g = λ where (inj₁ z) → a₁ z
+                              (inj₂ z) → a₂ z
+              in fst (f x) ≡ g x
+    fst-case (inj₁ x) a₁ a₂ b₁ b₂ = refl
+    fst-case (inj₂ y) a₁ a₂ b₁ b₂ = refl
+
+    -- DSemᵀ-lemma-chain-app : {τ1 τ2 τ3 : Typ Pr}
+    --             → (f : Rep τ2 → Rep τ3)
+    --             → (g : Rep τ1 → Rep τ2)
+    --             → (a : Rep τ1)
+    --             → (ctg : LinRepDense (D2τ' τ3))
+    --             → DSemᵀ {τ1} {τ3} (λ a' → f (g a')) a ctg
+    --               ≡ DSemᵀ {τ1} {τ2} g a (DSemᵀ {τ2} {τ3} f (g a) ctg)
+    -- DSemᵀ-lemma-chain-app {τ1} {τ2} {τ3} f g a ctg = cong-app (DSemᵀ-chain {τ1} {τ2} {τ3} f g a) ctg
+
+    -- DSemᵀ-lemma-interp-case : {Γ : Env Pr} {σ τ ρ : Typ Pr}
+    --   → (a : Rep (Etup Pr Γ))
+    --   → (ctg : LinRepDense (D2τ' ρ))
+    --   → (e : Term Pr Γ (σ :+ τ))
+    --   → (l : Term Pr (σ ∷ Γ) ρ)
+    --   → (r : Term Pr (τ ∷ Γ) ρ)
+    --   → (x : Rep σ)
+    --   → let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
+    --         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
+    --     in Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)
+    --        ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg)
+    -- DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a ctg e l r x =
+    --   let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
+    --       dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
+    --       dsem-g₁ = DSemᵀ {Etup Pr Γ} {(σ :+ τ)} ? a ?
+    --       dsem-g₂ = DSemᵀ {Etup Pr Γ} {Etup Pr Γ} ? a ?
+    --   in begin
+    --   Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)
+    --   ≡⟨ {!   !} ⟩
+    --   -- ?
+    --   -- -- Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a
+    --   -- --           (match-inj ((σ :+ τ) :* (Etup Pr Γ)) ρ 
+    --   -- --               ?
+    --   -- --               ?
+    --   -- --               (g a)
+    --   -- --           ))
+    --   -- ≡⟨ cong Etup2EV {!   !} ⟩
+    --   -- Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a (DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (g a) ctg))
+    --   -- ≡⟨ cong Etup2EV (sym (DSemᵀ-lemma-chain-app f g a ctg)) ⟩
+    --   -- Etup2EV (DSemᵀ (f ∘ g) a ctg)
+    --   -- ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg w) ⟩
+    --   Etup2EV (DSemᵀ (?) a ctg)
+    --   ≡⟨ {!   !} ⟩
+    --   Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg)
+    --   ∎
+    --   where f : Rep ((σ :+ τ) :* (Etup Pr Γ)) → Rep ρ
+    --         f = λ (zs , a) → match-inj σ τ 
+    --                           (λ z → interp l (Etup-to-val (z , a))) 
+    --                           (λ z → interp r (Etup-to-val (z , a)))
+    --                           zs
+    --         g : Rep (Etup Pr Γ) → Rep ((σ :+ τ) :* (Etup Pr Γ)) 
+    --         g = λ a → ( interp e (Etup-to-val a) , a)
+    --         w : (y : Rep (Etup Pr Γ)) → (f ∘ g) y ≡ interp (case' e l r) (Etup-to-val y) -- TODO: extract this lemma
+    --         w y with interp e (Etup-to-val y)
+    --         ... | inj₁ _ = refl
+    --         ... | inj₂ _ = refl
                                  
 
 open dsem-lemmas public
@@ -592,6 +654,15 @@ module interp-sink where
 open interp-sink public
 
 module simplify-exec-chad where
+  interp-zerot-equiv-zerov : {Γ : Env Du} { env : Val Du Γ }
+                              → (τ : Typ Pr)
+                              → interp (zerot τ) env ≡ zerov (D2τ' τ) .fst
+  interp-zerot-equiv-zerov Un = refl
+  interp-zerot-equiv-zerov Inte = refl
+  interp-zerot-equiv-zerov R = refl
+  interp-zerot-equiv-zerov (σ :* τ) = refl
+  interp-zerot-equiv-zerov (σ :+ τ) = refl 
+
   simplify-exec-chad-fst : {Γ : Env Pr} {σ τ : Typ Pr} 
       → (val : Val Pr Γ)
         (evIn : LEtup (map D2τ' Γ) )
@@ -749,5 +820,5 @@ module simplify-exec-chad where
     rewrite elim-scope-fst
     rewrite elim-scope-snd
     = refl
-   
-open simplify-exec-chad public
+       
+open simplify-exec-chad public 

@@ -93,9 +93,9 @@ module environment-vector where
 
 open environment-vector public
 
-module sparse-LTyp-harmony where
+module value-compatibility where
     -- Overall
-    -- x ≃ y is a witness to the fact that x and y are congruent (of the same shape) in their constructors for sum types.
+    -- x ≃ y is a witness to the fact that x and y are compatible (of the same shape) in their constructors for sum types.
     -- i.e. whenever x is inj₁, y is also inj₁
 
     _≃₁_ : {τ : Typ Pr} → LinRep (D2τ' τ) → Rep τ  → Set
@@ -109,7 +109,7 @@ module sparse-LTyp-harmony where
     _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
     _≃₁_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃₁ y
     _≃₁_ {σ :+ τ} nothing _ = ⊤
-
+≃τ
     _≃₂_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
     _≃₂_ {[]} x y = ⊤
     _≃₂_ {Un ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
@@ -145,4 +145,4 @@ module sparse-LTyp-harmony where
     _≃₅_ {Γ} {τ} (S idx , x) (push y ys) = (idx , x) ≃₅ ys
 
   
-open sparse-LTyp-harmony public
+open value-compatibility public

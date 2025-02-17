@@ -262,7 +262,6 @@ module DenseLinRepresentation where
     sparse2dense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , sparse2dense {τ} y 
     sparse2dense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
 
-    -- TODO rewrite as comparison to zerov-Dense (Lawrence)
     equals-zero : {τ : LTyp} → (x : LinRepDense τ) → Dec (x ≡ zerovDense τ)
     equals-zero {τ} x = LinRepDense≟ {τ} x (zerovDense τ)
 

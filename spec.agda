@@ -493,6 +493,10 @@ buildValFromInj {Γ' = τ ∷ Γ'} inj env =
   push (valprj env (inj Z))
        (buildValFromInj (inj ∘ S) env)
 
+match-inj : {tag : PDTag} { A : Set } ( σ τ : Typ tag ) → (Rep σ → A) → (Rep τ → A) → (Rep (σ :+ τ)) → A
+match-inj _ _ f g (inj₁ x) = f x
+match-inj _ _ f g (inj₂ y) = g y
+
 -- The semantics of the term language. Aside from returning the evaluation
 -- result, this also returns an integer recording the number of evaluation
 -- steps taken during evaluation. This integer is used for complexity analysis.
@@ -529,13 +533,14 @@ eval env (inl e) =
 eval env (inr e) =
   let e , ce = eval env e
   in inj₂ e , one + ce
-eval env (case' e1 e2 e3) =
+eval env (case' {σ = σ} {τ = τ} {ρ = ρ} e1 e2 e3) =
   let v , cv = eval env e1
-  in case v of
-       λ where (inj₁ x) -> let z , cz = eval (push x env) e2
-                           in z , one + cv + cz
-               (inj₂ y) -> let z , cz = eval (push y env) e3
-                           in z , one + cv + cz
+  in (match-inj σ τ
+       (λ x → let z , cz = eval (push x env) e2 
+              in z , one + cv + cz) 
+       (λ y → let z , cz = eval (push y env) e3 
+              in z , one + cv + cz)
+     ) v
 eval env (pureevm {Γ' = Γ'} e) =
   let e' , ce = eval env e
   in LACM.pure e' , one + ce

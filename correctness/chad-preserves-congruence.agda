@@ -15,6 +15,7 @@ open import correctness.spec
 open import correctness.lemmas
 open import chad-preserves-primal
 
+-- TODO rename to compatability
 
 dprim'-preserves-≃₁ : {Γ : Env Pr} {σ τ : Typ Pr}
       (val : Val Pr Γ) (ctg : LinRep (D2τ' τ)) (op : Primop Pr σ τ) (t : Term Pr Γ σ) 
