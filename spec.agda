@@ -12,7 +12,7 @@ open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Integer using (ℤ; _+_; _-_; _*_; -_; +_; _≤_)
 open import Data.Product using (_×_)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Function.Base using (id; _$_; _∘_; case_of_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst; cong)
 
@@ -493,10 +493,6 @@ buildValFromInj {Γ' = τ ∷ Γ'} inj env =
   push (valprj env (inj Z))
        (buildValFromInj (inj ∘ S) env)
 
-match-inj : {tag : PDTag} { A : Set } ( σ τ : Typ tag ) → (Rep σ → A) → (Rep τ → A) → (Rep (σ :+ τ)) → A
-match-inj _ _ f g (inj₁ x) = f x
-match-inj _ _ f g (inj₂ y) = g y
-
 -- The semantics of the term language. Aside from returning the evaluation
 -- result, this also returns an integer recording the number of evaluation
 -- steps taken during evaluation. This integer is used for complexity analysis.
@@ -534,13 +530,13 @@ eval env (inr e) =
   let e , ce = eval env e
   in inj₂ e , one + ce
 eval env (case' {σ = σ} {τ = τ} {ρ = ρ} e1 e2 e3) =
+  -- Question: Is it okay to change this definition from a lambda case to the named version from Data.Sum?
   let v , cv = eval env e1
-  in (match-inj σ τ
-       (λ x → let z , cz = eval (push x env) e2 
-              in z , one + cv + cz) 
-       (λ y → let z , cz = eval (push y env) e3 
+  in [ (λ x → let z , cz = eval (push x env) e2 
+              in z , one + cv + cz )
+     , (λ y → let z , cz = eval (push y env) e3 
               in z , one + cv + cz)
-     ) v
+     ] v
 eval env (pureevm {Γ' = Γ'} e) =
   let e' , ce = eval env e
   in LACM.pure e' , one + ce

@@ -9,7 +9,7 @@ open import Data.Integer using (ℤ)
 open import Data.List using (map; _∷_; [])
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_)
-open import Function.Base using (_∘_; flip; _$_)
+open import Function.Base using (_∘_; flip; _$_; case_of_)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; inspect; [_])
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
@@ -204,11 +204,14 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
         ih = {!   !}
         dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) (sparse2dense ctg)
         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( dsem-l .fst , zerovDense (D2τ' τ))
+        lemma = DSemᵀ-lemma-interp-case a (sparse2dense ctg) e l r
+        lemma2 = cong (λ q → case q of _) interp-e-val≡inj₁-x
+        lemma3 = {! rewrite-case-of  interp-e-val≡inj₁-x   !}
     in begin
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd))
     ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
     (Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL {! (interp (case' e l r))  !} ⟩
+    ≡⟨ ev+congL {! rewrite-case-of   !} ⟩
     Etup2EV (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
     ∎
 ... | inj₂ x | [ interp-e-val≡inj₂-x ]

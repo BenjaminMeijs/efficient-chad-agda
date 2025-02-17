@@ -1,4 +1,4 @@
-module lemmas where
+module cost.lemmas where
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Unit

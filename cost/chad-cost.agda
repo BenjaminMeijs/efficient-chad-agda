@@ -1,3 +1,4 @@
+module cost.chad-cost where
 open import Agda.Builtin.IO
 open import Agda.Builtin.Bool
 open import Agda.Builtin.Equality
@@ -30,7 +31,7 @@ open import spec
 open import setup
 open import eval-sink-commute
 open import chad-preserves-primal
-open import lemmas
+open import cost.lemmas
 import spec.LACM as LACM
 open LACM using (LACM)
 
