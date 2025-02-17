@@ -18,7 +18,7 @@ import spec.LACM as LACM
 open import correctness.spec
 open import correctness.dsem
 open import correctness.lemmas
-open import correctness.chad-preserves-congruence
+open import correctness.chad-preserves-compatibility
 open import chad-preserves-primal
 
 gnoc : {A B : Set} {x y : A} → (x ≡ y) → (f : A → B ) → f x ≡ f y

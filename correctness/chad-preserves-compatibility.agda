@@ -1,21 +1,57 @@
-module correctness.chad-preserves-congruence where
+module correctness.chad-preserves-compatibility where
 
--- open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (tt)
 open import Agda.Builtin.Maybe using (just; nothing)
-
-open import Data.List using (map)
+open import Data.List using (_∷_; map)
 open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality using (sym; inspect; [_])
 
 open import spec
-import spec.LACM as LACM
 open import correctness.spec
-open import correctness.lemmas
+open import correctness.lemmas.value-compatibility-lemmas
+open import correctness.lemmas.simplify-exec-chad
+open import correctness.lemmas.LACMexec-lemmas
 open import chad-preserves-primal
 
--- TODO rename to compatability
+-- ===============================
+-- Operations preserving compatibility
+-- ===============================
+plusv-preserves-≃τ : {τ : Typ Pr}
+    → (x : LinRep (D2τ' τ)) (y : LinRep (D2τ' τ)) (z : Rep τ)
+    → (Compatible-LinReps x y) → (x ≃τ z) → (y ≃τ z)
+    → fst (plusv (D2τ' τ) x y) ≃τ z
+plusv-preserves-≃τ {Un} _ _ _ _ _ _ = tt
+plusv-preserves-≃τ {Inte} _ _ _ _ _ _ = tt
+plusv-preserves-≃τ {R} _ _ _ _ _ _ = tt
+plusv-preserves-≃τ {σ :* τ} (just x) (just x₁) z w1 w2 w3
+    = plusv-preserves-≃τ (x .fst) (x₁ .fst) (z .fst) (w1 .fst) (w2 .fst) (w3 .fst) , plusv-preserves-≃τ (x .snd) (x₁ .snd) (z .snd) (w1 .snd) (w2 .snd) (w3 .snd)
+plusv-preserves-≃τ {σ :* τ} (just (x , xs)) nothing (z , zs) tt w2 w3 = w2 .fst , w2 .snd
+plusv-preserves-≃τ {σ :* τ} nothing (just (y , ys)) (z , zs) w1 w2 w3 = w3 .fst , w3 .snd
+plusv-preserves-≃τ {σ :* τ} nothing nothing _ _ _ _ = tt
+plusv-preserves-≃τ {σ :+ τ} (just (inj₁ x)) (just (inj₁ x₁)) (inj₁ x₂) w1 w2 w3 = plusv-preserves-≃τ x x₁ x₂ w1 w2 w3
+plusv-preserves-≃τ {σ :+ τ} (just (inj₂ y₁)) (just (inj₂ y₂)) (inj₂ y) w1 w2 w3 = plusv-preserves-≃τ y₁ y₂ y w1 w2 w3
+plusv-preserves-≃τ {σ :+ τ} (just _) nothing (inj₁ x₁) w1 w2 w3 = w2
+plusv-preserves-≃τ {σ :+ τ} (just _) nothing (inj₂ y) w1 w2 w3 = w2
+plusv-preserves-≃τ {σ :+ τ} nothing (just _) (inj₁ _) w1 w2 w3 = w3
+plusv-preserves-≃τ {σ :+ τ} nothing (just _) (inj₂ _) w1 w2 w3 = w3
+plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₁ _) w1 w2 w3 = tt
+plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₂ _) w1 w2 w3 = tt
+
+addLEτ-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr}
+            → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
+            → (evIn ≃Γ val) → (Compatible-idx-LEtup (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
+            → addLEτ (convIdx D2τ' idx) ctg evIn ≃Γ val
+addLEτ-preserves-≃Γ {Un ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
+addLEτ-preserves-≃Γ {Inte ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
+addLEτ-preserves-≃Γ {R ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
+addLEτ-preserves-≃Γ {(σ :* τ) ∷ Γ} Z ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {σ :* τ} ctg x y w2 w3 (w1 .fst) , (w1 .snd)
+addLEτ-preserves-≃Γ {(σ :+ τ) ∷ Γ} Z ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {σ :+ τ} ctg x y w2 w3 (w1 .fst) , (w1 .snd)
+addLEτ-preserves-≃Γ {Un ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
+addLEτ-preserves-≃Γ {Inte ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
+addLEτ-preserves-≃Γ {R ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
+addLEτ-preserves-≃Γ {(σ :* τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3 
+addLEτ-preserves-≃Γ {(σ :+ τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3
 
 dprim'-preserves-≃τ : {Γ : Env Pr} {σ τ : Typ Pr}
       (val : Val Pr Γ) (ctg : LinRep (D2τ' τ)) (op : Primop Pr σ τ) (t : Term Pr Γ σ) 
@@ -31,6 +67,9 @@ dprim'-preserves-≃τ val ctg IMUL t w = tt , tt
 dprim'-preserves-≃τ val ctg INEG t w = tt
 dprim'-preserves-≃τ val ctg SIGN t w = tt
 
+-- ===============================
+-- CHAD preserves compatibility
+-- ===============================
 chad-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr} 
                 → (val : Val Pr Γ)
                   (evIn : LEtup (map D2τ' Γ) )
@@ -44,9 +83,9 @@ chad-preserves-≃Γ _ evIn _ unit _ w2
 chad-preserves-≃Γ {Γ} val evIn ctg (var x) w1 w2
   using idx ← convIdx D2τ' x
   rewrite LACMexec-add idx ctg evIn
-  = let ≃₄evIn = ≃τ-and-≃Γ-implies-≃₄ x ctg evIn val w1 w2 
-        ≃₅evIn = ≃τ-and-≃Γ-implies-≃₅ x ctg evIn val w1 w2 
-    in addLEτ-preserves-≃Γ x ctg evIn val w2 ≃₄evIn ≃₅evIn
+  = let ≃evIn-etup = ≃τ-and-≃Γ-implies-Compatible-idx-LEtup x ctg evIn val w1 w2 
+        ≃evIn-val = ≃τ-and-≃Γ-implies-Compatible-idx-val x ctg evIn val w1 w2 
+    in addLEτ-preserves-≃Γ x ctg evIn val w2 ≃evIn-etup ≃evIn-val
 chad-preserves-≃Γ {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2
   using m1 ← interp (chad l) (primalVal val) .snd (zerov (D2τ' σ) .fst) .fst
   using m2 ← interp (chad r) (primalVal val) .snd (zerov (D2τ' τ) .fst) .fst

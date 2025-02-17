@@ -118,31 +118,5 @@ module value-compatibility where
     _≃Γ_ {(σ :* τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :* τ} x y) × xs ≃Γ ys
     _≃Γ_ {(σ :+ τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :+ τ} x y) × xs ≃Γ ys
 
-
-    -- Note that _≃₃_ and _≃₄_ are not really part of the specification for the correctnessproof
-    -- These witnesses are only used as preconditions for (internal) lemmas.
-    _≃₃_ : {τ : LTyp} → LinRep τ → LinRep τ → Set
-    _≃₃_ {LUn} x y = ⊤
-    _≃₃_ {LR} x y = ⊤
-    _≃₃_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = (x1 ≃₃ y1) × (x2 ≃₃ y2) 
-    _≃₃_ {σ :*! τ} (just x) nothing = ⊤
-    _≃₃_ {σ :*! τ} nothing (just x) = ⊤
-    _≃₃_ {σ :*! τ} nothing nothing = ⊤
-    _≃₃_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃₃ y
-    _≃₃_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = ⊥
-    _≃₃_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = ⊥
-    _≃₃_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃₃ y
-    _≃₃_ {σ :+! τ} (just x) nothing = ⊤
-    _≃₃_ {σ :+! τ} nothing (just x) = ⊤
-    _≃₃_ {σ :+! τ} nothing nothing = ⊤
-
-    _≃₄_ : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
-    _≃₄_ {Γ} {τ} (Z , x) (y , ys) = x ≃₃ y
-    _≃₄_ {Γ} {τ} (S idx , x) (y , ys) = (idx , x) ≃₄ ys
-
-    _≃₅_ : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
-    _≃₅_ {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 
-    _≃₅_ {Γ} {τ} (S idx , x) (push y ys) = (idx , x) ≃₅ ys
-
   
 open value-compatibility public
