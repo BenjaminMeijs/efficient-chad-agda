@@ -34,18 +34,18 @@ open utility0.LACMconvenience public
 open utility0.DenseLinRepresentation public
 
 module sparse-LTyp-harmony where
-    _≃₁_ : {τ : LTyp} → LinRep τ → LinRep τ → Bool
-    _≃₁_ {LUn} x y = true
-    _≃₁_ {LR} x y = true
+    _≃τ_ : {τ : LTyp} → LinRep τ → LinRep τ → Bool
+    _≃τ_ {LUn} x y = true
+    _≃τ_ {LR} x y = true
 
-    _≃₁_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = x1 ≃₁ y1 ∧ x2 ≃₁ y2
-    _≃₁_ {σ :*! τ} x y = true
+    _≃τ_ {σ :*! τ} (just (x1 , x2)) (just (y1 , y2)) = x1 ≃τ y1 ∧ x2 ≃τ y2
+    _≃τ_ {σ :*! τ} x y = true
 
-    _≃₁_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃₁ y
-    _≃₁_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = false
-    _≃₁_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = false
-    _≃₁_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃₁ y
-    _≃₁_ {σ :+! τ} x y = true
+    _≃τ_ {σ :+! τ} (just (inj₁ x)) (just (inj₁ y)) = x ≃τ y
+    _≃τ_ {σ :+! τ} (just (inj₁ x)) (just (inj₂ y)) = false
+    _≃τ_ {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) = false
+    _≃τ_ {σ :+! τ} (just (inj₂ x)) (just (inj₂ y)) = x ≃τ y
+    _≃τ_ {σ :+! τ} x y = true
 
     _≃_ : {τ : LTyp} → LinRep τ → LinRep τ → Set
     _≃_ {LUn} x y = ⊤

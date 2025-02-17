@@ -98,25 +98,25 @@ module value-compatibility where
     -- x ≃ y is a witness to the fact that x and y are compatible (of the same shape) in their constructors for sum types.
     -- i.e. whenever x is inj₁, y is also inj₁
 
-    _≃₁_ : {τ : Typ Pr} → LinRep (D2τ' τ) → Rep τ  → Set
-    _≃₁_ {Un} x y = ⊤
-    _≃₁_ {Inte} x y = ⊤
-    _≃₁_ {R} x y = ⊤
-    _≃₁_ {σ :* τ} (just (x1 , x2)) (y1 , y2) = x1 ≃₁ y1 × x2 ≃₁ y2
-    _≃₁_ {σ :* τ} nothing _ = ⊤
-    _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₁ y) = x ≃₁ y
-    _≃₁_ {σ :+ τ} (just (inj₂ x)) (inj₁ y) = ⊥
-    _≃₁_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
-    _≃₁_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃₁ y
-    _≃₁_ {σ :+ τ} nothing _ = ⊤
-≃τ
-    _≃₂_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
-    _≃₂_ {[]} x y = ⊤
-    _≃₂_ {Un ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
-    _≃₂_ {Inte ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
-    _≃₂_ {R ∷ Γ} (x , xs) (push y ys) = xs ≃₂ ys
-    _≃₂_ {(σ :* τ) ∷ Γ} (x , xs) (push y ys) = (_≃₁_ {σ :* τ} x y) × xs ≃₂ ys
-    _≃₂_ {(σ :+ τ) ∷ Γ} (x , xs) (push y ys) = (_≃₁_ {σ :+ τ} x y) × xs ≃₂ ys
+    _≃τ_ : {τ : Typ Pr} → LinRep (D2τ' τ) → Rep τ  → Set
+    _≃τ_ {Un} x y = ⊤
+    _≃τ_ {Inte} x y = ⊤
+    _≃τ_ {R} x y = ⊤
+    _≃τ_ {σ :* τ} (just (x1 , x2)) (y1 , y2) = x1 ≃τ y1 × x2 ≃τ y2
+    _≃τ_ {σ :* τ} nothing _ = ⊤
+    _≃τ_ {σ :+ τ} (just (inj₁ x)) (inj₁ y) = x ≃τ y
+    _≃τ_ {σ :+ τ} (just (inj₂ x)) (inj₁ y) = ⊥
+    _≃τ_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
+    _≃τ_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃τ y
+    _≃τ_ {σ :+ τ} nothing _ = ⊤
+
+    _≃Γ_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
+    _≃Γ_ {[]} x y = ⊤
+    _≃Γ_ {Un ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
+    _≃Γ_ {Inte ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
+    _≃Γ_ {R ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
+    _≃Γ_ {(σ :* τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :* τ} x y) × xs ≃Γ ys
+    _≃Γ_ {(σ :+ τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :+ τ} x y) × xs ≃Γ ys
 
 
     -- Note that _≃₃_ and _≃₄_ are not really part of the specification for the correctnessproof
@@ -141,7 +141,7 @@ module value-compatibility where
     _≃₄_ {Γ} {τ} (S idx , x) (y , ys) = (idx , x) ≃₄ ys
 
     _≃₅_ : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
-    _≃₅_ {Γ} {τ} (Z , x) (push y ys) = x ≃₁ y 
+    _≃₅_ {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 
     _≃₅_ {Γ} {τ} (S idx , x) (push y ys) = (idx , x) ≃₅ ys
 
   
