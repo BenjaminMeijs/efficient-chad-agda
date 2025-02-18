@@ -15,13 +15,7 @@ open import spec
 open import correctness.spec
 
 module plusv-lemmas where
-    -- Floats
-    postulate
-        primFloatPlus-comm : (x : Float) → (y : Float) → primFloatPlus x y ≡ primFloatPlus y x
-        primFloatPlus-zeroR : (x : Float) → primFloatPlus x (primNatToFloat 0) ≡ x
-        primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
-                              → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
-
+    -- This can be derived from the postulations
     primFloatPlus-zeroL : (x : Float) → primFloatPlus (primNatToFloat 0) x ≡ x
 
     -- sparse plus
@@ -49,7 +43,7 @@ module plusv-lemmas where
                             →  sparse2dense (plusv τ x y .fst)
                              ≡ plusvDense τ (sparse2dense x) (sparse2dense y)
     -- ==================
-    -- Proofs for: sparse plus
+    -- Proofs for: primitive operations on floats
     -- ==================
     primFloatPlus-zeroL x = trans (primFloatPlus-comm 0.0 x) (primFloatPlus-zeroR x) 
 
@@ -131,6 +125,7 @@ module plusv-lemmas where
     plusv-equiv-plusvDense {σ :+! τ} nothing nothing _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
 open plusv-lemmas public
 
+
 ev+congR : {Γ : LEnv} {x : EV Γ} {y : EV Γ} {z : EV Γ}
             → y ≡ z → x ev+ y ≡ x ev+ z
 ev+congL : {Γ : LEnv} {x : EV Γ} {y : EV Γ} {z : EV Γ}
@@ -143,6 +138,7 @@ ev+comm : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → a ev+ b ≡ b ev+ a
 ev+assoc : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → (c : EV Γ)
             → (a ev+ b) ev+ c ≡ a ev+ (b ev+ c)
 
+-- Relation of EV to other constructs
 Etup-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ EV (map D2τ' Γ)
 Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → Etup2EV (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
 plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )

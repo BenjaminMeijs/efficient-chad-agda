@@ -23,9 +23,8 @@ private
 LACMsequence : ∀ {Γ : LEnv} {a b : Set} -> LACM Γ a -> LACM Γ b -> LACM Γ b
 LACMsequence f g = LACMbind f ( λ _ → g )
 
--- executing a pure computation doesn't change the environment, exec (pure x) env ≡ env
 LACMexec-pure : ∀ {Γ : LEnv} {a : Set} → (x : a)
-    → (ev : LEtup Γ) -- ev: Environment Vector
+    → (ev : LEtup Γ)
     → LACMexec {Γ} (LACM.pure x) ev ≡ ev
 LACMexec-pure {Γ = Γ} x ev = fst $ LACM.run-pure x ev
 
@@ -64,13 +63,3 @@ LACMexec-sequence : ∀ {Γ : LEnv} {a b : Set}
           evOut2 = LACMexec m2 evAux
     in (evOut1 ≡ evOut2) 
 LACMexec-sequence m1 m2 ev = LACMexec-bind m1 (λ _ → m2) ev
-
-LACMexec-sequence-unchanged : ∀ {Γ : LEnv} {a b : Set} 
-    → (m1 : LACM Γ a) 
-    → (m2 : LACM Γ b)
-    → (evIn : LEtup Γ)
-    → let evOut1 = LACMexec (LACMsequence m1 m2) evIn
-          evAux  = LACMexec m1 evIn
-          evOut2 = LACMexec m2 evIn
-    in ((evAux ≡ evIn) → (evOut1 ≡ evOut2))
-LACMexec-sequence-unchanged m1 m2 ev w = trans (LACMexec-sequence m1 m2 ev) (cong₂ LACMexec refl w)

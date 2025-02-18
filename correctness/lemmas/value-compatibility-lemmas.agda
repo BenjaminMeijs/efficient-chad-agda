@@ -23,32 +23,25 @@ open import correctness.spec
 ≃τ-zerov ( σ :* τ ) _ = tt
 ≃τ-zerov ( σ :+ τ ) _ = tt
 
-≃τ-intro-inj₁ : ( σ τ : Typ Pr ) → (x : LinRep (D2τ' τ))  ( y : Rep τ )  → x ≃τ y → _≃τ_ {τ :+ σ} (just (inj₁ x)) (inj₁ y)
-≃τ-intro-inj₁ σ Un x y w = tt
-≃τ-intro-inj₁ σ Inte x y w = tt
-≃τ-intro-inj₁ σ R x y w = tt
-≃τ-intro-inj₁ σ (τ1 :* τ2) x y w = w
-≃τ-intro-inj₁ σ (τ1 :+ τ2) x y w = w
-
-≃τ-transL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
+≃τ-congL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
         → x ≡ y → x ≃τ z → y ≃τ z
-≃τ-transL τ x y z refl w2 = w2
+≃τ-congL τ x y z refl w2 = w2
 
-≃τ-transR : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : Rep τ ) → ( z : Rep τ )
+≃τ-congR : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : Rep τ ) → ( z : Rep τ )
         → y ≡ z → x ≃τ y → x ≃τ z
-≃τ-transR τ x y z refl w = w
+≃τ-congR τ x y z refl w = w
 
-≃Γ-transL : {Γ : Env Pr} {τ : Typ Pr} 
+≃Γ-congL : {Γ : Env Pr} {τ : Typ Pr} 
         → ( x : LEtup (map D2τ' Γ) ) → ( y : LEtup (map D2τ' Γ) ) → ( z : Val Pr Γ )
         → x ≡ y → x ≃Γ z → y ≃Γ z
-≃Γ-transL {[]}    {τ} _ _ _ _    _ = tt
-≃Γ-transL {σ ∷ Γ} {τ} _ _ _ refl w = w
+≃Γ-congL {[]}    {τ} _ _ _ _    _ = tt
+≃Γ-congL {σ ∷ Γ} {τ} _ _ _ refl w = w
 
-≃Γ-transR : {Γ : Env Pr} {τ : Typ Pr} 
+≃Γ-congR : {Γ : Env Pr} {τ : Typ Pr} 
         → ( x : LEtup (map D2τ' Γ) ) → ( y : Val Pr Γ ) → ( z : Val Pr Γ )
         → y ≡ z → x ≃Γ y → x ≃Γ z
-≃Γ-transR {[]}    {τ} _ _ _ _    _ = tt
-≃Γ-transR {σ ∷ Γ} {τ} _ _ _ refl w = w
+≃Γ-congR {[]}    {τ} _ _ _ _    _ = tt
+≃Γ-congR {σ ∷ Γ} {τ} _ _ _ refl w = w
 
 ≃Γ-fst : {Γ' : Env Pr} {τ : Typ Pr} 
     → let Γ = τ ∷ Γ' in ( x : LEtup (map D2τ' Γ) )

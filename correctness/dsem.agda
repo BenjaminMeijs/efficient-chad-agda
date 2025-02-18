@@ -22,14 +22,6 @@ onehot : {Γ : Env Pr} {τ : Typ Pr}
 onehot {ρ ∷ Γ} {τ} Z       x = x , zerovDense _
 onehot {ρ ∷ Γ} {τ} (S idx) x = zerovDense _ , onehot idx x
 
-WitnessInj₁ : {A : Set} {B : Set} → A ⊎ B → Set
-WitnessInj₁ (inj₁ _) = ⊤
-WitnessInj₁ (inj₂ _) = ⊥
-
-WitnessInj₂ : {A : Set} {B : Set} → A ⊎ B → Set
-WitnessInj₂ (inj₁ _) = ⊥
-WitnessInj₂ (inj₂ _) = ⊤
-
 postulate
     -- ======================
     -- Definition

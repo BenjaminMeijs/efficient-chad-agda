@@ -20,7 +20,7 @@ interp-sink-commute : ∀ {tag} {Γ Γ' : Env tag} {τ : Typ tag}
 interp-sink-commute env env2 w s e = cong fst (eval-sink-commute env env2 w s e)
 
 -- Lemma using interp-sink-commute on a weakening of Copy-Skip-End
--- This ends up being used for the let' and case' constructors.
+-- This ends up being used for let' and case'.
 interp-sink-commute-Copy-Skip-End : ∀ {tag} {Γ : Env tag} {σ τ ρ : Typ tag} {y : Rep ρ}
                             → (x : Rep σ)
                             → (env : Val tag Γ)
@@ -32,6 +32,8 @@ interp-sink-commute-Copy-Skip-End : ∀ {tag} {Γ : Env tag} {σ τ ρ : Typ tag
 interp-sink-commute-Copy-Skip-End x env t = sym $
     interp-sink-commute (push x env) (push x (push _ env)) (WCopy (WSkip WEnd)) (refl , forall-fin-trivial (λ _ → refl )) t
 
+-- Lemma using interp-sink-commute on a weakening of Copy-Copy-Cut
+-- This ends up being used for prim op.
 interp-sink-commute-Copy-Copy-Cut : ∀ {tag} {Γ : Env tag} {σ1 σ2 τ : Typ tag}
                             → ( x : Rep σ1 )
                             → ( y : Rep σ2 )

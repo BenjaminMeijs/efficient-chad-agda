@@ -51,13 +51,13 @@ chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr}
                 → LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) evIn)
                   ≡ Etup2EV {Γ} (DSemᵀ {σ} {τ} (interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV {LΓ} evIn
 chad-equiv-DSemᵀ {Γ} a evIn ctg unit _ _ =
-    begin
-    LEtup2EV (LACMexec (interp (chad unit) (Etup-to-val-primal a) .snd ctg .fst) evIn)
-      ≡⟨ gnoc (LACMexec-pure tt evIn) LEtup2EV ⟩
-    LEtup2EV evIn
-      ≡⟨ sym (ev+zeroL' DSemᵀ-lemma-ctg-zeroLEnv') ⟩
-    Etup2EV (DSemᵀ (interp {Γ = Γ} unit ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
-    ∎
+  begin
+  LEtup2EV (LACMexec (interp (chad unit) (Etup-to-val-primal a) .snd ctg .fst) evIn)
+    ≡⟨ gnoc (LACMexec-pure tt evIn) LEtup2EV ⟩
+  LEtup2EV evIn
+    ≡⟨ sym (ev+zeroL' DSemᵀ-lemma-ctg-zeroLEnv') ⟩
+  Etup2EV (DSemᵀ (interp {Γ = Γ} unit ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
+  ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (var x) w1 w2 =
   let idx = convIdx D2τ' x
   in begin
@@ -85,21 +85,21 @@ chad-equiv-DSemᵀ {Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2 =
     ≡⟨ sym (ev+zeroL' DSemᵀ-lemma-ctg-zeroLEnv') ⟩
   Etup2EV (DSemᵀ (interp (pair l r) ∘ Etup-to-val) a (zerovDense (D2τ' σ) , zerovDense (D2τ' τ))) ev+ LEtup2EV evIn
   ∎   
-chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) w1 w2
-  = let ctgL = _ ; ctgR = _
-        m1 = interp (chad l) (Etup-to-val-primal a) .snd ctgL .fst
-        m2 = interp (chad r) (Etup-to-val-primal a) .snd ctgR .fst
-        ihr = chad-equiv-DSemᵀ a (LACMexec m1 evIn) ctgR r (w1 .snd) (chad-preserves-≃Γ (Etup-to-val a) evIn ctgL l (w1 .fst) w2)
-        ihl = chad-equiv-DSemᵀ a evIn ctgL l (w1 .fst) w2 
-    in begin
-    LEtup2EV (LACMexec (LACMsequence m1 m2) evIn)
-      ≡⟨ gnoc (LACMexec-sequence m1 m2 evIn) LEtup2EV ⟩
-    LEtup2EV (LACMexec m2 (LACMexec m1 evIn))
-      ≡⟨ trans ihr (trans (ev+congR ihl) (trans (sym (ev+assoc _ _ _)  ) (ev+congL (ev+comm _ _)) ))  ⟩
-    (Etup2EV (DSemᵀ (interp l ∘ Etup-to-val) a (sparse2dense (ctg .fst))) ev+ Etup2EV (DSemᵀ (interp r ∘ Etup-to-val) a (sparse2dense (ctg .snd))) ) ev+ LEtup2EV evIn
-      ≡⟨ ev+congL (DSemᵀ-lemma-pair _ _ a _ _) ⟩
-    Etup2EV (DSemᵀ (interp (pair l r) ∘ Etup-to-val) a (sparse2dense {D2τ' σ :*! D2τ' τ} (just ctg))) ev+ LEtup2EV evIn
-    ∎
+chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) w1 w2 =
+  let ctgL = _ ; ctgR = _
+      m1 = interp (chad l) (Etup-to-val-primal a) .snd ctgL .fst
+      m2 = interp (chad r) (Etup-to-val-primal a) .snd ctgR .fst
+      ihr = chad-equiv-DSemᵀ a (LACMexec m1 evIn) ctgR r (w1 .snd) (chad-preserves-≃Γ (Etup-to-val a) evIn ctgL l (w1 .fst) w2)
+      ihl = chad-equiv-DSemᵀ a evIn ctgL l (w1 .fst) w2 
+  in begin
+  LEtup2EV (LACMexec (LACMsequence m1 m2) evIn)
+    ≡⟨ gnoc (LACMexec-sequence m1 m2 evIn) LEtup2EV ⟩
+  LEtup2EV (LACMexec m2 (LACMexec m1 evIn))
+    ≡⟨ trans ihr (trans (ev+congR ihl) (trans (sym (ev+assoc _ _ _)  ) (ev+congL (ev+comm _ _)) ))  ⟩
+  (Etup2EV (DSemᵀ (interp l ∘ Etup-to-val) a (sparse2dense (ctg .fst))) ev+ Etup2EV (DSemᵀ (interp r ∘ Etup-to-val) a (sparse2dense (ctg .snd))) ) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (DSemᵀ-lemma-pair _ _ a _ _) ⟩
+  Etup2EV (DSemᵀ (interp (pair l r) ∘ Etup-to-val) a (sparse2dense {D2τ' σ :*! D2τ' τ} (just ctg))) ev+ LEtup2EV evIn
+  ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (fst' {σ = σ} {τ = τ} t) w1 w2 =
   let ctg' = (just (ctg , zerov (D2τ' τ) .fst))
   in begin
@@ -136,7 +136,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2 =
       dsem-rhs = DSemᵀ (interp rhs ∘ Etup-to-val) a (Etup2EV dsem-body .fst)
   in begin
   LEtup2EV (LACMexec (interp (chad (let' rhs body)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
-    ≡⟨ gnoc (simplify-exec-chad-let a evIn ctg rhs body) LEtup2EV ⟩
+    ≡⟨ gnoc (simplify-exec-chad-let a Etup-to-val evIn ctg rhs body) LEtup2EV ⟩
   LEtup2EV (LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd))
     ≡⟨ trans ih (sym (ev+assoc _ _ _)) ⟩
   (Etup2EV dsem-rhs  ev+ Etup2EV dsem-body .snd ) ev+ LEtup2EV evIn
@@ -196,27 +196,53 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
   rewrite chad-preserves-primal (Etup-to-val a) e
   with interp e (Etup-to-val a) | inspect (interp e) (Etup-to-val a)
 ... | inj₁ x | [ interp-e-val≡inj₁-x ]
-  rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e l x inj₁ =
-    let ev' = (zerov (D2τ' σ) .fst , evIn)
+  rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e l x inj₁
+  = let ev' = (zerov (D2τ' σ) .fst , evIn)
         l' = LACMexec (interp (chad l) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
 
         ev'≃ev = (≃Γ-intro-zero {τ = σ} evIn (Etup-to-val a) x w2)
         l'-preserves≃Γ = chad-preserves-≃Γ (Etup-to-val (x , a)) ev' ctg l w1 ev'≃ev
-        l'-preserves≃τ = ≃τ-transR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x (Etup-to-val a) l'-preserves≃Γ)
+        l'-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x (Etup-to-val a) l'-preserves≃Γ)
 
         ih-e = chad-equiv-DSemᵀ a (l' .snd) (just (inj₁ (l' .fst))) e l'-preserves≃τ (≃Γ-snd l' x (Etup-to-val a) l'-preserves≃Γ)
         ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg l w1 ev'≃ev )
                      (cong₂ _,_ (plusvDense-zeroR' {{zerov-equiv-zerovDense (D2τ' σ)}}) refl)
         ih = trans ih-e (cong₂ _ev+_ (cong (λ q → Etup2EV (DSemᵀ (interp e ∘ Etup-to-val) a (q , zerovDense (D2τ' τ)))) (cong fst ih-l)) (cong snd ih-l)) -- trans ih-e ({! ih-l  !})
+
         dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) (sparse2dense ctg)
         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( dsem-l .fst , zerovDense (D2τ' τ))
         lemma-dsem-case = DSemᵀ-lemma-interp-case-apply-refl a (sparse2dense ctg) e l r (inj₁ x) interp-e-val≡inj₁-x
     in begin
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd))
-    ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
+      ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
     (Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL lemma-dsem-case ⟩
+      ≡⟨ ev+congL lemma-dsem-case ⟩
     Etup2EV (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
     ∎
-... | inj₂ x | [ interp-e-val≡inj₂-x ]
-  = {!   !}-- 
+
+... | inj₂ x | [ interp-e-val≡inj₂-x ] 
+  -- Question: deze 2 gevallen lijken super veel op elkaar. Hoe zou ik dit is mooier kunnen opschrijven?
+  rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e r x inj₂
+  = let ev' = (zerov (D2τ' τ) .fst , evIn)
+        body = LACMexec (interp (chad r) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
+
+        ev'≃ev = (≃Γ-intro-zero {τ = τ} evIn (Etup-to-val a) x w2)
+        body-preserves≃Γ = chad-preserves-≃Γ (Etup-to-val (x , a)) ev' ctg r w1 ev'≃ev
+        body-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₂ (body .fst))) (inj₂ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₂-x) (≃Γ-fst body x (Etup-to-val a) body-preserves≃Γ)
+
+        ih-e = chad-equiv-DSemᵀ a (body .snd) (just (inj₂ (body .fst))) e body-preserves≃τ (≃Γ-snd body x (Etup-to-val a) body-preserves≃Γ)
+        ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg r w1 ev'≃ev )
+                      (cong₂ _,_ (plusvDense-zeroR' {{zerov-equiv-zerovDense (D2τ' τ)}}) refl)
+        ih = trans ih-e (cong₂ _ev+_ (cong (λ q → Etup2EV (DSemᵀ (interp e ∘ Etup-to-val) a (zerovDense (D2τ' σ) , q))) (cong fst ih-l)) (cong snd ih-l))
+
+        dsem-body = DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) (sparse2dense ctg)
+        dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( zerovDense (D2τ' σ) , dsem-body .fst)
+
+        lemma-dsem-case = DSemᵀ-lemma-interp-case-apply-refl a (sparse2dense ctg) e l r (inj₂ x) interp-e-val≡inj₂-x
+    in begin
+    LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₂ (body .fst))) .fst) (body .snd))
+      ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
+    (Etup2EV dsem-e ev+ Etup2EV (dsem-body .snd)) ev+ LEtup2EV evIn
+      ≡⟨ ev+congL lemma-dsem-case ⟩
+    Etup2EV (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
+    ∎

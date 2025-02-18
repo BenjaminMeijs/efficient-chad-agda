@@ -51,50 +51,23 @@ simplify-exec-chad-snd {Γ} {σ} {τ} val evIn ctg t
   rewrite interp-zerot-equiv-zerov {Lin (D2τ' τ) ∷ ρ ∷ []} {val2} σ
   = refl
 
-simplify-exec-chad-let : {Γ : Env Pr} {τ σ : Typ Pr} 
-    → (a : Rep (Etup Pr Γ))
-      (evIn : LEtup (map D2τ' Γ) )
+-- This lemma is used to simplify LACMexec of a let'
+-- it is polymorphic in the valuation v for example:
+-- -> A is Val Pr Γ, toVal is id
+-- -> A is Etup Pr Γ, toVal is Etup-to-val
+simplify-exec-chad-let : {A : Set} {Γ : Env Pr} {τ σ : Typ Pr} 
+    → (v : A) (toVal : A → Val Pr Γ)
+    → (evIn : LEtup (map D2τ' Γ) )
       (ctg : LinRep (D2τ' τ))
     → (rhs : Term Pr Γ σ)
       (body : Term Pr (σ ∷ Γ) τ)
-    → let val' = Etup-to-val-primal ((interp rhs (Etup-to-val a)) , a)
+    → let val' = primalVal (push (interp rhs (toVal v)) (toVal v))
           body' = interp (chad body) val' .snd ctg .fst
           ev-body = LACMexec body' (zerov (D2τ' σ) .fst , evIn)
-      in LACMexec (interp (chad (let' rhs body)) (Etup-to-val-primal a) .snd ctg .fst ) evIn
-          ≡ LACMexec (interp (chad rhs) (Etup-to-val-primal a) .snd (ev-body .fst) .fst) (ev-body .snd)
-simplify-exec-chad-let {Γ} {τ} {σ} a evIn ctg rhs body
-  using val ← Etup-to-val a
-  using ρ1 ← D1τ σ :* (D2τ σ :-> D2Γ Γ)
-  using ρ2 ← D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))
-  using ρ3 ← Lin (D2τ' τ)
-  rewrite chad-preserves-primal val rhs
-  rewrite interp-sink-commute-Copy-Skip-End {ρ = ρ1} {y = interp (chad rhs) (primalVal val)} (primal σ (interp rhs val)) (primalVal val) (chad body)
-  using val-verbose ← 
-    (push {Du} {ρ2 ∷ ρ1 ∷ []} {ρ3} ctg
-    (push {Du} {ρ1 ∷ []} {ρ2} (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)))
-    (push {Du} {[]} {ρ1} (interp (chad rhs) (primalVal val)) empty)))
-  rewrite interp-zerot-equiv-zerov {ρ3 ∷ ρ2 ∷ ρ1 ∷ []} {val-verbose} σ
-  using m1 ← λ x → ( snd (interp (chad rhs) (primalVal val)) (fst x) .fst , ℤ.pos 5 Data.Integer.+ snd (interp (chad rhs) (primalVal val)) (fst x) .snd )
-  using m2 ← (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)
-  using elim-bind ← LACM.run-bind (LACM.scope (zerov (D2τ' σ) .fst) m2) m1 evIn .fst
-  rewrite elim-bind
-  using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
-  rewrite elim-scope-fst
-  rewrite elim-scope-snd
-  = refl
-
-simplify-exec-chad-let-val : {Γ : Env Pr} {τ σ : Typ Pr} 
-    → (val : Val Pr Γ)
-      (evIn : LEtup (map D2τ' Γ) )
-      (ctg : LinRep (D2τ' τ))
-    → (rhs : Term Pr Γ σ)
-      (body : Term Pr (σ ∷ Γ) τ)
-    → let val' = primalVal (push (interp rhs val) val)
-          body' = interp (chad body) val' .snd ctg .fst
-          ev-body = LACMexec body' (zerov (D2τ' σ) .fst , evIn)
-      in LACMexec (interp (chad (let' rhs body)) (primalVal val) .snd ctg .fst ) evIn
-          ≡ LACMexec (interp (chad rhs) (primalVal val) .snd (ev-body .fst) .fst) (ev-body .snd)
-simplify-exec-chad-let-val {Γ} {τ} {σ} val evIn ctg rhs body
+      in LACMexec (interp (chad (let' rhs body)) (primalVal (toVal v)) .snd ctg .fst ) evIn
+          ≡ LACMexec (interp (chad rhs) (primalVal (toVal v)) .snd (ev-body .fst) .fst) (ev-body .snd)
+simplify-exec-chad-let {_} {Γ} {τ} {σ} v toVal evIn ctg rhs body
+  using val ← toVal v
   using ρ1 ← D1τ σ :* (D2τ σ :-> D2Γ Γ)
   using ρ2 ← D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))
   using ρ3 ← Lin (D2τ' τ)
@@ -132,8 +105,8 @@ simplify-exec-chad-primop {Γ} {σ} {τ} val evIn ctg t op
 -- This lemma is used to simplify LACMexec of a case' after having done:
 -- 1. a rewrite using: rewrite chad-preserves-primal val e
 -- 2. a with and case distinction on: interp e val
--- Then, you can use this lemma, for example with a rewrite
--- the argument f should be either inj₁ or inj₂, depending on the case distinction
+-- Then, you can use this lemma, for example with a rewrite.
+-- The argument f should be either inj₁ or inj₂, depending on the case distinction
 simplify-exec-chad-case : {Γ : Env Pr} {σ τ ρ π : Typ Pr} 
   → (val : Val Pr Γ)
     (evIn : LEtup (map D2τ' Γ) )

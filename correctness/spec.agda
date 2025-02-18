@@ -1,6 +1,7 @@
 module correctness.spec where
 
-open import Agda.Builtin.Float using (Float; primFloatPlus)
+open import Agda.Builtin.Equality using (_≡_)
+open import Agda.Builtin.Float using (Float; primFloatPlus; primNatToFloat)
 open import Agda.Builtin.Maybe using (just; nothing)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
@@ -24,6 +25,13 @@ interp e env = fst (eval env e)
 -- Folowing the naming of the haskell state monad (MTL)
 LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
 LACMexec {Γ} f e = LACM.run f e .snd .fst
+
+-- Postulations about Floats
+postulate
+    primFloatPlus-comm : (x : Float) → (y : Float) → primFloatPlus x y ≡ primFloatPlus y x
+    primFloatPlus-zeroR : (x : Float) → primFloatPlus x (primNatToFloat 0) ≡ x
+    primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
+                            → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
 
 module environment-value-tuple where
     Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag
