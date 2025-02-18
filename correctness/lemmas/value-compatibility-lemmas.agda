@@ -23,6 +23,13 @@ open import correctness.spec
 ≃τ-zerov ( σ :* τ ) _ = tt
 ≃τ-zerov ( σ :+ τ ) _ = tt
 
+≃τ-intro-inj₁ : ( σ τ : Typ Pr ) → (x : LinRep (D2τ' τ))  ( y : Rep τ )  → x ≃τ y → _≃τ_ {τ :+ σ} (just (inj₁ x)) (inj₁ y)
+≃τ-intro-inj₁ σ Un x y w = tt
+≃τ-intro-inj₁ σ Inte x y w = tt
+≃τ-intro-inj₁ σ R x y w = tt
+≃τ-intro-inj₁ σ (τ1 :* τ2) x y w = w
+≃τ-intro-inj₁ σ (τ1 :+ τ2) x y w = w
+
 ≃τ-transL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
         → x ≡ y → x ≃τ z → y ≃τ z
 ≃τ-transL τ x y z refl w2 = w2

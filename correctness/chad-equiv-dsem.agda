@@ -199,19 +199,23 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
   rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e l x inj₁ =
     let ev' = (zerov (D2τ' σ) .fst , evIn)
         l' = LACMexec (interp (chad l) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
-        ih-e = chad-equiv-DSemᵀ a (l' .snd) (just (inj₁ (l' .fst))) e {!   !} {!   !}
-        ih-l = chad-equiv-DSemᵀ (x , a) ev' ctg l {!   !} {!   !}
-        ih = {!   !}
+
+        ev'≃ev = (≃Γ-intro-zero {τ = σ} evIn (Etup-to-val a) x w2)
+        l'-preserves≃Γ = chad-preserves-≃Γ (Etup-to-val (x , a)) ev' ctg l w1 ev'≃ev
+        l'-preserves≃τ = ≃τ-transR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x (Etup-to-val a) l'-preserves≃Γ)
+
+        ih-e = chad-equiv-DSemᵀ a (l' .snd) (just (inj₁ (l' .fst))) e l'-preserves≃τ (≃Γ-snd l' x (Etup-to-val a) l'-preserves≃Γ)
+        ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg l w1 ev'≃ev )
+                     (cong₂ _,_ (plusvDense-zeroR' {{zerov-equiv-zerovDense (D2τ' σ)}}) refl)
+        ih = trans ih-e (cong₂ _ev+_ (cong (λ q → Etup2EV (DSemᵀ (interp e ∘ Etup-to-val) a (q , zerovDense (D2τ' τ)))) (cong fst ih-l)) (cong snd ih-l)) -- trans ih-e ({! ih-l  !})
         dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) (sparse2dense ctg)
         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( dsem-l .fst , zerovDense (D2τ' τ))
-        lemma = DSemᵀ-lemma-interp-case a (sparse2dense ctg) e l r
-        lemma2 = cong (λ q → case q of _) interp-e-val≡inj₁-x
-        lemma3 = {! rewrite-case-of  interp-e-val≡inj₁-x   !}
+        lemma-dsem-case = DSemᵀ-lemma-interp-case-apply-refl a (sparse2dense ctg) e l r (inj₁ x) interp-e-val≡inj₁-x
     in begin
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd))
     ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
     (Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL {! rewrite-case-of   !} ⟩
+    ≡⟨ ev+congL lemma-dsem-case ⟩
     Etup2EV (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
     ∎
 ... | inj₂ x | [ interp-e-val≡inj₂-x ]
