@@ -71,7 +71,21 @@ postulate
               → DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a ctg
                 ≡ onehot idx ctg
 
---     DSemᵀ-case : {σ1 σ2 τ : Typ Pr}
+
+--     DSemᵀ-case0 : {σ1 σ2 τ : Typ Pr}
+--               → (a : Rep (σ1 :+ σ2))
+--               → (f : Rep σ1 →  Rep τ) 
+--               → (g : Rep σ2 →  Rep τ) 
+--               → (ctg : LinRepDense (D2τ' τ))
+--               → let h : Rep (σ1 :+ σ2) → Rep τ
+--                     h = [ f , g ]
+--                     k : Rep (σ1 :+ σ2) → LinRepDense (D2τ' σ1) × LinRepDense (D2τ' σ2)
+--                     k = [ (λ x → (DSemᵀ {σ1} {τ} f x ctg) , (zerovDense (D2τ' σ2)))
+--                         , (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg)) ]
+--                 in DSemᵀ {σ1 :+ σ2} {τ} h a ctg
+--                    ≡ k a
+
+--     DSemᵀ-case1: {σ1 σ2 τ : Typ Pr}
 --               → (a : Rep (σ1 :+ σ2))
 --               → (f : Rep σ1 →  Rep τ) 
 --               → (g : Rep σ2 →  Rep τ) 
@@ -182,19 +196,6 @@ postulate
                              in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
                                 ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
                   ] (a .fst)
-
-    DSemᵀ-case0 : {σ1 σ2 τ : Typ Pr}
-              → (a : Rep (σ1 :+ σ2))
-              → (f : Rep σ1 →  Rep τ) 
-              → (g : Rep σ2 →  Rep τ) 
-              → (ctg : LinRepDense (D2τ' τ))
-              → let h : Rep (σ1 :+ σ2) → Rep τ
-                    h = [ f , g ]
-                    k : Rep (σ1 :+ σ2) → LinRepDense (D2τ' σ1) × LinRepDense (D2τ' σ2)
-                    k = [ (λ x → (DSemᵀ {σ1} {τ} f x ctg) , (zerovDense (D2τ' σ2)))
-                        , (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg)) ]
-                in DSemᵀ {σ1 :+ σ2} {τ} h a ctg
-                   ≡ k a
 
     -- Question: Zou een implementatie dit kunnen bewijzen? Ik denk van wel
     DSemᵀ-extensionality : {σ τ : Typ Pr}

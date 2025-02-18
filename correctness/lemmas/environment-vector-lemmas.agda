@@ -14,6 +14,8 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong�
 open import spec
 open import correctness.spec
 
+-- Question: Ik kan deze binary relations ook 'netjes' via 'Algebra.Definitions' van de std lib.
+-- Dat is waarschijnlijk minder handig, maar is dat beter?
 module plusv-lemmas where
     -- This can be derived from the postulations
     primFloatPlus-zeroL : (x : Float) → primFloatPlus (primNatToFloat 0) x ≡ x
