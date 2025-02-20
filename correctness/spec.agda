@@ -94,7 +94,6 @@ module environment-vector where
     zero-EV [] = tt
     zero-EV (x ∷ env) = zerovDense x , zero-EV env 
 
-
     _ev+_ : {Γ : LEnv} → EV Γ → EV Γ → EV Γ
     _ev+_ {[]} tt tt = tt
     _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = plusvDense _ vL vR , (evL ev+ evR)

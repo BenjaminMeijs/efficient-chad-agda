@@ -10,7 +10,7 @@ open import Data.List using (map; _∷_; [])
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_)
 open import Function.Base using (id)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; inspect; [_])
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 -- open import Data.Integer using (ℤ)
 -- open Relation.Binary.PropositionalEquality.≡-Reasoning
 
@@ -19,6 +19,7 @@ import spec.LACM as LACM
 open import correctness.spec
 open import correctness.lemmas
 open import correctness.chad-preserves-compatibility
+open import chad-preserves-primal
 
 addLEτ-ctg-zero : {Γ : Env Pr} {τ : Typ Pr}
                 → (idx : Idx Γ τ)
@@ -47,6 +48,8 @@ dprim'-ctg-zero x ctg w IADD = refl
 dprim'-ctg-zero x ctg w IMUL = refl
 dprim'-ctg-zero x ctg w INEG = w
 dprim'-ctg-zero x ctg w SIGN = refl
+
+-- TODO: Afmaken
 
 chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
                   → let LΓ = map D2τ' Γ in
@@ -97,7 +100,24 @@ chad-ctg-zero {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ w
   rewrite simplify-exec-chad-primop val evIn ctg t op
   = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
     in chad-ctg-zero val evIn (interp (dprim' op) d-op-env) t (dprim'-preserves-≃τ val ctg op t ~τ) ~Γ {!   !}
--- chad-ctg-zero {Γ} val evIn ctg (inl t) ~τ ~Γ w = {!   !}
--- chad-ctg-zero {Γ} val evIn ctg (inr t) ~τ ~Γ w = {!   !}
--- chad-ctg-zero {Γ} val evIn ctg (case' e l r) ~τ ~Γ w = {!   !}
-chad-ctg-zero {Γ} val evIn ctg t ≃ w = {!   !} 
+chad-ctg-zero {Γ} val evIn nothing (inl {σ = σ} t) ~τ ~Γ w 
+  = chad-ctg-zero val evIn (zerov (D2τ' σ) .fst) t (≃τ-zerov σ _) ~Γ (zerov-equiv-zerovDense (D2τ' σ))
+chad-ctg-zero {Γ} val evIn (just (inj₁ ctg)) (inl {σ = σ} t) ~τ ~Γ w
+  = chad-ctg-zero val evIn ctg t ~τ ~Γ (cong fst w) 
+chad-ctg-zero {Γ} val evIn nothing (inr {τ = τ} t) ~τ ~Γ w 
+  = chad-ctg-zero val evIn (zerov (D2τ' τ) .fst) t (≃τ-zerov τ _) ~Γ (zerov-equiv-zerovDense (D2τ' τ))
+chad-ctg-zero {Γ} val evIn (just (inj₂ ctg)) (inr {τ = τ} t) ~τ ~Γ w
+  = chad-ctg-zero val evIn ctg t ~τ ~Γ (cong snd w) 
+chad-ctg-zero {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~τ ~Γ w
+  rewrite chad-preserves-primal val e
+  with interp e val | inspect (interp e) val
+... | inj₁ x | [ interp-e-val≡inj₁-x ]
+  rewrite simplify-exec-chad-case val evIn ctg e l x inj₁
+  = trans ih-e {!   !}
+  where l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
+        compatibility = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero {τ = σ} evIn val x ~Γ)
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x val compatibility)
+        ih-l = chad-ctg-zero (push x val) l' ctg l ~τ compatibility w
+        ih-e = chad-ctg-zero val _ _ e {!   !} {!   !} (cong₂ _,_ {! cong fst ih-l  !} refl)   
+... | inj₂ x | [ interp-e-val≡inj₂-x ]
+  = {!   !} 

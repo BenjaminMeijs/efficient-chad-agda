@@ -7,7 +7,7 @@ open import Data.List using ([]; _∷_; map)
 open import Data.Product using (_×_; uncurry)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Function.Base using (_$_; _∘_; id; case_of_; flip)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; inspect)
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 import Relation.Binary.PropositionalEquality as Equality
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
@@ -216,8 +216,8 @@ DSemᵀ-lemma-interp-case2 {Γ} {σ} {τ} {ρ} a ctg e l r
   using g ← λ a' → [ (λ v → inj₁ (v , a'))
                    , (λ v → inj₂ (v , a'))
                    ] (interp e (Etup-to-val a'))
-  with interp e (Etup-to-val a) | inspect (interp e) (Etup-to-val a)
-... | (inj₁ x) | Equality.[_] interp-e-val≡inj₁-x =
+  with interp e (Etup-to-val a) in interp-e-val≡inj₁-x
+... | (inj₁ x) interp-e-val≡inj₁-x =
   let π = (σ :* Etup Pr Γ) :+ (τ :* Etup Pr Γ)
   in begin
   {!   !}
@@ -252,9 +252,6 @@ DSemᵀ-lemma-interp-case : {Γ : Env Pr} {σ τ ρ : Typ Pr}
              in Etup2EV dsem-e ev+ Etup2EV (dsem-r .snd)
                 ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg))
     ] (interp e (Etup-to-val a))
--- Question: Ik mix hier 2 styles (≡-reasoning en rewrites) in twee 'spiegel' gevallen.
--- Ben je het hiermee eens? Ik heb hier wel een reden voor.
-
 -- This proof consists of two 'mirror' cases (inj₁ and inj₂)
 -- For the inj₁ case we use ≡-reasoning since its verbosity makes clear how the proof works.
 -- For the inj­₂ case we use rewrites for brevity

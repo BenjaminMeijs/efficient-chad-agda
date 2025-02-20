@@ -32,7 +32,6 @@ open utility0.environment-value-tuple public
 open utility0.LACMconvenience public  
 
 module environment-vector-addition where
-    -- Question, Is it smart to base the proof around Environment Vector addition?
     _ev+_ : {Γ : Env Pr} -> LEtup (map D2τ' Γ) -> LEtup (map D2τ' Γ) -> LEtup (map D2τ' Γ)
     _ev+_ {[]} tt tt = tt
     _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = fst (plusv (D2τ' typ) vL vR) , (evL   ev+  evR )

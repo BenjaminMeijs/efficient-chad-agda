@@ -491,7 +491,6 @@ chad-equiv-DSem {Γ = Γ} env evIn (just (inj₁ ctg)) (inl t) =
   evIn ev+ DSem (inj₁ ∘ flip interp  t) env (just (inj₁ ctg))
   ∎
 -- I believe this is a case that is not valid
--- Question: How should I handle this?
 chad-equiv-DSem {Γ = Γ} env evIn (just (inj₂ ctg)) (inl t) = {! inl t  !}
 chad-equiv-DSem {Γ = Γ} env evIn nothing (inr t) =
   let zero-σ = zerov (D2τ' _) .fst

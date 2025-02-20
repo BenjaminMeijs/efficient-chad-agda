@@ -82,6 +82,8 @@ postulate
                   , (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg))
                   ] a
 
+    -- Question: Wat is de juiste regel voor DSemᵀ-case ???
+    -- todo: Naam aanpassen
     DSemᵀ-case8 : {σ1 σ2 ρ τ : Typ Pr}
               → (a : Rep ((σ1 :+ σ2) :* ρ))
               → (l : Rep (σ1 :* ρ) → Rep τ) 
@@ -98,25 +100,7 @@ postulate
                              in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
                                 ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
                   ] (a .fst)
-
-    DSemᵀ-case9 : {σ ρ1 ρ2 τ : Typ Pr}
-              → (a : Rep σ)
-              → (c : Rep σ → Rep (ρ1 :+ ρ2))
-              → (l : Rep σ → Rep ρ1 → Rep τ) 
-              → (r : Rep σ → Rep ρ2 → Rep τ) 
-              → (ctg : LinRepDense (D2τ' τ))
-              → let f : Rep σ  → Rep τ
-                    f = λ a' → case c a' of [ l a' , r a' ]
-                in case c a of 
-                        [ (λ v → let dsem-l = DSemᵀ {ρ1} {τ} (l a) v ctg -- Question: Dit voelt niet valide omdat de functie l nu niet meer over a gaat, maar dat moet wel
-                                 in DSemᵀ {σ} {τ} f a ctg 
-                                    ≡ DSemᵀ {σ} {ρ1 :+ ρ2} c a (( dsem-l , zerovDense (D2τ' ρ2))) ) -- ( (dsem-l .fst , zerovDense (D2τ' σ2)) , dsem-l .snd)  )
-                        , {!   !} -- (λ v → let dsem-r = DSemᵀ {σ2 :* ρ} {τ} r (v , snd a) ctg
-                             --    in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
-                              --          ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
-                        ]
-
-    -- Question: Zou een implementatie dit kunnen bewijzen? Ik denk van wel
+                  
     DSemᵀ-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 
               → (g : Rep σ →  Rep τ) 

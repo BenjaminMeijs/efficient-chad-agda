@@ -17,8 +17,6 @@ open import correctness.spec
 -- Basic lemmas about ≃τ and ≃Γ
 -- ===============================
 
--- Question: Is het het waard om tactics te schrijven zodat het toepassen van deze basic lemmas veel minder verbose wordt?
-
 ≃τ-zerov : ( τ : Typ Pr ) →  ( x : Rep τ )  → zerov (D2τ' τ) .fst ≃τ x
 ≃τ-zerov Un _ = tt
 ≃τ-zerov Inte _ = tt
@@ -45,6 +43,8 @@ open import correctness.spec
         → y ≡ z → x ≃Γ y → x ≃Γ z
 ≃Γ-congR {[]}    {τ} _ _ _ _    _ = tt
 ≃Γ-congR {σ ∷ Γ} {τ} _ _ _ refl w = w
+
+-- TODO: Zip deze bewijzen want je hebt ze toch allebei nodig
 
 ≃Γ-fst : {Γ' : Env Pr} {τ : Typ Pr} 
     → let Γ = τ ∷ Γ' in ( x : LEtup (map D2τ' Γ) )
@@ -79,8 +79,6 @@ open import correctness.spec
 -- ===============================
 -- Combining ≃τ's and ≃Γ's to create other kinds of compatibility
 -- ===============================
-
-
 ≃τ's-implies-Compatible-LinReps : {τ : Typ Pr}
     → (x : LinRep (D2τ' τ)) (y : LinRep (D2τ' τ)) (z : Rep τ)
     → (x ≃τ z) → (y ≃τ z) → (Compatible-LinReps x y)
@@ -122,3 +120,8 @@ open import correctness.spec
     = ≃τ-and-≃Γ-implies-Compatible-idx-val idx ctg xs ys w1 (≃Γ-snd (x , xs) y ys w2)
 
 
+-- Todo: vragen aan Lawrence of hij ervaring heeft met tactics schrijven.
+-- 
+-- ≃τ-zerov' : { @(tactic foo) τ : Typ Pr } → { @(tactic bar) x : Rep τ }  → zerov (D2τ' τ) .fst ≃τ x
+≃τ-zerov' : ( τ : Typ Pr ) → { x : Rep τ }  → zerov (D2τ' τ) .fst ≃τ x
+≃τ-zerov' τ {x} = ≃τ-zerov τ x

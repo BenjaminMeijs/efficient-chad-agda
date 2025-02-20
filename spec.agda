@@ -530,13 +530,12 @@ eval env (inr e) =
   let e , ce = eval env e
   in inj₂ e , one + ce
 eval env (case' {σ = σ} {τ = τ} {ρ = ρ} e1 e2 e3) =
-  -- Question: Is it okay to change this definition from a lambda case to the named version from Data.Sum?
   let v , cv = eval env e1
-  in [ (λ x → let z , cz = eval (push x env) e2 
-              in z , one + cv + cz )
-     , (λ y → let z , cz = eval (push y env) e3 
-              in z , one + cv + cz)
-     ] v
+  in case v of
+       λ where (inj₁ x) -> let z , cz = eval (push x env) e2
+                           in z , one + cv + cz
+               (inj₂ y) -> let z , cz = eval (push y env) e3
+                           in z , one + cv + cz
 eval env (pureevm {Γ' = Γ'} e) =
   let e' , ce = eval env e
   in LACM.pure e' , one + ce

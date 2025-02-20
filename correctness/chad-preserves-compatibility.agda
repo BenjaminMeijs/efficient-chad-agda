@@ -6,7 +6,7 @@ open import Agda.Builtin.Maybe using (just; nothing)
 open import Data.List using (_∷_; map)
 open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (id)
-open import Relation.Binary.PropositionalEquality using (sym; inspect; [_])
+open import Relation.Binary.PropositionalEquality using (sym)
 
 open import spec
 open import correctness.spec
@@ -91,8 +91,8 @@ chad-preserves-≃Γ {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2
   using l' ← interp (chad l) (primalVal val) .snd (zerov (D2τ' σ) .fst) .fst
   using r' ← interp (chad r) (primalVal val) .snd (zerov (D2τ' τ) .fst) .fst
   rewrite LACMexec-sequence l' r' evIn
-  = let ihl = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l val)) w2
-    in chad-preserves-≃Γ val (LACMexec l' evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ (interp r val)) ihl
+  = let ihl = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ _) w2
+    in chad-preserves-≃Γ val (LACMexec l' evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ _) ihl
 chad-preserves-≃Γ {Γ} val evIn (just (ctgL , ctgR)) (pair l r) w1 w2
   using l' ← interp (chad l) (primalVal val) .snd ctgL .fst
   using r' ← interp (chad r) (primalVal val) .snd ctgR .fst
@@ -101,10 +101,10 @@ chad-preserves-≃Γ {Γ} val evIn (just (ctgL , ctgR)) (pair l r) w1 w2
     in chad-preserves-≃Γ val (LACMexec l' evIn) ctgR r (w1 .snd) ihl
 chad-preserves-≃Γ {Γ} val evIn ctg (fst' {σ = σ} {τ = τ} t) w1 w2
   rewrite simplify-exec-chad-fst val evIn ctg t
-  = chad-preserves-≃Γ val evIn (just (ctg , zerov (D2τ' τ) .fst)) t (w1 , (≃τ-zerov τ (interp t val .snd))) w2
+  = chad-preserves-≃Γ val evIn (just (ctg , zerov (D2τ' τ) .fst)) t (w1 , (≃τ-zerov τ _)) w2
 chad-preserves-≃Γ {Γ} val evIn ctg (snd' {σ = σ} {τ = τ} t) w1 w2
   rewrite simplify-exec-chad-snd val evIn ctg t
-  = chad-preserves-≃Γ val evIn (just (zerov (D2τ' σ) .fst , ctg)) t ((≃τ-zerov σ (interp t val .fst)) , w1) w2
+  = chad-preserves-≃Γ val evIn (just (zerov (D2τ' σ) .fst , ctg)) t ((≃τ-zerov σ _) , w1) w2
 chad-preserves-≃Γ {Γ} val evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2
   rewrite simplify-exec-chad-let val id evIn ctg rhs body
   =  let ev = (zerov (D2τ' σ) .fst , evIn)
@@ -133,7 +133,7 @@ chad-preserves-≃Γ {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l
   = let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
         ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃Γ-intro-zero {τ = σ} evIn val x w2)
         w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x val ih)
-    in chad-preserves-≃Γ val (l' .snd) (just (inj₁ (l' .fst))) e w1' (≃Γ-snd l' x val ih)
+    in chad-preserves-≃Γ val (l' .snd) (just (inj₁ (l' .fst))) e w1' ((≃Γ-snd l' _ _ ih))
 ... | inj₂ x | [ interp-e-val≡inj₂-x ]
   rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
   = let r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)

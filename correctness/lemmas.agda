@@ -8,3 +8,5 @@ open import correctness.lemmas.simplify-exec-chad public
 open import correctness.lemmas.value-compatibility-lemmas public
 
 -- TODO: remove allow-unsolved-metas (in all submodules)
+
+-- Question: Wat is de juiste file structuur?

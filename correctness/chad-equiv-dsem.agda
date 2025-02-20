@@ -10,7 +10,7 @@ open import Data.List using (map; _∷_; [])
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_)
 open import Function.Base using (_∘_; flip; _$_; case_of_)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; inspect; [_])
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import spec
@@ -198,15 +198,15 @@ chad-equiv-DSemᵀ {Γ} a evIn (just (inj₂ ctg)) (inr {σ = σ} {τ = τ} t) w
   ∎  
 chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w1 w2
   rewrite chad-preserves-primal (Etup-to-val a) e
-  with interp e (Etup-to-val a) | inspect (interp e) (Etup-to-val a)
-... | inj₁ x | [ interp-e-val≡inj₁-x ]
+  with interp e (Etup-to-val a) in interp-e-val≡inj-x
+... | inj₁ x
   rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e l x inj₁
   = let ev' = (zerov (D2τ' σ) .fst , evIn)
         l' = LACMexec (interp (chad l) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
 
         ev'≃ev = (≃Γ-intro-zero {τ = σ} evIn (Etup-to-val a) x w2)
         l'-preserves≃Γ = chad-preserves-≃Γ (Etup-to-val (x , a)) ev' ctg l w1 ev'≃ev
-        l'-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x (Etup-to-val a) l'-preserves≃Γ)
+        l'-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj-x) (≃Γ-fst l' x (Etup-to-val a) l'-preserves≃Γ)
 
         ih-e = chad-equiv-DSemᵀ a (l' .snd) (just (inj₁ (l' .fst))) e l'-preserves≃τ (≃Γ-snd l' x (Etup-to-val a) l'-preserves≃Γ)
         ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg l w1 ev'≃ev )
@@ -215,7 +215,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
 
         dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) (sparse2dense ctg)
         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( dsem-l .fst , zerovDense (D2τ' τ))
-        lemma-dsem-case = DSemᵀ-lemma-interp-case-cong a (sparse2dense ctg) e l r (inj₁ x) interp-e-val≡inj₁-x
+        lemma-dsem-case = DSemᵀ-lemma-interp-case-cong a (sparse2dense ctg) e l r (inj₁ x) interp-e-val≡inj-x
     in begin
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₁ (l' .fst))) .fst) (l' .snd))
       ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
@@ -224,15 +224,14 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
     Etup2EV (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
     ∎
 
-... | inj₂ x | [ interp-e-val≡inj₂-x ] 
-  -- Question: deze 2 gevallen lijken super veel op elkaar. Hoe zou ik dit is mooier kunnen opschrijven?
+... | inj₂ x
   rewrite simplify-exec-chad-case (Etup-to-val a) evIn ctg e r x inj₂
   = let ev' = (zerov (D2τ' τ) .fst , evIn)
         body = LACMexec (interp (chad r) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
 
         ev'≃ev = (≃Γ-intro-zero {τ = τ} evIn (Etup-to-val a) x w2)
         body-preserves≃Γ = chad-preserves-≃Γ (Etup-to-val (x , a)) ev' ctg r w1 ev'≃ev
-        body-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₂ (body .fst))) (inj₂ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj₂-x) (≃Γ-fst body x (Etup-to-val a) body-preserves≃Γ)
+        body-preserves≃τ = ≃τ-congR (σ :+ τ) (just (inj₂ (body .fst))) (inj₂ x) (interp e (Etup-to-val a)) (sym interp-e-val≡inj-x) (≃Γ-fst body x (Etup-to-val a) body-preserves≃Γ)
 
         ih-e = chad-equiv-DSemᵀ a (body .snd) (just (inj₂ (body .fst))) e body-preserves≃τ (≃Γ-snd body x (Etup-to-val a) body-preserves≃Γ)
         ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg r w1 ev'≃ev )
@@ -242,7 +241,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) w
         dsem-body = DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) (sparse2dense ctg)
         dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a ( zerovDense (D2τ' σ) , dsem-body .fst)
 
-        lemma-dsem-case = DSemᵀ-lemma-interp-case-cong a (sparse2dense ctg) e l r (inj₂ x) interp-e-val≡inj₂-x
+        lemma-dsem-case = DSemᵀ-lemma-interp-case-cong a (sparse2dense ctg) e l r (inj₂ x) interp-e-val≡inj-x
     in begin
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₂ (body .fst))) .fst) (body .snd))
       ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
