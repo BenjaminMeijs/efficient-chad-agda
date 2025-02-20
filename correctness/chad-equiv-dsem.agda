@@ -118,8 +118,8 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2 =
       ih-body = trans (chad-equiv-DSemᵀ a' (zerov (D2τ' σ) .fst , evIn) ctg body w1 (≃Γ-intro-zero' σ evIn w2))
                       (cong₂ _,_ (plusvDense-zeroR' {{zerov-equiv-zerovDense (D2τ' σ) }}) refl)
       preserves-≃Γ = chad-preserves-≃Γ (Etup-to-val a') (zerov (D2τ' σ) .fst , evIn) ctg body w1 (≃Γ-intro-zero' σ evIn w2)
-      (~L , ~R) = ≃Γ-split ev-body (Etup-to-val a) preserves-≃Γ
-      ih-rhs = chad-equiv-DSemᵀ a (ev-body .snd) (ev-body .fst) rhs ~L ~R 
+      preserves-≃Γ' = ≃Γ-split ev-body (Etup-to-val a) preserves-≃Γ
+      ih-rhs = chad-equiv-DSemᵀ a (ev-body .snd) (ev-body .fst) rhs (fst preserves-≃Γ') (snd preserves-≃Γ')
       ih = trans ih-rhs (trans (ev+congR (cong snd ih-body)) (ev+congL (gnoc (gnoc (cong fst ih-body) (DSemᵀ (interp rhs ∘ Etup-to-val) a)) Etup2EV  ) ))
 
       dsem-body = DSemᵀ {σ = σ :* (Etup Pr Γ)} {τ = τ} (interp body ∘ Etup-to-val) a' (sparse2dense ctg)

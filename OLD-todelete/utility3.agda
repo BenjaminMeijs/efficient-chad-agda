@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module utility3 where
 
 open import Agda.Builtin.Sigma using (_,_; fst; snd)

@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.chad-ctg-zero where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -41,15 +40,13 @@ dprim'-ctg-zero : {σ τ : Typ Pr}
                 →  sparse2dense (interp (dprim' op) d-op-env)
                    ≡ zerovDense (D2τ' σ)
 dprim'-ctg-zero x ctg refl ADD = refl
-dprim'-ctg-zero x ctg refl MUL = {!   !}
-dprim'-ctg-zero x ctg refl NEG = {!   !}
+dprim'-ctg-zero x ctg refl MUL = cong₂ _,_ (primFloatTimes-identityL (x .snd)) (primFloatTimes-identityL (x .fst))
+dprim'-ctg-zero x ctg refl NEG = primFloatNegativeZero
 dprim'-ctg-zero x ctg w (LIT _) = refl
 dprim'-ctg-zero x ctg w IADD = refl
 dprim'-ctg-zero x ctg w IMUL = refl
 dprim'-ctg-zero x ctg w INEG = w
 dprim'-ctg-zero x ctg w SIGN = refl
-
--- TODO: Afmaken
 
 chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
                   → let LΓ = map D2τ' Γ in
@@ -92,15 +89,15 @@ chad-ctg-zero {Γ} val evIn ctg (snd' {σ = σ} t) ~τ ~Γ w
 chad-ctg-zero {Γ} val evIn ctg (let' {σ = σ} {τ = τ}  rhs body) ~τ ~Γ w
   rewrite simplify-exec-chad-let val id evIn ctg rhs body
   = let ih-body = chad-ctg-zero (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero' σ evIn ~Γ) w
-        compatibility = chad-preserves-≃Γ (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero' σ evIn ~Γ)
+        preserves≃Γ = chad-preserves-≃Γ (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero' σ evIn ~Γ)
         body' = LACMexec (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
-        (~L , ~R) = ≃Γ-split body' val compatibility
-        ih-rhs = chad-ctg-zero val _ _ rhs ~L ~R (trans (cong fst ih-body) (zerov-equiv-zerovDense (D2τ' σ)))
+        preserves≃Γ' = ≃Γ-split body' val preserves≃Γ
+        ih-rhs = chad-ctg-zero val _ _ rhs (fst preserves≃Γ') (snd preserves≃Γ') (trans (cong fst ih-body) (zerov-equiv-zerovDense (D2τ' σ)))
     in trans ih-rhs (cong snd ih-body)
 chad-ctg-zero {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ w
   rewrite simplify-exec-chad-primop val evIn ctg t op
   = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
-    in chad-ctg-zero val evIn (interp (dprim' op) d-op-env) t (dprim'-preserves-≃τ val ctg op t ~τ) ~Γ {!   !}
+    in chad-ctg-zero val evIn (interp (dprim' op) d-op-env) t (dprim'-preserves-≃τ val ctg op t ~τ) ~Γ (dprim'-ctg-zero (interp t val) ctg w op)
 chad-ctg-zero {Γ} val evIn nothing (inl {σ = σ} t) ~τ ~Γ w 
   = chad-ctg-zero val evIn (zerov (D2τ' σ) .fst) t (≃τ-zerov' σ) ~Γ (zerov-equiv-zerovDense (D2τ' σ))
 chad-ctg-zero {Γ} val evIn (just (inj₁ ctg)) (inl {σ = σ} t) ~τ ~Γ w
@@ -114,11 +111,19 @@ chad-ctg-zero {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~τ 
   with interp e val in interp-e-val≡inj-x 
 ... | inj₁ x 
   rewrite simplify-exec-chad-case val evIn ctg e l x inj₁
-  = trans ih-e {!   !}
+  = trans ih-e (cong snd ih-l)
   where l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
-        compatibility = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero' σ evIn ~Γ)
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (≃Γ-fst l' x val compatibility)
-        ih-l = chad-ctg-zero (push x val) l' ctg l ~τ compatibility w
-        ih-e = chad-ctg-zero val _ _ e {!   !} {!   !} (cong₂ _,_ {! cong fst ih-l  !} refl)   
+        preserves≃Γ = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero' σ evIn ~Γ)
+        preserves≃Γ' = ≃Γ-split l' val preserves≃Γ
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ')
+        ih-l = chad-ctg-zero (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero' σ evIn ~Γ) w
+        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ') (cong₂ _,_ (trans (cong fst ih-l) (zerov-equiv-zerovDense (D2τ' σ))) refl)   
 ... | inj₂ x
-  = {!   !} 
+  rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
+  = trans ih-e (cong snd ih-r)
+  where r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)
+        preserves≃Γ = chad-preserves-≃Γ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r ~τ (≃Γ-intro-zero' τ evIn ~Γ)
+        preserves≃Γ' = ≃Γ-split r' val preserves≃Γ
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ')
+        ih-r = chad-ctg-zero (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r ~τ (≃Γ-intro-zero' τ evIn ~Γ) w
+        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ') (cong₂ _,_ refl (trans (cong fst ih-r) (zerov-equiv-zerovDense (D2τ' τ))))   

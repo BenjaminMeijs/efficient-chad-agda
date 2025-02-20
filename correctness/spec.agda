@@ -1,7 +1,7 @@
 module correctness.spec where
 
 open import Agda.Builtin.Equality using (_≡_)
-open import Agda.Builtin.Float using (Float; primFloatPlus; primNatToFloat)
+open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primNatToFloat)
 open import Agda.Builtin.Maybe using (just; nothing)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
@@ -32,6 +32,9 @@ postulate
     primFloatPlus-zeroR : (x : Float) → primFloatPlus x (primNatToFloat 0) ≡ x
     primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
                             → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
+    primFloatTimes-identityL : (x : Float) → primFloatTimes 0.0 x ≡ 0.0
+    primFloatNegativeZero : primFloatNegate 0.0 ≡ 0.0
+
 
 module environment-value-tuple where
     Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag

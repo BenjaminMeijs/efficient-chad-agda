@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module utility0 where
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Equality using (_≡_; refl)

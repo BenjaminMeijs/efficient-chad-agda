@@ -111,8 +111,8 @@ chad-preserves-≃Γ {Γ} val evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2
          ih = chad-preserves-≃Γ (push (interp rhs val) val) ev ctg body
                                  w1 (≃Γ-intro-zero' σ evIn w2)
          body' = LACMexec ((interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)) ev 
-         (~L , ~R) = ≃Γ-split body' val ih
-     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs ~L ~R
+         preserves-≃Γ = ≃Γ-split body' val ih
+     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs (fst preserves-≃Γ) (snd preserves-≃Γ)
 chad-preserves-≃Γ {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) w1 w2
   rewrite simplify-exec-chad-primop val evIn ctg t op
   = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
