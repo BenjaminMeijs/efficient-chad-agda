@@ -122,11 +122,7 @@ module value-compatibility where
 
     _≃Γ_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
     _≃Γ_ {[]} x y = ⊤
-    _≃Γ_ {Un ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
-    _≃Γ_ {Inte ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
-    _≃Γ_ {R ∷ Γ} (x , xs) (push y ys) = xs ≃Γ ys
-    _≃Γ_ {(σ :* τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :* τ} x y) × xs ≃Γ ys
-    _≃Γ_ {(σ :+ τ) ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {σ :+ τ} x y) × xs ≃Γ ys
+    _≃Γ_ {τ ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {τ} x y) × (xs ≃Γ ys)
 
     -- Note that these other kinds of compatibility are not part of the specification for the correctness proof
     -- These witnesses are only used as preconditions for (internal) compatibility lemmas.

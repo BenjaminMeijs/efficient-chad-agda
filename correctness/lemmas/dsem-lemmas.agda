@@ -37,25 +37,37 @@ DSemᵀ-lemma-ctg-zero' : {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep
         → DSemᵀ {σ} {τ} f a ctg ≡ zerovDense (D2τ' σ)
 DSemᵀ-lemma-ctg-zero' {f = f} {a = a} {{ refl }} = DSemᵀ-ctg-zero f a
 
-DSemᵀ-lemma-ctg-zeroLEnv : {Γ : Env Pr} {τ : Typ Pr}
+
+DSemᵀ-lemma-ctg-zero-ev : {Γ : Env Pr} {τ : Typ Pr}
                 → let σ = Etup Pr Γ in
                 ( f : Rep σ  →  Rep τ ) 
                 ( a : Rep σ ) 
                 ( ctg : LinRepDense (D2τ' τ) )
                 → ( ctg ≡ zerovDense (D2τ' τ))
                 → Etup2EV (DSemᵀ {σ} {τ} f a ctg) ≡ zero-EV (map D2τ' Γ)
-DSemᵀ-lemma-ctg-zeroLEnv {σ} {τ} f a ctg w = trans (cong (Etup2EV ∘ (DSemᵀ f a)) w)
+DSemᵀ-lemma-ctg-zero-ev {σ} {τ} f a ctg w = trans (cong (Etup2EV ∘ (DSemᵀ f a)) w)
                                                 (trans (cong Etup2EV DSemᵀ-lemma-ctg-zero') 
                                                       Etup-zerovDense-equiv-zero-EV) 
 
-DSemᵀ-lemma-ctg-zeroLEnv' : {Γ : Env Pr} {τ : Typ Pr}
+DSemᵀ-lemma-ctg-zero-ev' : {Γ : Env Pr} {τ : Typ Pr}
                 → let σ = Etup Pr Γ
                 in { f : Rep σ  →  Rep τ } 
                     { a : Rep σ } 
                     { ctg : LinRepDense (D2τ' τ) }
                 →  {{ ctg ≡ zerovDense (D2τ' τ) }}
                 → Etup2EV (DSemᵀ {σ} {τ} f a ctg) ≡ zero-EV (map D2τ' Γ) 
-DSemᵀ-lemma-ctg-zeroLEnv' {σ} {τ} {f} {a} {ctg} {{w}} = DSemᵀ-lemma-ctg-zeroLEnv f a ctg w
+DSemᵀ-lemma-ctg-zero-ev' {σ} {τ} {f} {a} {ctg} {{w}} = DSemᵀ-lemma-ctg-zero-ev f a ctg w
+
+DSemᵀ-lemma-ctg-zero-evIn' : {Γ : Env Pr} {τ : Typ Pr}
+                → let σ = Etup Pr Γ
+                in { f : Rep σ  →  Rep τ } 
+                   { a : Rep σ } 
+                   { ctg : LinRepDense (D2τ' τ) }
+                →  { evIn : LEtup (map D2τ' Γ)  }
+                →  {{ ctg ≡ zerovDense (D2τ' τ) }}
+                → LEtup2EV {map D2τ' Γ} evIn 
+                  ≡ Etup2EV (DSemᵀ {σ} {τ} f a ctg) ev+ LEtup2EV {map D2τ' Γ} evIn
+DSemᵀ-lemma-ctg-zero-evIn' {σ} {τ} {f} {a} {ctg} {evIn} {{w}} = sym (ev+zeroL' (DSemᵀ-lemma-ctg-zero-ev' {{w}}))
 
 DSemᵀ-lemma-pair : {Γ : Env Pr} {τ1 τ2 : Typ Pr}
         → let σ  = Etup Pr Γ 

@@ -43,16 +43,8 @@ addLEτ-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr}
             → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
             → (evIn ≃Γ val) → (Compatible-idx-LEtup (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
             → addLEτ (convIdx D2τ' idx) ctg evIn ≃Γ val
-addLEτ-preserves-≃Γ {Un ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
-addLEτ-preserves-≃Γ {Inte ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
-addLEτ-preserves-≃Γ {R ∷ Γ} Z ctg (x , xs) (push y val) w _ _ = w
-addLEτ-preserves-≃Γ {(σ :* τ) ∷ Γ} Z ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {σ :* τ} ctg x y w2 w3 (w1 .fst) , (w1 .snd)
-addLEτ-preserves-≃Γ {(σ :+ τ) ∷ Γ} Z ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {σ :+ τ} ctg x y w2 w3 (w1 .fst) , (w1 .snd)
-addLEτ-preserves-≃Γ {Un ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
-addLEτ-preserves-≃Γ {Inte ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
-addLEτ-preserves-≃Γ {R ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = addLEτ-preserves-≃Γ idx ctg xs val w1 w2 w3 
-addLEτ-preserves-≃Γ {(σ :* τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3 
-addLEτ-preserves-≃Γ {(σ :+ τ) ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3
+addLEτ-preserves-≃Γ {τ ∷ Γ} Z       ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {τ} ctg x y w2 w3 (w1 .fst) , w1 .snd
+addLEτ-preserves-≃Γ {τ ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3
 
 dprim'-preserves-≃τ : {Γ : Env Pr} {σ τ : Typ Pr}
       (val : Val Pr Γ) (ctg : LinRep (D2τ' τ)) (op : Primop Pr σ τ) (t : Term Pr Γ σ) 
@@ -111,8 +103,7 @@ chad-preserves-≃Γ {Γ} val evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2
          ih = chad-preserves-≃Γ (push (interp rhs val) val) ev ctg body
                                  w1 (≃Γ-intro-zero' σ evIn w2)
          body' = LACMexec ((interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)) ev 
-         preserves-≃Γ = ≃Γ-split body' val ih
-     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs (fst preserves-≃Γ) (snd preserves-≃Γ)
+     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs (fst ih) (snd ih)
 chad-preserves-≃Γ {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) w1 w2
   rewrite simplify-exec-chad-primop val evIn ctg t op
   = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
@@ -132,11 +123,11 @@ chad-preserves-≃Γ {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l
   rewrite simplify-exec-chad-case val evIn ctg e l x inj₁
   = let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
         ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃Γ-intro-zero'  σ evIn w2)
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (≃Γ-fst l' x val ih)
-    in chad-preserves-≃Γ val (l' .snd) (just (inj₁ (l' .fst))) e w1' ((≃Γ-snd l' _ _ ih))
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (fst ih)
+    in chad-preserves-≃Γ val (l' .snd) (just (inj₁ (l' .fst))) e w1' (snd ih)
 ... | inj₂ x
   rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
   = let r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)
         ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r w1 (≃Γ-intro-zero' τ evIn w2)
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (≃Γ-fst r' x val ih)
-    in chad-preserves-≃Γ val (r' .snd) (just (inj₂ (r' .fst))) e w1' (≃Γ-snd r' x val ih)
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (fst ih)
+    in chad-preserves-≃Γ val (r' .snd) (just (inj₂ (r' .fst))) e w1' (snd ih)

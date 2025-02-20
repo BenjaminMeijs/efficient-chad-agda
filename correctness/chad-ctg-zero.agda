@@ -10,8 +10,6 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Product using (_×_)
 open import Function.Base using (id)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
--- open import Data.Integer using (ℤ)
--- open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import spec
 import spec.LACM as LACM
@@ -91,8 +89,7 @@ chad-ctg-zero {Γ} val evIn ctg (let' {σ = σ} {τ = τ}  rhs body) ~τ ~Γ w
   = let ih-body = chad-ctg-zero (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero' σ evIn ~Γ) w
         preserves≃Γ = chad-preserves-≃Γ (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero' σ evIn ~Γ)
         body' = LACMexec (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
-        preserves≃Γ' = ≃Γ-split body' val preserves≃Γ
-        ih-rhs = chad-ctg-zero val _ _ rhs (fst preserves≃Γ') (snd preserves≃Γ') (trans (cong fst ih-body) (zerov-equiv-zerovDense (D2τ' σ)))
+        ih-rhs = chad-ctg-zero val _ _ rhs (fst preserves≃Γ) (snd preserves≃Γ) (trans (cong fst ih-body) (zerov-equiv-zerovDense (D2τ' σ)))
     in trans ih-rhs (cong snd ih-body)
 chad-ctg-zero {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ w
   rewrite simplify-exec-chad-primop val evIn ctg t op
@@ -114,16 +111,14 @@ chad-ctg-zero {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~τ 
   = trans ih-e (cong snd ih-l)
   where l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
         preserves≃Γ = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero' σ evIn ~Γ)
-        preserves≃Γ' = ≃Γ-split l' val preserves≃Γ
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ')
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ)
         ih-l = chad-ctg-zero (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l ~τ (≃Γ-intro-zero' σ evIn ~Γ) w
-        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ') (cong₂ _,_ (trans (cong fst ih-l) (zerov-equiv-zerovDense (D2τ' σ))) refl)   
+        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ) (cong₂ _,_ (trans (cong fst ih-l) (zerov-equiv-zerovDense (D2τ' σ))) refl)   
 ... | inj₂ x
   rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
   = trans ih-e (cong snd ih-r)
   where r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)
         preserves≃Γ = chad-preserves-≃Γ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r ~τ (≃Γ-intro-zero' τ evIn ~Γ)
-        preserves≃Γ' = ≃Γ-split r' val preserves≃Γ
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ')
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (fst preserves≃Γ)
         ih-r = chad-ctg-zero (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r ~τ (≃Γ-intro-zero' τ evIn ~Γ) w
-        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ') (cong₂ _,_ refl (trans (cong fst ih-r) (zerov-equiv-zerovDense (D2τ' τ))))   
+        ih-e = chad-ctg-zero val _ _ e w1' (snd preserves≃Γ) (cong₂ _,_ refl (trans (cong fst ih-r) (zerov-equiv-zerovDense (D2τ' τ))))   
