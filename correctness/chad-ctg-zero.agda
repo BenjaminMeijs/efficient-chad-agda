@@ -1,0 +1,103 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+module correctness.chad-ctg-zero where
+
+open import Agda.Builtin.Equality using (_≡_; refl)
+open import Agda.Builtin.Sigma using (_,_; fst; snd)
+open import Agda.Builtin.Unit using (tt; ⊤)
+open import Agda.Builtin.Maybe using (just; nothing)
+open import Data.Empty using (⊥)
+open import Data.List using (map; _∷_; [])
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Product using (_×_)
+open import Function.Base using (id)
+open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; inspect; [_])
+-- open import Data.Integer using (ℤ)
+-- open Relation.Binary.PropositionalEquality.≡-Reasoning
+
+open import spec
+import spec.LACM as LACM
+open import correctness.spec
+open import correctness.lemmas
+open import correctness.chad-preserves-compatibility
+
+addLEτ-ctg-zero : {Γ : Env Pr} {τ : Typ Pr}
+                → (idx : Idx Γ τ)
+                  (evIn : LEtup (map D2τ' Γ) )
+                  (ctg : LinRep (D2τ' τ))
+                → ( Compatible-idx-LEtup (idx , ctg) evIn )
+                → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) )
+                → LEtup2EV (addLEτ (convIdx D2τ' idx) ctg evIn)
+                  ≡ LEtup2EV evIn
+addLEτ-ctg-zero {Γ} Z evIn ctg w≃ w = cong₂ _,_ (trans (plusv-equiv-plusvDense ctg (evIn .fst) w≃) (plusvDense-zeroL' {{w}})) refl
+addLEτ-ctg-zero {Γ} (S idx) evIn ctg w≃ w = cong₂ _,_ refl (addLEτ-ctg-zero idx (evIn .snd) ctg w≃ w)
+
+dprim'-ctg-zero : {σ τ : Typ Pr}
+                → (x : Rep σ)
+                → (ctg : LinRep (D2τ' τ))
+                → (sparse2dense ctg ≡ zerovDense (D2τ' τ))
+                → let d-op-env = (push ctg (push (primal σ x) empty)) in
+                  (op : Primop Pr σ τ )
+                →  sparse2dense (interp (dprim' op) d-op-env)
+                   ≡ zerovDense (D2τ' σ)
+dprim'-ctg-zero x ctg refl ADD = refl
+dprim'-ctg-zero x ctg refl MUL = {!   !}
+dprim'-ctg-zero x ctg refl NEG = {!   !}
+dprim'-ctg-zero x ctg w (LIT _) = refl
+dprim'-ctg-zero x ctg w IADD = refl
+dprim'-ctg-zero x ctg w IMUL = refl
+dprim'-ctg-zero x ctg w INEG = w
+dprim'-ctg-zero x ctg w SIGN = refl
+
+chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
+                  → let LΓ = map D2τ' Γ in
+                  (val : Val Pr Γ)
+                  (evIn : LEtup LΓ )
+                  (ctg : LinRep (D2τ' τ))
+                  (t : Term Pr Γ τ)
+                → ( ctg  ≃τ (interp t val))
+                → ( evIn ≃Γ val )
+                → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) ) -- a witness to the fact that the cotangent is semantically a zero value
+                →   LEtup2EV {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
+                  ≡ LEtup2EV {LΓ} evIn
+chad-ctg-zero {Γ} val evIn ctg unit _ _ _
+  rewrite LACMexec-pure tt evIn
+  = refl
+chad-ctg-zero {Γ} val evIn ctg (var x) ~τ ~Γ w
+  rewrite LACMexec-add (convIdx D2τ' x) ctg evIn
+  = let ~evIn-val = ≃τ-and-≃Γ-implies-Compatible-idx-LEtup x ctg evIn val ~τ ~Γ
+    in addLEτ-ctg-zero x evIn ctg ~evIn-val w 
+chad-ctg-zero {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) ~τ ~Γ w
+  using l' ← interp (chad l) (primalVal val) .snd (zerov (D2τ' σ) .fst) .fst
+  using r' ← interp (chad r) (primalVal val) .snd (zerov (D2τ' τ) .fst) .fst
+  rewrite LACMexec-sequence l' r' evIn
+  rewrite chad-ctg-zero val (LACMexec l' evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ (interp r val)) (chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l val)) ~Γ) (zerov-equiv-zerovDense (D2τ' τ))
+  rewrite chad-ctg-zero val evIn (zerov (D2τ' σ) .fst) l ( ≃τ-zerov σ _ ) ~Γ (zerov-equiv-zerovDense (D2τ' σ))
+  = refl
+chad-ctg-zero {Γ} val evIn (just (ctgL , ctgR)) (pair {σ = σ} {τ = τ} l r) ~τ ~Γ w
+  using l' ← interp (chad l) (primalVal val) .snd ctgL .fst
+  using r' ← interp (chad r) (primalVal val) .snd ctgR .fst
+  rewrite LACMexec-sequence l' r' evIn
+  rewrite chad-ctg-zero val (LACMexec l' evIn) ctgR r (~τ .snd) (chad-preserves-≃Γ val evIn ctgL l (~τ .fst) ~Γ) (cong snd w)
+  rewrite chad-ctg-zero val evIn ctgL l (~τ .fst) ~Γ (cong fst w)
+  = refl
+chad-ctg-zero {Γ} val evIn ctg (fst' {σ = σ} {τ = τ} t) ~τ ~Γ w
+  rewrite simplify-exec-chad-fst val evIn ctg t
+  = chad-ctg-zero val evIn (just ( ctg , zerov (D2τ' τ) .fst)) t (~τ , (≃τ-zerov τ _)) ~Γ (cong₂ _,_ w (zerov-equiv-zerovDense (D2τ' τ)))
+chad-ctg-zero {Γ} val evIn ctg (snd' {σ = σ} t) ~τ ~Γ w
+  rewrite simplify-exec-chad-snd val evIn ctg t
+  = chad-ctg-zero val evIn (just (zerov (D2τ' σ) .fst , ctg)) t (≃τ-zerov σ _ , ~τ) ~Γ (cong₂ _,_ (zerov-equiv-zerovDense (D2τ' σ)) w)
+chad-ctg-zero {Γ} val evIn ctg (let' {σ = σ} {τ = τ}  rhs body) ~τ ~Γ w
+  rewrite simplify-exec-chad-let val id evIn ctg rhs body
+  = let ih-body = chad-ctg-zero (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero {τ = σ} evIn val (interp rhs val) ~Γ) w
+        compatibility = chad-preserves-≃Γ (push (interp rhs val) val) (zerov (D2τ' σ) .fst , evIn) ctg body ~τ (≃Γ-intro-zero {τ = σ} evIn val (interp rhs val) ~Γ)
+        body' = LACMexec (interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
+        ih-rhs = chad-ctg-zero val _ _ rhs (≃Γ-fst body' _ val compatibility) (≃Γ-snd body' _ val compatibility) (trans (cong fst ih-body) (zerov-equiv-zerovDense (D2τ' σ)))
+    in trans ih-rhs (cong snd ih-body)
+chad-ctg-zero {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ w
+  rewrite simplify-exec-chad-primop val evIn ctg t op
+  = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
+    in chad-ctg-zero val evIn (interp (dprim' op) d-op-env) t (dprim'-preserves-≃τ val ctg op t ~τ) ~Γ {!   !}
+-- chad-ctg-zero {Γ} val evIn ctg (inl t) ~τ ~Γ w = {!   !}
+-- chad-ctg-zero {Γ} val evIn ctg (inr t) ~τ ~Γ w = {!   !}
+-- chad-ctg-zero {Γ} val evIn ctg (case' e l r) ~τ ~Γ w = {!   !}
+chad-ctg-zero {Γ} val evIn ctg t ≃ w = {!   !} 

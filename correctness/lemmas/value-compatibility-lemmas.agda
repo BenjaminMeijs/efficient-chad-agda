@@ -16,6 +16,9 @@ open import correctness.spec
 -- ===============================
 -- Basic lemmas about ≃τ and ≃Γ
 -- ===============================
+
+-- Question: Is het het waard om tactics te schrijven zodat het toepassen van deze basic lemmas veel minder verbose wordt?
+
 ≃τ-zerov : ( τ : Typ Pr ) →  ( x : Rep τ )  → zerov (D2τ' τ) .fst ≃τ x
 ≃τ-zerov Un _ = tt
 ≃τ-zerov Inte _ = tt

@@ -19,6 +19,7 @@ open import correctness.spec
 open import correctness.dsem
 open import correctness.lemmas
 open import correctness.chad-preserves-compatibility
+open import correctness.chad-ctg-zero
 open import chad-preserves-primal
 
 gnoc : {A B : Set} {x y : A} → (x ≡ y) → (f : A → B ) → f x ≡ f y
@@ -69,22 +70,25 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (var x) w1 w2 =
     ≡⟨ ev+congL (sym (cong Etup2EV (DSemᵀ-var a x (sparse2dense ctg)))) ⟩
   Etup2EV (DSemᵀ (flip valprj x ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
   ∎
-chad-equiv-DSemᵀ {Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2 =
-  let m1 = interp (chad l) (Etup-to-val-primal a) .snd (zerov (D2τ' σ) .fst) .fst
-      m2 = interp (chad r) (Etup-to-val-primal a) .snd (zerov (D2τ' τ) .fst) .fst
-      ihl = trans (chad-equiv-DSemᵀ a evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l (Etup-to-val a))) w2)
-                  (ev+zeroL' (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' σ)}}))
-      ihr = trans (chad-equiv-DSemᵀ a (LACMexec m1 evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ (interp r (Etup-to-val a))) (chad-preserves-≃Γ (Etup-to-val a) evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l (Etup-to-val a))) w2 ))
-                  (ev+zeroL' (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' τ)}}))
-  in begin
-  LEtup2EV (LACMexec (interp (chad (pair l r)) (Etup-to-val-primal a) .snd nothing .fst) evIn)
-    ≡⟨ gnoc (LACMexec-sequence m1 m2 evIn) LEtup2EV ⟩
-  LEtup2EV (LACMexec m2 (LACMexec m1 evIn))
-    ≡⟨ trans ihr ihl ⟩
-  LEtup2EV evIn  
-    ≡⟨ sym (ev+zeroL' DSemᵀ-lemma-ctg-zeroLEnv') ⟩
-  Etup2EV (DSemᵀ (interp (pair l r) ∘ Etup-to-val) a (zerovDense (D2τ' σ) , zerovDense (D2τ' τ))) ev+ LEtup2EV evIn
-  ∎   
+chad-equiv-DSemᵀ {Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2
+  rewrite chad-ctg-zero (Etup-to-val a) evIn nothing (pair l r) tt w2 refl 
+  rewrite DSemᵀ-lemma-ctg-zeroLEnv {Γ = Γ} {τ = σ :* τ} (interp (pair l r) ∘ Etup-to-val) a (zerovDense (D2τ' σ) , zerovDense (D2τ' τ)) refl
+  = sym (ev+zeroL _)
+  -- let m1 = interp (chad l) (Etup-to-val-primal a) .snd (zerov (D2τ' σ) .fst) .fst
+  --     m2 = interp (chad r) (Etup-to-val-primal a) .snd (zerov (D2τ' τ) .fst) .fst
+  --     ihl = trans (chad-equiv-DSemᵀ a evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l (Etup-to-val a))) w2)
+  --                 (ev+zeroL' (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' σ)}}))
+  --     ihr = trans (chad-equiv-DSemᵀ a (LACMexec m1 evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ (interp r (Etup-to-val a))) (chad-preserves-≃Γ (Etup-to-val a) evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ (interp l (Etup-to-val a))) w2 ))
+  --                 (ev+zeroL' (DSemᵀ-lemma-ctg-zeroLEnv' {{zerov-equiv-zerovDense (D2τ' τ)}}))
+  -- in begin
+  -- LEtup2EV (LACMexec (interp (chad (pair l r)) (Etup-to-val-primal a) .snd nothing .fst) evIn)
+  --   ≡⟨ gnoc (LACMexec-sequence m1 m2 evIn) LEtup2EV ⟩
+  -- LEtup2EV (LACMexec m2 (LACMexec m1 evIn))
+  --   ≡⟨ trans ihr ihl ⟩
+  -- LEtup2EV evIn  
+  --   ≡⟨ sym (ev+zeroL' DSemᵀ-lemma-ctg-zeroLEnv') ⟩
+  -- Etup2EV (DSemᵀ (interp (pair l r) ∘ Etup-to-val) a (zerovDense (D2τ' σ) , zerovDense (D2τ' τ))) ev+ LEtup2EV evIn
+  -- ∎   
 chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) w1 w2 =
   let ctgL = _ ; ctgR = _
       m1 = interp (chad l) (Etup-to-val-primal a) .snd ctgL .fst
