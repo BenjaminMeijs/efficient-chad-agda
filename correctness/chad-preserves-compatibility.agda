@@ -91,8 +91,8 @@ chad-preserves-≃Γ {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2
   using l' ← interp (chad l) (primalVal val) .snd (zerov (D2τ' σ) .fst) .fst
   using r' ← interp (chad r) (primalVal val) .snd (zerov (D2τ' τ) .fst) .fst
   rewrite LACMexec-sequence l' r' evIn
-  = let ihl = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov σ _) w2
-    in chad-preserves-≃Γ val (LACMexec l' evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov τ _) ihl
+  = let ihl = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) l (≃τ-zerov' σ) w2
+    in chad-preserves-≃Γ val (LACMexec l' evIn) (zerov (D2τ' τ) .fst) r (≃τ-zerov' τ) ihl
 chad-preserves-≃Γ {Γ} val evIn (just (ctgL , ctgR)) (pair l r) w1 w2
   using l' ← interp (chad l) (primalVal val) .snd ctgL .fst
   using r' ← interp (chad r) (primalVal val) .snd ctgR .fst
@@ -101,42 +101,42 @@ chad-preserves-≃Γ {Γ} val evIn (just (ctgL , ctgR)) (pair l r) w1 w2
     in chad-preserves-≃Γ val (LACMexec l' evIn) ctgR r (w1 .snd) ihl
 chad-preserves-≃Γ {Γ} val evIn ctg (fst' {σ = σ} {τ = τ} t) w1 w2
   rewrite simplify-exec-chad-fst val evIn ctg t
-  = chad-preserves-≃Γ val evIn (just (ctg , zerov (D2τ' τ) .fst)) t (w1 , (≃τ-zerov τ _)) w2
+  = chad-preserves-≃Γ val evIn (just (ctg , zerov (D2τ' τ) .fst)) t (w1 , (≃τ-zerov' τ)) w2
 chad-preserves-≃Γ {Γ} val evIn ctg (snd' {σ = σ} {τ = τ} t) w1 w2
   rewrite simplify-exec-chad-snd val evIn ctg t
-  = chad-preserves-≃Γ val evIn (just (zerov (D2τ' σ) .fst , ctg)) t ((≃τ-zerov σ _) , w1) w2
+  = chad-preserves-≃Γ val evIn (just (zerov (D2τ' σ) .fst , ctg)) t ((≃τ-zerov' σ) , w1) w2
 chad-preserves-≃Γ {Γ} val evIn ctg (let' {σ = σ} {τ = τ} rhs body) w1 w2
   rewrite simplify-exec-chad-let val id evIn ctg rhs body
   =  let ev = (zerov (D2τ' σ) .fst , evIn)
          ih = chad-preserves-≃Γ (push (interp rhs val) val) ev ctg body
-                                 w1 (≃Γ-intro-zero {Γ} {σ} evIn val (interp rhs val) w2)
+                                 w1 (≃Γ-intro-zero' σ evIn w2)
          body' = LACMexec ((interp (chad body) (push (primal σ (interp rhs val)) (primalVal val)) .snd ctg .fst)) ev 
-     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs
-        (≃Γ-fst body' (interp rhs val) val ih) (≃Γ-snd body' (interp rhs val) val ih)
+         (~L , ~R) = ≃Γ-split body' val ih
+     in chad-preserves-≃Γ val (body' .snd) (body' .fst) rhs ~L ~R
 chad-preserves-≃Γ {Γ} val evIn ctg (prim {σ = σ} {τ = τ} op t) w1 w2
   rewrite simplify-exec-chad-primop val evIn ctg t op
   = let d-op-env = push ctg (push (primal σ (interp t val)) empty)
     in chad-preserves-≃Γ val evIn (interp (dprim' op) d-op-env) t (dprim'-preserves-≃τ val ctg op t w1) w2
 chad-preserves-≃Γ {Γ} val evIn nothing (inl {σ = σ} {τ = τ} t) w1 w2
-  = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) t (≃τ-zerov σ (interp t val)) w2
+  = chad-preserves-≃Γ val evIn (zerov (D2τ' σ) .fst) t (≃τ-zerov' σ) w2
 chad-preserves-≃Γ {Γ} val evIn (just (inj₁ ctg)) (inl t) w1 w2
   = chad-preserves-≃Γ val evIn ctg t w1 w2
 chad-preserves-≃Γ {Γ} val evIn nothing (inr {σ = σ} {τ = τ} t) w1 w2
-  = chad-preserves-≃Γ val evIn (zerov (D2τ' τ) .fst) t (≃τ-zerov τ (interp t val)) w2
+  = chad-preserves-≃Γ val evIn (zerov (D2τ' τ) .fst) t (≃τ-zerov' τ) w2
 chad-preserves-≃Γ {Γ} val evIn (just (inj₂ ctg)) (inr t) w1 w2
   = chad-preserves-≃Γ val evIn ctg t w1 w2
 chad-preserves-≃Γ {Γ} val evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l r) w1 w2
   rewrite chad-preserves-primal val e
-  with interp e val | inspect (interp e) val
-... | inj₁ x | [ interp-e-val≡inj₁-x ]
+  with interp e val in interp-e-val≡inj-x
+... | inj₁ x 
   rewrite simplify-exec-chad-case val evIn ctg e l x inj₁
   = let l' = LACMexec (interp (chad l) (push (primal σ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' σ) .fst , evIn)
-        ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃Γ-intro-zero {τ = σ} evIn val x w2)
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj₁-x) (≃Γ-fst l' x val ih)
+        ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' σ) .fst , evIn) ctg l w1 (≃Γ-intro-zero'  σ evIn w2)
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₁ (l' .fst))) (inj₁ x) (interp e val) (sym interp-e-val≡inj-x) (≃Γ-fst l' x val ih)
     in chad-preserves-≃Γ val (l' .snd) (just (inj₁ (l' .fst))) e w1' ((≃Γ-snd l' _ _ ih))
-... | inj₂ x | [ interp-e-val≡inj₂-x ]
+... | inj₂ x
   rewrite simplify-exec-chad-case val evIn ctg e r x inj₂
   = let r' = LACMexec (interp (chad r) (push (primal τ x) (primalVal val)) .snd ctg .fst) (zerov (D2τ' τ) .fst , evIn)
-        ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r w1 (≃Γ-intro-zero {τ = τ} evIn val x w2)
-        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj₂-x) (≃Γ-fst r' x val ih)
+        ih = chad-preserves-≃Γ (push x val) (zerov (D2τ' τ) .fst , evIn) ctg r w1 (≃Γ-intro-zero' τ evIn w2)
+        w1' = ≃τ-congR (σ :+ τ) (just (inj₂ (r' .fst))) (inj₂ x) (interp e val) (sym interp-e-val≡inj-x) (≃Γ-fst r' x val ih)
     in chad-preserves-≃Γ val (r' .snd) (just (inj₂ (r' .fst))) e w1' (≃Γ-snd r' x val ih)

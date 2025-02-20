@@ -44,8 +44,6 @@ open import correctness.spec
 ≃Γ-congR {[]}    {τ} _ _ _ _    _ = tt
 ≃Γ-congR {σ ∷ Γ} {τ} _ _ _ refl w = w
 
--- TODO: Zip deze bewijzen want je hebt ze toch allebei nodig
-
 ≃Γ-fst : {Γ' : Env Pr} {τ : Typ Pr} 
     → let Γ = τ ∷ Γ' in ( x : LEtup (map D2τ' Γ) )
     → (y : Rep τ ) ( ys : Val Pr Γ' )
@@ -65,6 +63,17 @@ open import correctness.spec
 ≃Γ-snd {Γ} {R} (x , xs) y ys w = w
 ≃Γ-snd {Γ} {σ :* τ} (x , xs) y ys w = w .snd
 ≃Γ-snd {Γ} {σ :+ τ} (x , xs) y ys w = w .snd
+
+≃Γ-split : {Γ' : Env Pr} {τ : Typ Pr} 
+    → let Γ = τ ∷ Γ' in ( x : LEtup (map D2τ' Γ) )
+    → { y : Rep τ  } ( ys : Val Pr Γ' )
+    → (x ≃Γ push y ys) → (fst x ≃τ y × snd x ≃Γ ys)
+≃Γ-split {Γ} {Un} (x , xs) {y} ys w = tt , w
+≃Γ-split {Γ} {Inte} (x , xs) {y} ys w = tt , w
+≃Γ-split {Γ} {R} (x , xs) {y} ys w = tt , w
+≃Γ-split {Γ} {τ :* τ₁} (x , xs) {y} ys w = w
+≃Γ-split {Γ} {τ :+ τ₁} (x , xs) {y} ys w = w
+
 
 ≃Γ-intro-zero : {Γ : Env Pr} {τ : Typ Pr}
             → (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
@@ -119,9 +128,16 @@ open import correctness.spec
 ≃τ-and-≃Γ-implies-Compatible-idx-val (S idx) ctg (x , xs) (push y ys) w1 w2
     = ≃τ-and-≃Γ-implies-Compatible-idx-val idx ctg xs ys w1 (≃Γ-snd (x , xs) y ys w2)
 
+-- ===============================
+-- Versions of previous lemmas with (more) implicit arguments
+-- ===============================
 
--- Todo: vragen aan Lawrence of hij ervaring heeft met tactics schrijven.
--- 
--- ≃τ-zerov' : { @(tactic foo) τ : Typ Pr } → { @(tactic bar) x : Rep τ }  → zerov (D2τ' τ) .fst ≃τ x
 ≃τ-zerov' : ( τ : Typ Pr ) → { x : Rep τ }  → zerov (D2τ' τ) .fst ≃τ x
 ≃τ-zerov' τ {x} = ≃τ-zerov τ x
+
+≃Γ-intro-zero' : {Γ : Env Pr} ( τ : Typ Pr )
+            → { val : Val Pr Γ } { x : Rep τ } 
+            → (evIn : LEtup (map D2τ' Γ))
+            → evIn ≃Γ val
+            → (zerov (D2τ' τ) .fst , evIn) ≃Γ push x val
+≃Γ-intro-zero' {Γ} τ {val} {x} evIn w = ≃Γ-intro-zero {Γ} {τ} evIn val x w

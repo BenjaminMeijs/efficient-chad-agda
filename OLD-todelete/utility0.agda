@@ -65,8 +65,6 @@ module Basics where
                     → w ≡ z
                     → f u v w ≡ f x y z
     cong₃ f refl refl refl = refl
-    -- TODO: voor D2τ' een normaal vorm maken
-    -- Vanwege sumtypes, just (nothing, nothing) -> nothing . Zo sparse mogelijk, in plaats van zo dense mogelijk.
 
     sparse-normal-form : {τ : LTyp} → LinRep τ → LinRep τ
     sparse-normal-form {(σ1 :*! σ2) :*! (τ1 :*! τ2)} (just (nothing , nothing)) = nothing

@@ -71,20 +71,7 @@ postulate
               → DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a ctg
                 ≡ onehot idx ctg
 
-
-    DSemᵀ-case0 : {σ1 σ2 τ : Typ Pr}
-              → (a : Rep (σ1 :+ σ2))
-              → (f : Rep σ1 →  Rep τ) 
-              → (g : Rep σ2 →  Rep τ) 
-              → (ctg : LinRepDense (D2τ' τ))
-              → DSemᵀ {σ1 :+ σ2} {τ} [ f , g ] a ctg
-                ≡ [ (λ x → (DSemᵀ {σ1} {τ} f x ctg) , (zerovDense (D2τ' σ2)))
-                  , (λ y → (zerovDense (D2τ' σ1)) , (DSemᵀ {σ2} {τ} g y ctg))
-                  ] a
-
-    -- Question: Wat is de juiste regel voor DSemᵀ-case ???
-    -- todo: Naam aanpassen
-    DSemᵀ-case8 : {σ1 σ2 ρ τ : Typ Pr}
+    DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
               → (a : Rep ((σ1 :+ σ2) :* ρ))
               → (l : Rep (σ1 :* ρ) → Rep τ) 
               → (r : Rep (σ2 :* ρ) → Rep τ) 

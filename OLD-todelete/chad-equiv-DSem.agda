@@ -460,7 +460,7 @@ chad-equiv-DSem {Γ = Γ} env evIn ctg (prim op t) =
   let chad-t = interp env (chad t)
       d-op-env-verbose = push ctg (push (fst chad-t) (push ctg (push chad-t empty)))
       d-op-verbose = interp d-op-env-verbose (sink (WCopy (WCopy WCut)) (dprim' op))
-      d-op-env = push ctg (push (fst chad-t) empty) -- TODO: Probably need to convert fst chad-t to the original function using chad-preserves-primal.
+      d-op-env = push ctg (push (fst chad-t) empty) 
       d-op = interp d-op-env (dprim' op) 
   in begin
   LACMexec (chad-t .snd d-op-verbose .fst) evIn
@@ -512,9 +512,9 @@ chad-equiv-DSem {Γ = Γ} env evIn (just (inj₂ ctg)) (inr t) =
   ≡⟨ cong₂ _ev+_ refl (DSem-inj₂ (flip interp t) env ctg) ⟩
   evIn ev+ DSem (inj₂ ∘ flip interp  t) env (just (inj₂ ctg))
   ∎
--- TODO: perhaps rewrite this to use a case distinction
-chad-equiv-DSem {Γ = Γ} env evIn ctg (case' {σ = σ} {ρ = ρ} c l r) with (interp env (chad c) .fst) | inspect fst (interp env (chad c))
-... | inj₁ c' | [ w ] = 
+chad-equiv-DSem {Γ = Γ} env evIn ctg (case' {σ = σ} {ρ = ρ} c l r)
+with (interp env (chad c) .fst) in w
+... | inj₁ c' =
   let interp-chad-c = interp env (chad c)
       w' : fst (interp-chad-c) ≡ inj₁ c'
       w' = w
@@ -556,5 +556,5 @@ chad-equiv-DSem {Γ = Γ} env evIn ctg (case' {σ = σ} {ρ = ρ} c l r) with (i
   (evIn ev+
       DSem (λ x → ((λ { (inj₁ y) → interp (push y x) l ; (inj₂ y) → interp (push y x) r }) (interp x c))) env ctg)
   ∎
-... | inj₂ c' | [ w ] = {! w  !}
+... | inj₂ c' | = ?
 

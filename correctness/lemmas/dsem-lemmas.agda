@@ -189,53 +189,6 @@ private
   ... | inj₁ _  = refl
   ... | inj₂ _  = refl
 
-  couple : {σ1 σ2 τ : Typ Pr} → Rep (σ1 :+ σ2) → Rep τ → Rep ( (σ1 :* τ) :+ (σ2 :* τ) )
-  couple x y = [ (λ x' → inj₁ (x' , y))
-               , (λ x' → inj₂ (x' , y))
-               ] x
-
-DSemᵀ-lemma-interp-case2 : {Γ : Env Pr} {σ τ ρ : Typ Pr}
-  → (a : Rep (Etup Pr Γ))
-  → (ctg : LinRepDense (D2τ' ρ))
-  → (e : Term Pr Γ (σ :+ τ))
-  → (l : Term Pr (σ ∷ Γ) ρ)
-  → (r : Term Pr (τ ∷ Γ) ρ)
-  → [ (λ x → let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
-                 dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
-             in Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)
-                ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg))
-    , (λ x → let dsem-r = DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) ctg
-                 dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (zerovDense (D2τ' σ),  dsem-r .fst)
-             in Etup2EV dsem-e ev+ Etup2EV (dsem-r .snd)
-                ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg))
-    ] (interp e (Etup-to-val a))
-DSemᵀ-lemma-interp-case2 {Γ} {σ} {τ} {ρ} a ctg e l r
-  using f ← [  (λ (z , a) → interp l (Etup-to-val (z , a))) 
-             , (λ (z , a) → interp r (Etup-to-val (z , a)))
-            ] 
-  using g ← λ a' → [ (λ v → inj₁ (v , a'))
-                   , (λ v → inj₂ (v , a'))
-                   ] (interp e (Etup-to-val a'))
-  with interp e (Etup-to-val a) in interp-e-val≡inj₁-x
-... | (inj₁ x) interp-e-val≡inj₁-x =
-  let π = (σ :* Etup Pr Γ) :+ (τ :* Etup Pr Γ)
-  in begin
-  {!   !}
-    ≡⟨ {!   !} ⟩
-  Etup2EV (DSemᵀ {Etup Pr Γ} {π} g a (DSemᵀ {π} {ρ} f (g a) ctg))
-    ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a ctg)) ⟩
-  Etup2EV (DSemᵀ (f ∘ g) a ctg)
-    ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg yolo) ⟩
-  Etup2EV (DSemᵀ (λ a' → interp (case' e l r) (Etup-to-val a')) a ctg)
-    ≡⟨⟩
-  Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = ρ} (interp (case' e l r) ∘ Etup-to-val) a ctg)
-  ∎
-  where yolo : (v : Rep (Etup Pr Γ)) → f (g v) ≡ interp (case' e l r) (Etup-to-val v)
-        yolo v with interp e (Etup-to-val v)
-        ... | (inj₁ w) = refl
-        ... | (inj₂ w) = refl
-... | (inj₂ x) | Equality.[_] interp-e-val≡inj₂-x = {!   !}
-  
 
 DSemᵀ-lemma-interp-case : {Γ : Env Pr} {σ τ ρ : Typ Pr}
   → (a : Rep (Etup Pr Γ))
@@ -260,15 +213,15 @@ DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a ctg e l r
                           ,(λ z → interp r (Etup-to-val (z , a)))
                          ] zs
   using g ← λ a → ( interp e (Etup-to-val a) , a)
-  with interp e (Etup-to-val a) | inspect (interp e) (Etup-to-val a)
-... | (inj₁ x) | Equality.[_] interp-e-val≡inj₁-x = 
+  with interp e (Etup-to-val a) in interp-e-val≡inj-x  
+... | (inj₁ x) = 
   let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
       dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
       dsem-f = DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (inj₁ x , a) ctg
       dsem-g = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-f .fst)
 
       case-lemma : ( (dsem-l .fst , zerovDense (D2τ' τ)) , dsem-l .snd) ≡ dsem-f
-      case-lemma = sym (DSemᵀ-case8 {σ} {τ} {Etup Pr Γ} {ρ} (inj₁ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg)
+      case-lemma = sym (DSemᵀ-case {σ} {τ} {Etup Pr Γ} {ρ} (inj₁ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg)
   in begin
   Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)
     ≡⟨ cong₂ _ev+_ (cong Etup2EV (cong (DSemᵀ (interp e ∘ Etup-to-val) a) (cong fst case-lemma))) (cong Etup2EV (cong snd case-lemma)) ⟩
@@ -277,7 +230,7 @@ DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a ctg e l r
   Etup2EV dsem-g ev+ Etup2EV (DSemᵀ {Etup Pr Γ} {Etup Pr Γ} id a (dsem-f .snd))
     ≡⟨ DSemᵀ-lemma-pair (interp e ∘ Etup-to-val) id a (dsem-f .fst) (dsem-f .snd) ⟩
   Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a dsem-f)
-    ≡⟨ cong Etup2EV (cong (DSemᵀ g a) (cong (λ q → DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f q ctg) (cong₂ (_,_) (sym interp-e-val≡inj₁-x) refl))) ⟩
+    ≡⟨ cong Etup2EV (cong (DSemᵀ g a) (cong (λ q → DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f q ctg) (cong₂ (_,_) (sym interp-e-val≡inj-x) refl))) ⟩
   Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a (DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (g a) ctg))
     ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a ctg)) ⟩
   Etup2EV (DSemᵀ (f ∘ g) a ctg)
@@ -286,21 +239,21 @@ DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a ctg e l r
     ≡⟨⟩
   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = ρ} (interp (case' e l r) ∘ Etup-to-val) a ctg)
   ∎
-... | (inj₂ x) | Equality.[_] interp-e-val≡inj₂-x
+... | (inj₂ x) 
   rewrite sym (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg (interp-case-extensionality e l r))
   rewrite DSemᵀ-chain {Etup Pr Γ} {(σ :+ τ) :* Etup Pr Γ} {ρ} f g a ctg
-  rewrite interp-e-val≡inj₂-x
+  rewrite interp-e-val≡inj-x
   using dsem-t ← DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) ctg
   using dsem-e ← DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (zerovDense (D2τ' σ) , dsem-t .fst)
   using dsem-f ← DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (inj₂ x , a) ctg
   using dsem-g ← DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-f .fst)
   rewrite sym (DSemᵀ-lemma-pair {Γ} {σ :+ τ} {Etup Pr Γ} (interp e ∘ Etup-to-val) id a (dsem-f .fst) (dsem-f .snd))
   rewrite DSemᵀ-identity {Etup Pr Γ} a (dsem-f .snd)  
-  rewrite DSemᵀ-case8 {σ} {τ} {Etup Pr Γ} {ρ} (inj₂ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg 
+  rewrite DSemᵀ-case {σ} {τ} {Etup Pr Γ} {ρ} (inj₂ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg 
   = refl
 
 -- This lemma combines DSemᵀ-lemma-interp-case together with a cong on 'interp e (Etup-to-val a)'
--- This is convenient, as this lemma is used when we've made a case distinction on 'interp e (Etup-to-val a)' (alongside an inspect), and thus this disctinction needs to be propagated
+-- This is convenient, as this lemma is used when we've made a case distinction on 'interp e (Etup-to-val a)', and thus this disctinction needs to be propagated
 DSemᵀ-lemma-interp-case-cong : {Γ : Env Pr} {σ τ ρ : Typ Pr}
   → (a : Rep (Etup Pr Γ))
   → (ctg : LinRepDense (D2τ' ρ))
