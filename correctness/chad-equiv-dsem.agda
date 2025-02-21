@@ -7,7 +7,7 @@ open import Agda.Builtin.Unit using (tt)
 open import Data.Integer using (ℤ)
 open import Data.List using (map; _∷_; [])
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Maybe using (Maybe; just; nothing; Is-just)
+open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness)
 open import Data.Product using (_×_)
 open import Function.Base using (_∘_; flip; _$_; case_of_)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
@@ -41,20 +41,42 @@ gnoc refl f = refl
 -- evalprim-equiv-DSem x ctg SIGN = sym DSemᵀ-lemma-ctg-zero'
 
 
--- chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr} 
---                   → let σ  = Etup Pr Γ 
---                         LΓ = map D2τ' Γ in
---                   (a : Rep σ)
---                   (evIn : LEtup LΓ )
---                   (ctg : LinRep (D2τ' τ))
---                   (t : Term Pr Γ τ)
---                 → ctg  ≃τ (interp t (Etup-to-val a))
---                 → evIn ≃Γ Etup-to-val a  
---                 -- → (dsem : IsJust (DSemᵀ {σ} {τ} (interp t ∘ Etup-to-val) a) )
---                 -- → (LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) evIn)
---                 --   ≡ Etup2EV {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LEtup2EV {LΓ} evIn)
---                 → (LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) evIn)
---                   ≡ Etup2EV {Γ} (DSemᵀ {σ} {τ} (interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV {LΓ} evIn)
+chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr} 
+                  → let σ  = Etup Pr Γ 
+                        LΓ = map D2τ' Γ in
+                  (a : Rep σ)
+                  (evIn : LEtup LΓ )
+                  (ctg : LinRep (D2τ' τ))
+                  (t : Term Pr Γ τ)
+                → ctg  ≃τ (interp t (Etup-to-val a))
+                → evIn ≃Γ Etup-to-val a  
+                → (dsem : Is-just (DSemᵀ {σ} {τ} (interp t ∘ Etup-to-val) a) )
+                → (LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) evIn)
+                  ≡ Etup2EV {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LEtup2EV {LΓ} evIn)
+chad-equiv-DSemᵀ {Γ} a evIn tt unit ~τ ~Γ dt 
+  rewrite chad-ctg-zero (Etup-to-val a) evIn tt unit tt ~Γ refl
+  = Zero.DSemᵀ-lemma-ctg-zero-evIn' dt
+chad-equiv-DSemᵀ {Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) ~τ ~Γ dt
+  rewrite chad-ctg-zero (Etup-to-val a) evIn nothing (pair l r) tt ~Γ refl 
+  = Zero.DSemᵀ-lemma-ctg-zero-evIn' dt
+chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) ~τ ~Γ dt
+  = let ctgL = _ ; ctgR = _
+        m1 = interp (chad l) (Etup-to-val-primal a) .snd ctgL .fst
+        m2 = interp (chad r) (Etup-to-val-primal a) .snd ctgR .fst
+
+        (dl , dr) = Pair.DSemᵀ-exists-lemma-pair₁ (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) a dt
+        ihr = chad-equiv-DSemᵀ a (LACMexec m1 evIn) ctgR r (~τ .snd) (chad-preserves-≃Γ (Etup-to-val a) evIn ctgL l (~τ .fst) ~Γ) dr
+        ihl = chad-equiv-DSemᵀ a evIn ctgL l (~τ .fst) ~Γ dl
+  in begin
+  LEtup2EV (LACMexec (LACMsequence m1 m2) evIn)
+    ≡⟨ gnoc (LACMexec-sequence m1 m2 evIn) LEtup2EV ⟩
+  LEtup2EV (LACMexec m2 (LACMexec m1 evIn))
+    ≡⟨ trans ihr (trans (ev+congR ihl) (trans (sym (ev+assoc _ _ _)) (ev+congL (ev+comm _ _)))) ⟩
+  (Etup2EV (to-witness dl (sparse2dense $ fst ctg )) ev+ Etup2EV (to-witness dr (sparse2dense $ snd ctg))) ev+ LEtup2EV evIn
+    ≡⟨ ev+congL (DSemᵀ-lemma-pair-ev+ (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) a dt dl dr (sparse2dense $ fst ctg )  (sparse2dense $ snd ctg)) ⟩
+  (Etup2EV (to-witness dt (sparse2dense {D2τ' σ :*! D2τ' τ} (just ctg))) ev+ LEtup2EV evIn)
+  ∎
+chad-equiv-DSemᵀ {Γ} a evIn ctg t ~τ ~Γ dt = {!   !}
 -- chad-equiv-DSemᵀ {Γ} a evIn tt unit w1 w2
 --   rewrite chad-ctg-zero (Etup-to-val a) evIn tt unit tt w2 refl
 --   = DSemᵀ-lemma-ctg-zero-evIn'
