@@ -107,7 +107,7 @@ simplify-exec-chad-primop {Γ} {σ} {τ} val evIn ctg t op
 -- 2. a with and case distinction on: interp e val
 -- Then, you can use this lemma, for example with a rewrite.
 -- The argument f should be either inj₁ or inj₂, depending on the case distinction
--- todo: Extra comment over lelijke type
+-- TODO: Extra comment over lelijke type
 simplify-exec-chad-case : {Γ : Env Pr} {σ τ ρ π : Typ Pr} 
   → (val : Val Pr Γ)
     (evIn : LEtup (map D2τ' Γ) )

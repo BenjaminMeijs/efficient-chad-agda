@@ -15,7 +15,7 @@ open import correctness.spec
 import spec.LACM as LACM
 open LACM using (LACM)
 
--- Todo: Rename to LACMexec-properties
+-- TODO: Rename to LACMexec-properties
 
 private
     LACMbind : ∀ {Γ : LEnv} {a b : Set} -> LACM Γ a -> (a -> LACM Γ b) -> LACM Γ b

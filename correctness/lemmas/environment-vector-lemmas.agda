@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; congâ
 open import spec
 open import correctness.spec
 
--- Todo: rename to LinRep-is-monoid
+-- TODO: rename to LinRep-is-monoid
 
 module plusv-lemmas where
     -- This can be derived from the postulations

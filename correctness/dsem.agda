@@ -8,6 +8,7 @@ open import Data.Empty using (⊥)
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing)
 open import Data.List using (_∷_)
 open import Function.Base using (id; _∘_; _$_; flip; case_of_)
+open import Function.Bundles using (_⇔_)
 open import Data.Product.Base using (uncurry; _×_; Σ)
 open import Agda.Builtin.Float using (primFloatPlus; primFloatTimes; primFloatNegate)
 
@@ -30,7 +31,7 @@ _??_ : {A B : Set} → Maybe (A → B) → A → Maybe B
 _??_ (just f) x = just (f x)
 _??_ nothing _  = nothing
 
--- Todo: figure out how to do applicative style stuff
+-- TODO: figure out how to do applicative style stuff
 map₂ : {A B C : Set} → (A → B → C) → Maybe A → Maybe B → Maybe C
 map₂ f (just x) (just y) = just (f x y)
 map₂ _ _ _ = nothing
@@ -58,9 +59,17 @@ postulate
                 → (g : Rep τ1 → Rep τ2)
                 → (a : Rep τ1)
                 → (df∘g : Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a))
+                → (df : Is-just (DSemᵀ {τ2} {τ3} f (g a)))
+                → (dg : Is-just (DSemᵀ {τ1} {τ2} g a))
                 → (ctg : LinRepDense (D2τ' τ3))
-                → Σ (Is-just (DSemᵀ {τ1} {τ2} g a) × Is-just (DSemᵀ {τ2} {τ3} f (g a)))
-                    (λ (dg , df) → (to-witness df∘g) ctg ≡ (to-witness dg) ((to-witness df $ ctg)))
+                → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg)
+
+    DSemᵀ-chain-exists : {τ1 τ2 τ3 : Typ Pr}
+                → (f : Rep τ2 → Rep τ3)
+                → (g : Rep τ1 → Rep τ2)
+                → (a : Rep τ1)
+                → (Is-just $ DSemᵀ {τ1} {τ3} (f ∘ g) a)
+                  ⇔ (Is-just (DSemᵀ {τ1} {τ2} g a) × Is-just (DSemᵀ {τ2} {τ3} f (g a)))
 
     DSemᵀ-pair : {σ τ1 τ2 : Typ Pr}
             → (f : Rep σ →  Rep τ1) 
@@ -106,52 +115,64 @@ postulate
 --     DSemᵀ-extensionality : {σ τ : Typ Pr}
 --               → (f : Rep σ →  Rep τ) 
 --               → (g : Rep σ →  Rep τ) 
---               → (a : Rep σ)
---               → (ctg : LinRepDense (D2τ' τ))
 --               → ( (x : Rep σ) → f x ≡ g x  )
---               → DSemᵀ {σ} {τ} f a ctg
---               ≡ DSemᵀ {σ} {τ} g a ctg
+--               → (a : Rep σ)
+--               → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+--               → (ctg : LinRepDense (D2τ' τ))
+--               → Σ (Is-just $ DSemᵀ {σ} {τ} g a)
+--                   (λ dg → to-witness df ctg ≡ to-witness dg ctg)
+    DSemᵀ-extensionality : {σ τ : Typ Pr}
+              → (f : Rep σ →  Rep τ) 
+              → (g : Rep σ →  Rep τ) 
+              → ( (x : Rep σ) → f x ≡ g x  )
+              → (a : Rep σ)
+              → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+              → (dg : Is-just $ DSemᵀ {σ} {τ} g a)
+              → (ctg : LinRepDense (D2τ' τ))
+              → (to-witness df ctg ≡ to-witness dg ctg)
 
 --     -- ======================
 --     -- DSem on linear functions (Derivative of a linear function f is f)
 --     -- ======================
---     DSemᵀ-identity : {τ : Typ Pr} 
---             → (a : Rep τ)
---             → (ctg : LinRepDense (D2τ' τ))
---             → DSemᵀ {τ} {τ} id a ctg
---               ≡ ctg
+    DSemᵀ-identity : {τ : Typ Pr} 
+            → (a : Rep τ)
+            → (ctg : LinRepDense (D2τ' τ))
+            → Σ (Is-just $ DSemᵀ {τ} {τ} id a)
+                ( λ d-id → to-witness d-id ctg ≡ ctg)
 
---     DSemᵀ-inj₁ : {σ τ : Typ Pr}
---             → (a : Rep σ)
---             → (ctg : LinRepDense (D2τ' (σ :+ τ)))
---             → DSemᵀ {σ} {σ :+ τ} inj₁ a ctg
---               ≡ fst ctg
+    DSemᵀ-inj₁ : {σ τ : Typ Pr}
+            → (a : Rep σ)
+            → (ctg : LinRepDense (D2τ' (σ :+ τ)))
+            → Σ (Is-just $ DSemᵀ {σ} {σ :+ τ} inj₁ a)
+                ( λ df → to-witness df ctg ≡ fst ctg)
 
---     DSemᵀ-inj₂ : {σ τ : Typ Pr}
---             → (a : Rep σ)
---             → (ctg : LinRepDense (D2τ' (τ :+ σ)))
---             → DSemᵀ {σ} {τ :+ σ} inj₂ a ctg
---               ≡ snd ctg
+    DSemᵀ-inj₂ : {σ τ : Typ Pr}
+            → (a : Rep σ)
+            → (ctg : LinRepDense (D2τ' (τ :+ σ)))
+            → Σ (Is-just $ DSemᵀ {σ} {τ :+ σ} inj₂ a)
+                ( λ df → to-witness df ctg ≡ snd ctg)
 
 --     -- ======================
 --     -- (primitive) Operations on Floats
 --     -- ======================
---     DSemᵀ-prim-floatPlus : let  σ : Typ Pr ; σ = (R :* R) ; τ : Typ Pr ; τ = R 
---             in (a : Rep σ)
---             → (ctg : LinRepDense (D2τ' τ))
---             → let (x , y) = a
---               in DSemᵀ {σ} {τ} (uncurry primFloatPlus) (x , y) ctg
---               ≡ (ctg , ctg)
+    DSemᵀ-prim-floatPlus : let  σ : Typ Pr ; σ = (R :* R) ; τ : Typ Pr ; τ = R 
+            in (a : Rep σ)
+            → (ctg : LinRepDense (D2τ' τ))
+            → let (x , y) = a
+            in Σ ( Is-just $ DSemᵀ {σ} {τ} (uncurry primFloatPlus) a)
+                 ( λ df → to-witness df ctg
+                          ≡ (ctg , ctg) )
 
---     DSemᵀ-prim-floatTimes : let  σ : Typ Pr ; σ = (R :* R) ; τ : Typ Pr ; τ = R 
---             in (a : Rep σ)
---             → (ctg : LinRepDense (D2τ' τ))
---             → let (x , y) = a
---               in DSemᵀ {σ} {τ} (uncurry primFloatTimes) (x , y) ctg
---               ≡ (primFloatTimes ctg y , primFloatTimes ctg x)
+    DSemᵀ-prim-floatTimes : let  σ : Typ Pr ; σ = (R :* R) ; τ : Typ Pr ; τ = R 
+            in (a : Rep σ)
+            → (ctg : LinRepDense (D2τ' τ))
+            → let (x , y) = a
+            in Σ ( Is-just $ DSemᵀ {σ} {τ} (uncurry primFloatTimes) a)
+                 ( λ df → to-witness df ctg
+                         ≡ (primFloatTimes ctg y , primFloatTimes ctg x))
 
---     DSemᵀ-prim-floatNegate : let  σ : Typ Pr ; σ = R ; τ : Typ Pr ; τ = R 
---             in (a : Rep σ) 
---             → (ctg : LinRepDense (D2τ' τ))
---             → DSemᵀ {σ} {τ} primFloatNegate a ctg
---               ≡ primFloatNegate ctg
+    DSemᵀ-prim-floatNegate : let  σ : Typ Pr ; σ = R ; τ : Typ Pr ; τ = R 
+            in (a : Rep σ) 
+            → (ctg : LinRepDense (D2τ' τ))
+            → Σ (Is-just $ DSemᵀ {σ} {τ} primFloatNegate a)
+                ( λ df → to-witness df ctg ≡ primFloatNegate ctg)
