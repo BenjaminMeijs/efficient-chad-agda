@@ -9,6 +9,7 @@ open import Data.Product using (_×_; uncurry; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing; maybe; from-just)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Data.Integer using (ℤ)
 import Data.Maybe.Relation.Unary.Any as Any
 open import Function.Bundles using (_⇔_;  mk⇔; Equivalence)
 -- import Data.Maybe.Relation.Unary.All as All
@@ -36,8 +37,6 @@ private
     just-nothing-absurd : {A : Set} {x : A} → just x ≡ nothing → ⊥
     just-nothing-absurd ()
 
-
-
 module Zero {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
     { ctg : LinRepDense (D2τ' τ) }
     {{ w : ctg ≡ zerovDense (D2τ' τ)}}
@@ -47,8 +46,6 @@ module Zero {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
     DSemᵀ-lemma-ctg-zero'
       rewrite w
       = DSemᵀ-ctg-zero f a df 
-
-    
 module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  Rep τ2) (a : Rep σ) where
     -- helper functions
     private
@@ -170,7 +167,7 @@ DSemᵀ-exists-lemma-inj₁ : {σ τ ρ : Typ Pr}
         → (Is-just (DSemᵀ {σ} {τ} f a))
           ⇔ (Is-just (DSemᵀ {σ} {τ :+ ρ} (inj₁ ∘ f) a))
 DSemᵀ-exists-lemma-inj₁ {σ} {τ} {ρ} f a = mk⇔ to from
-  where chain = DSemᵀ-chain-exists inj₁ f a
+  where chain = DSemᵀ-exists-chain inj₁ f a
         to   = λ df → Equivalence.from chain (df , (DSemᵀ-inj₁ (f a) (zerovDense (D2τ' τ :*! D2τ' ρ)) .fst))
         from = λ dg → Equivalence.to   chain dg .fst
 
@@ -207,36 +204,6 @@ DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a df dg ctgL ctgR =
 -- -- ======================
 -- -- Lemmas derivable from the postulations, that *do* include interp
 -- -- ======================
--- DSemᵀ-lemma-interp-let : {Γ : Env Pr} {σ τ : Typ Pr}
---   → (a : Rep (Etup Pr Γ))
---   → (ctg : LinRepDense (D2τ' τ))
---   → (rhs : Term Pr Γ σ)
---   → (body : Term Pr (σ ∷ Γ) τ)
---   → let a' = (interp rhs (Etup-to-val a)) , a
---         dsem-body = DSemᵀ {σ = σ :* (Etup Pr Γ)} {τ = τ} (interp body ∘ Etup-to-val) a' ctg
---         dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (interp rhs ∘ Etup-to-val) a (Etup2EV dsem-body .fst)
---     in (Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd)
---         ≡ Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
--- DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body =
---   let -- Expressions used for applying the chain rule
---       f : (env : Rep (Etup Pr (σ ∷ Γ))) → Rep τ
---       f = interp body ∘ Etup-to-val
---       g : (env : Rep (Etup Pr Γ)) → Rep σ × Rep (Etup Pr Γ) -- Note that g constructs a pair, thus we can use the pair rule of DSem on it
---       g = (λ env → (interp rhs (Etup-to-val env) , env))
-
---       dsem-body = DSemᵀ {σ = σ :* (Etup Pr Γ)} {τ = τ} f (g a) ctg
---       dsem-rhs = DSemᵀ {σ = Etup Pr Γ } {τ = σ} (fst ∘ g) a (Etup2EV dsem-body .fst)
---   in begin
---   Etup2EV dsem-rhs ev+ Etup2EV dsem-body .snd
---     ≡⟨ ev+congR (sym (cong Etup2EV (DSemᵀ-identity a (dsem-body .snd)))) ⟩
---   Etup2EV dsem-rhs ev+ Etup2EV (DSemᵀ id a (dsem-body .snd))
---     ≡⟨ DSemᵀ-lemma-pair (interp rhs ∘ Etup-to-val) id a (dsem-body .fst) (dsem-body .snd) ⟩
---   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = σ :* Etup Pr Γ} g a (DSemᵀ {σ = σ :* Etup Pr Γ} {τ = τ} f (g a) ctg))
---     ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a ctg)) ⟩
---   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (f ∘ g) a ctg)
---     ≡⟨⟩
---   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = τ} (interp (let' rhs body) ∘ Etup-to-val) a ctg)
---   ∎
 
 -- private
 --   -- This proof is used within the poslution DSemᵀ-extensionality to simplify interp (case' e l r) (Etup-to-val y)
@@ -318,22 +285,3 @@ DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a df dg ctgL ctgR =
 --   rewrite DSemᵀ-case {σ} {τ} {Etup Pr Γ} {ρ} (inj₂ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg 
 --   = refl
 
--- -- This lemma combines DSemᵀ-lemma-interp-case together with a cong on 'interp e (Etup-to-val a)'
--- -- This is convenient, as this lemma is used when we've made a case distinction on 'interp e (Etup-to-val a)', and thus this disctinction needs to be propagated
--- DSemᵀ-lemma-interp-case-cong : {Γ : Env Pr} {σ τ ρ : Typ Pr}
---   → (a : Rep (Etup Pr Γ))
---   → (ctg : LinRepDense (D2τ' ρ))
---   → (e : Term Pr Γ (σ :+ τ))
---   → (l : Term Pr (σ ∷ Γ) ρ)
---   → (r : Term Pr (τ ∷ Γ) ρ)
---   → (c : Rep (σ :+ τ)) → (w : interp e (Etup-to-val a) ≡ c)
---   → [ (λ x → let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
---                  dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
---              in Etup2EV dsem-e ev+ Etup2EV (dsem-l .snd)
---                 ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg))
---     , (λ x → let dsem-r = DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) ctg
---                  dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (zerovDense (D2τ' σ),  dsem-r .fst)
---              in Etup2EV dsem-e ev+ Etup2EV (dsem-r .snd)
---                 ≡ Etup2EV (DSemᵀ (interp (case' e l r) ∘ Etup-to-val) a ctg))
---     ] c
--- DSemᵀ-lemma-interp-case-cong a ctg e l r c refl = DSemᵀ-lemma-interp-case a ctg e l r

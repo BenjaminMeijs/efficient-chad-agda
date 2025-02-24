@@ -64,7 +64,7 @@ postulate
                 → (ctg : LinRepDense (D2τ' τ3))
                 → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg)
 
-    DSemᵀ-chain-exists : {τ1 τ2 τ3 : Typ Pr}
+    DSemᵀ-exists-chain : {τ1 τ2 τ3 : Typ Pr}
                 → (f : Rep τ2 → Rep τ3)
                 → (g : Rep τ1 → Rep τ2)
                 → (a : Rep τ1)
@@ -87,13 +87,13 @@ postulate
               in ( (dh ?? ctg)
                    ≡ map₂ (plusvDense (D2τ' σ)) (df ?? ctg-f) (dg ?? ctg-g))
 
---     DSemᵀ-var : {Γ : Env Pr} {τ : Typ Pr}
---               → let σ = Etup Pr Γ
---               in (a : Rep σ)
---               → (idx : Idx Γ τ)
---               → (ctg : LinRepDense (D2τ' τ))
---               → DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a ctg
---                 ≡ onehot idx ctg
+    DSemᵀ-var : {Γ : Env Pr} {τ : Typ Pr}
+              → let σ = Etup Pr Γ
+              in (a : Rep σ)
+              → (idx : Idx Γ τ)
+              → (ctg : LinRepDense (D2τ' τ))
+              → Σ (Is-just $ DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a)
+                  (λ df → to-witness df ctg ≡ onehot idx ctg)
 
 --     DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
 --               → (a : Rep ((σ1 :+ σ2) :* ρ))
@@ -112,24 +112,25 @@ postulate
 --                                 ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
 --                   ] (a .fst)
                   
---     DSemᵀ-extensionality : {σ τ : Typ Pr}
---               → (f : Rep σ →  Rep τ) 
---               → (g : Rep σ →  Rep τ) 
---               → ( (x : Rep σ) → f x ≡ g x  )
---               → (a : Rep σ)
---               → (df : Is-just $ DSemᵀ {σ} {τ} f a)
---               → (ctg : LinRepDense (D2τ' τ))
---               → Σ (Is-just $ DSemᵀ {σ} {τ} g a)
---                   (λ dg → to-witness df ctg ≡ to-witness dg ctg)
     DSemᵀ-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 
               → (g : Rep σ →  Rep τ) 
-              → ( (x : Rep σ) → f x ≡ g x  )
+              -- TODO: replace with pointwise equality
+              → ( (x : Rep σ) → f x ≡ g x  ) 
               → (a : Rep σ)
               → (df : Is-just $ DSemᵀ {σ} {τ} f a)
               → (dg : Is-just $ DSemᵀ {σ} {τ} g a)
               → (ctg : LinRepDense (D2τ' τ))
               → (to-witness df ctg ≡ to-witness dg ctg)
+
+    DSemᵀ-exists-extensionality : {σ τ : Typ Pr}
+              → (f : Rep σ →  Rep τ) 
+              → (g : Rep σ →  Rep τ) 
+              -- TODO: replace with pointwise equality
+              → ( (x : Rep σ) → f x ≡ g x  ) 
+              → (a : Rep σ)
+              → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+              → (Is-just $ DSemᵀ {σ} {τ} g a)
 
 --     -- ======================
 --     -- DSem on linear functions (Derivative of a linear function f is f)
