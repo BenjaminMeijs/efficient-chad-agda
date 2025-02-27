@@ -12,7 +12,7 @@ open import spec
 open import correctness.spec
 open import correctness.lemmas.value-compatibility-lemmas
 open import correctness.lemmas.simplify-exec-chad
-open import correctness.lemmas.LACMexec-lemmas
+open import correctness.lemmas.LACMexec-properties
 open import chad-preserves-primal
 
 -- ===============================

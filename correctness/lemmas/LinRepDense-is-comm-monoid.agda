@@ -1,4 +1,4 @@
-module correctness.lemmas.environment-vector-lemmas where
+module correctness.lemmas.LinRepDense-is-comm-monoid where
 
 open import Agda.Builtin.Equality using (_â‰¡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -13,8 +13,6 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; congâ
 
 open import spec
 open import correctness.spec
-
--- TODO: rename to LinRep-is-monoid
 
 module plusv-lemmas where
     -- This can be derived from the postulations

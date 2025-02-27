@@ -8,7 +8,7 @@ open import Data.List using (List; []; _∷_; map)
 open import Data.Product using (_×_)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 
-open import correctness.lemmas.LACMexec-lemmas
+open import correctness.lemmas.LACMexec-properties
 open import correctness.lemmas.interp-sink-commutes
 
 open import spec

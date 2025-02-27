@@ -5,17 +5,18 @@ open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (tt)
 open import Data.List using ([]; _∷_; map)
-open import Data.Product using (_×_; uncurry)
+open import Data.Product using (_×_; uncurry; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing; maybe; from-just)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Data.Integer using (ℤ; _+_)
 import Data.Maybe.Relation.Unary.Any as Any
 open import Function.Bundles using (_⇔_;  mk⇔; Equivalence)
 open import Function.Base using (_$_; _∘_; id; case_of_; flip)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-open import correctness.lemmas.environment-vector-lemmas
+open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import correctness.lemmas.dsem-lemmas
 
 open import spec
@@ -109,69 +110,175 @@ DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body d-let d-rhs d-body =
   Etup2EV (to-witness d-let ctg)
   ∎
   
-private
-  -- This proof is used within the poslution DSemᵀ-extensionality to simplify interp (case' e l r) (Etup-to-val y)
-  -- The simplification is to ignore the costs of eval
-  interp-case-extensionality : {Γ : Env Pr} {σ τ ρ : Typ Pr}
-        → (e : Term Pr Γ (σ :+ τ))
-        → (l : Term Pr (σ ∷ Γ) ρ)
-        → (r : Term Pr (τ ∷ Γ) ρ)
-        → (y : Rep (Etup Pr Γ)) 
-        → let f = λ (zs , a) → [ (λ z → interp l (Etup-to-val (z , a))) 
-                               ,(λ z → interp r (Etup-to-val (z , a)))
-                               ] zs
-              g = λ a → ( interp e (Etup-to-val a) , a)
-        in (f ∘ g) y ≡ interp (case' e l r) (Etup-to-val y)
-  interp-case-extensionality e l r y with interp e (Etup-to-val y)
-  ... | inj₁ _  = refl
-  ... | inj₂ _  = refl
+module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
+  (a : Rep (Etup Pr Γ))
+  (e : Term Pr Γ (σ :+ τ))
+  (l : Term Pr (σ ∷ Γ) ρ)
+  (r : Term Pr (τ ∷ Γ) ρ)
+  (de : Is-just $ DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a)
+  (d-case : Is-just $ DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
+  (ctg : LinRepDense (D2τ' ρ))
+  where
 
-DSemᵀ-lemma-interp-case : {Γ : Env Pr} {σ τ ρ : Typ Pr}
-  → (a : Rep (Etup Pr Γ))
-  → (e : Term Pr Γ (σ :+ τ))
-  → (l : Term Pr (σ ∷ Γ) ρ)
-  → (r : Term Pr (τ ∷ Γ) ρ)
-  → (de : Is-just $ DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a)
-  → (d-case : Is-just $ DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
-  → (ctg : LinRepDense (D2τ' ρ))
-  → [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
-            → let ctg-l = to-witness dl ctg
-            in Etup2EV (to-witness de ( ctg-l .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (ctg-l .snd)
-               ≡ Etup2EV (to-witness d-case ctg))
-    , (λ x  → (dr : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
-            → let ctg-r = to-witness dr ctg
-            in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
-               ≡ Etup2EV (to-witness d-case ctg))
-    ] (interp e (Etup-to-val a))
--- This proof consists of two 'mirror' cases (inj₁ and inj₂)
--- For the inj₁ case we use ≡-reasoning since its verbosity makes clear how the proof works.
--- For the inj­₂ case we use rewrites for brevity
-DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg
-  using f ← λ (zs , a) → [ (λ z → interp l (Etup-to-val (z , a))) 
-                          ,(λ z → interp r (Etup-to-val (z , a)))
-                         ] zs
-  using g ← λ a → ( interp e (Etup-to-val a) , a)
-  with interp e (Etup-to-val a) in interp-e-val≡inj-x  
-... | (inj₁ x) = λ dl → 
-  let foo = {! Equivalence.to (DSemᵀ-exists-chain f g a) d-f∘g   !}
-      ctg-l = to-witness dl ctg
-      ctg-e = to-witness de (ctg-l .fst , zerovDense (D2τ' τ))
+  private
+    -- This proof is used within the poslution DSemᵀ-extensionality to simplify interp (case' e l r) (Etup-to-val y)
+    -- The simplification is to ignore the costs of eval
+    interp-case-extensionality : 
+            (y : Rep (Etup Pr Γ)) 
+          → let f = λ (zs , a) → [ (λ z → interp l (Etup-to-val (z , a))) 
+                                  , (λ z → interp r (Etup-to-val (z , a)))
+                                  ] zs
+                g = λ a → ( interp e (Etup-to-val a) , a)
+          in (f ∘ g) y ≡ interp (case' e l r) (Etup-to-val y)
+    interp-case-extensionality y with interp e (Etup-to-val y)
+    ... | inj₁ _  = refl
+    ... | inj₂ _  = refl
 
-      d-f∘g = DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) (sym ∘ interp-case-extensionality e l r) a d-case
-      (d-g , d-f) = Equivalence.to (DSemᵀ-exists-chain {τ2 = (σ :+ τ) :* Etup Pr Γ} f g a) d-f∘g 
-      -- d-id = DSemᵀ-identity a (zerovDense (D2τ' (Etup Pr Γ))) .fst
-      -- d-h = Pair.DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , d-id)
-  in begin
-  Etup2EV ctg-e ev+ Etup2EV (ctg-l .snd)
-    ≡⟨ {!   !} ⟩
-  {!   !}
-    ≡⟨ {!   !} ⟩
-  Etup2EV (to-witness d-g (to-witness d-f ctg))
-    ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a d-f∘g d-f d-g ctg)) ⟩
-  Etup2EV (to-witness d-f∘g ctg)
-    ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) (interp-case-extensionality e l r) a d-f∘g d-case ctg) ⟩
-  Etup2EV (to-witness d-case ctg)
-  ∎
+    lemma-cong-DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ρ)
+              → (c : Rep ρ → Rep (σ1 :+ σ2))
+              → (v : Rep (σ1 :+ σ2)) (w : c a ≡ v )
+              → (l : Rep σ1 → Rep ρ → Rep τ) 
+              → (r : Rep σ2 → Rep ρ → Rep τ) 
+              → (dc : Is-just $ DSemᵀ {ρ} {σ1 :+ σ2} c a)
+              → (ctg : LinRepDense (D2τ' τ))
+              → let f = case c a of [ l , r ]
+              in case v of
+                  [ (λ v → (dl : Is-just $ DSemᵀ {ρ} {τ} (l v) a )
+                         → Σ (Is-just $ DSemᵀ {ρ} {τ} f a)
+                             ( λ df → to-witness df ctg ≡ to-witness dl ctg))
+                  , (λ v → (dr : Is-just $ DSemᵀ {ρ} {τ} (r v) a )
+                         → Σ (Is-just $ DSemᵀ {ρ} {τ} f a)
+                             ( λ df → to-witness df ctg ≡ to-witness dr ctg))
+                  ]
+    lemma-cong-DSemᵀ-case a c v refl = DSemᵀ-case a c
+
+
+    DSemᵀ-lemma-interp-case-left : (x : Rep σ) → (interp-e-val≡inj-x : interp e (Etup-to-val a) ≡ inj₁ x)
+             → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
+             → Etup2EV (to-witness d-case ctg)
+               ≡ (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
+    DSemᵀ-lemma-interp-case-left x interp-e-val≡inj-x dl
+      -- using foo ← DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
+      -- using bar ← Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) (fst foo)
+      -- using eq1 ← DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a (fst foo) (snd bar) (fst bar) ctg
+      -- rewrite snd foo
+      -- rewrite eq1
+      = let -- aaaaaaa = {!   !}
+            Temp1 : Rep (ρ :* Inte)
+            Temp1 = ((λ { (inj₁ x) → eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
+                        ; (inj₂ y) → eval (push y (Etup-to-val a)) r .fst , one + eval (Etup-to-val a) e .snd + eval (push y (Etup-to-val a)) r .snd
+                    }) (eval (Etup-to-val a) e .fst))
+            Temp2 : Rep (ρ :* Inte)
+            Temp2 = eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
+            TempL = λ v' a' → interp l (Etup-to-val (v' , a' )) , one + eval (Etup-to-val a') e .snd + eval (push v' (Etup-to-val a')) l .snd
+            TempR = λ v' a' → interp r (Etup-to-val (v' , a' )) , one + eval (Etup-to-val a') e .snd + eval (push v' (Etup-to-val a')) r .snd
+            foo = DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
+            bar = Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) (fst foo)
+            eq1 = DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a (fst foo) (snd bar) (fst bar) ctg
+            baz = DSemᵀ-fst Temp1 ctg
+            bix = {!   !}
+            biz = lemma-cong-DSemᵀ-case {τ = ρ :* Inte} a (interp e ∘ Etup-to-val) (inj₁ x) interp-e-val≡inj-x TempL TempR de (ctg , zerovDense LUn) bix
+
+            -- bbbbbbb = {! snd biz  !}
+            -- ccccccc = {! fst bar  !}
+        in begin
+        Etup2EV (to-witness d-case ctg)
+          ≡⟨ cong Etup2EV (snd foo) ⟩
+        Etup2EV (to-witness (fst foo) ctg)
+          ≡⟨ cong Etup2EV eq1 ⟩
+        Etup2EV (to-witness (fst bar) (to-witness (snd bar) ctg))
+          ≡⟨ cong Etup2EV (cong (to-witness (fst bar)) (trans (DSemᵀ-extensionality _ _ (λ _ → refl) Temp1 (snd bar) (fst baz) ctg) (snd baz))) ⟩
+        Etup2EV (to-witness (fst bar) (ctg , zerovDense LUn))
+          ≡⟨ cong Etup2EV (DSemᵀ-extensionality _ _ ext-proof a (fst bar) bix (ctg , tt)) ⟩
+        Etup2EV (to-witness bix ((ctg , zerovDense LUn)))
+          ≡⟨ {!   !} ⟩
+        (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
+        ∎
+        where ext-proof : (x₁ : Rep (Etup Pr Γ)) → eval (Etup-to-val x₁) (case' e l r) ≡ (interp l (Etup-to-val (x , x₁)) , one + eval (Etup-to-val x₁) e .snd + eval (push x (Etup-to-val x₁)) l .snd)
+              ext-proof a' with interp e (Etup-to-val a') in eq2
+              ... | inj₁ x = {!   !}
+              ... | inj₂ y = {!   !}
+
+  -- DSemᵀ-lemma-interp-case : 
+  --     [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
+  --             → let ctg-l = to-witness dl ctg
+  --             in Etup2EV (to-witness de ( ctg-l .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (ctg-l .snd)
+  --               ≡ Etup2EV (to-witness d-case ctg))
+  --     , (λ x  → (dr : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
+  --             → let ctg-r = to-witness dr ctg
+  --             in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
+  --               ≡ Etup2EV (to-witness d-case ctg))
+  --     ] (interp e (Etup-to-val a))
+  -- -- This proof consists of two 'mirror' cases (inj₁ and inj₂)
+  -- -- For the inj₁ case we use ≡-reasoning since its verbosity makes clear how the proof works.
+  -- -- For the inj­₂ case we use rewrites for brevity
+  -- DSemᵀ-lemma-interp-case 
+  --   with interp e (Etup-to-val a) in interp-e-val≡inj-x  
+  -- ... | (inj₁ x) = sym ∘ DSemᵀ-lemma-interp-case-left x interp-e-val≡inj-x
+  -- ... | (inj₂ x) = {!   !}
+
+
+  -- -- -- This lemma combines DSemᵀ-lemma-interp-case together with a cong on 'interp e (Etup-to-val a)'
+  -- -- -- This is convenient, as this lemma is used when we've made a case distinction on 'interp e (Etup-to-val a)', and thus this disctinction needs to be propagated
+  -- DSemᵀ-lemma-interp-case-cong : 
+  --   (c : Rep (σ :+ τ)) → (w : interp e (Etup-to-val a) ≡ c)
+  --   → [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
+  --             → let ctg-l = to-witness dl ctg
+  --             in Etup2EV (to-witness de ( ctg-l .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (ctg-l .snd)
+  --               ≡ Etup2EV (to-witness d-case ctg))
+  --     , (λ x  → (dr : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
+  --             → let ctg-r = to-witness dr ctg
+  --             in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
+  --               ≡ Etup2EV (to-witness d-case ctg))
+  --     ] c
+  -- DSemᵀ-lemma-interp-case-cong c refl = DSemᵀ-lemma-interp-case
+
+
+
+
+    -- let Temp1 = ((one + eval (Etup-to-val a) e .snd) + eval (push x (Etup-to-val a)) l .snd)
+    --     Temp2 =  ( λ α → (λ { (inj₁ x) → eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
+    --                  ; (inj₂ y) → eval (push y (Etup-to-val a)) r .fst , one + eval (Etup-to-val a) e .snd + eval (push y (Etup-to-val a)) r .snd })
+    --               α)
+    --     (d-foo , eq1) = DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
+    --     ctg-l = to-witness dl ctg
+    --     ctg-e = to-witness de (ctg-l .fst , zerovDense (D2τ' τ))
+    --     (d-bar , d-baz) = Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) d-foo
+    --     foobar = DSemᵀ-exists-evaluation-a fst _ ( interp l (Etup-to-val (x , a)) , Temp1) (cong Temp2 (interp-e-val≡inj-x)) d-baz ctg
+    -- in begin
+    -- Etup2EV ctg-e ev+ Etup2EV (ctg-l .snd)
+    -- ≡⟨ {!   !} ⟩
+    -- {! d-baz  !}
+    -- ≡⟨ {!   !} ⟩
+    -- Etup2EV (to-witness d-bar (to-witness d-baz ctg))
+    -- ≡⟨ cong Etup2EV (sym (DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a d-foo d-baz d-bar ctg)) ⟩
+    -- Etup2EV (to-witness d-foo ctg)
+    -- ≡⟨ cong Etup2EV (sym eq1) ⟩
+    -- Etup2EV (to-witness d-case ctg)
+    -- ∎
+-- DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg | (inj₂ x)
+--   = {!  !}
+  -- let foo = {! Equivalence.to (DSemᵀ-exists-chain f g a) d-f∘g   !}
+  --     ctg-l = to-witness dl ctg
+  --     ctg-e = to-witness de (ctg-l .fst , zerovDense (D2τ' τ))
+
+  --     d-f∘g = DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) (sym ∘ interp-case-extensionality e l r) a d-case
+  --     (d-g , d-f) = Equivalence.to (DSemᵀ-exists-chain {τ2 = (σ :+ τ) :* Etup Pr Γ} f g a) d-f∘g 
+  --     -- d-id = DSemᵀ-identity a (zerovDense (D2τ' (Etup Pr Γ))) .fst
+
+  --     -- d-h = Pair.DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , d-id)
+  -- in begin
+  -- Etup2EV ctg-e ev+ Etup2EV (ctg-l .snd)
+  --   ≡⟨ {!   !} ⟩
+  -- {!   !}
+  --   ≡⟨ {!   !} ⟩
+  -- Etup2EV (to-witness d-g (to-witness d-f ctg))
+  --   ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a d-f∘g d-f d-g ctg)) ⟩
+  -- Etup2EV (to-witness d-f∘g ctg)
+  --   ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) (interp-case-extensionality e l r) a d-f∘g d-case ctg) ⟩
+  -- Etup2EV (to-witness d-case ctg)
+  -- ∎
 --   let dsem-l = DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a) ctg
 --       dsem-e = DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (dsem-l .fst , zerovDense (D2τ' τ))
 --       dsem-f = DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (inj₁ x , a) ctg
@@ -196,10 +303,10 @@ DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg
 --     ≡⟨⟩
 --   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = ρ} (interp (case' e l r) ∘ Etup-to-val) a ctg)
 --   ∎
-DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg | (inj₂ x)
+-- DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg | (inj₂ x)
+--   = {!  !}
   -- using d-f∘g ← DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) (sym ∘ interp-case-extensionality e l r) a d-case
   -- rewrite DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) (interp-case-extensionality e l r) a d-f∘g d-case ctg
-  = {!  !}
 --   rewrite sym (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg (interp-case-extensionality e l r))
 --   rewrite DSemᵀ-chain {Etup Pr Γ} {(σ :+ τ) :* Etup Pr Γ} {ρ} f g a ctg
 --   rewrite interp-e-val≡inj-x
@@ -211,27 +318,3 @@ DSemᵀ-lemma-interp-case {Γ} {σ} {τ} {ρ} a e l r de d-case ctg | (inj₂ x)
 --   rewrite DSemᵀ-identity {Etup Pr Γ} a (dsem-f .snd)  
 --   rewrite DSemᵀ-case {σ} {τ} {Etup Pr Γ} {ρ} (inj₂ x , a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) ctg 
 --   = refl
-
-
-
--- -- This lemma combines DSemᵀ-lemma-interp-case together with a cong on 'interp e (Etup-to-val a)'
--- -- This is convenient, as this lemma is used when we've made a case distinction on 'interp e (Etup-to-val a)', and thus this disctinction needs to be propagated
-DSemᵀ-lemma-interp-case-cong : {Γ : Env Pr} {σ τ ρ : Typ Pr}
-  → (a : Rep (Etup Pr Γ))
-  → (e : Term Pr Γ (σ :+ τ))
-  → (l : Term Pr (σ ∷ Γ) ρ)
-  → (r : Term Pr (τ ∷ Γ) ρ)
-  → (de : Is-just $ DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a)
-  → (d-case : Is-just $ DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
-  → (c : Rep (σ :+ τ)) → (w : interp e (Etup-to-val a) ≡ c)
-  → (ctg : LinRepDense (D2τ' ρ))
-  → [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
-            → let ctg-l = to-witness dl ctg
-            in Etup2EV (to-witness de ( ctg-l .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (ctg-l .snd)
-               ≡ Etup2EV (to-witness d-case ctg))
-    , (λ x  → (dr : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
-            → let ctg-r = to-witness dr ctg
-            in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
-               ≡ Etup2EV (to-witness d-case ctg))
-    ] c
-DSemᵀ-lemma-interp-case-cong a e l r de d-case c refl ctg = DSemᵀ-lemma-interp-case a e l r de d-case ctg

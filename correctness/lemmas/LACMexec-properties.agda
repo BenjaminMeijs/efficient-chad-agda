@@ -1,4 +1,4 @@
-module correctness.lemmas.LACMexec-lemmas where
+module correctness.lemmas.LACMexec-properties where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -14,8 +14,6 @@ open import spec
 open import correctness.spec
 import spec.LACM as LACM
 open LACM using (LACM)
-
--- TODO: Rename to LACMexec-properties
 
 private
     LACMbind : ∀ {Γ : LEnv} {a b : Set} -> LACM Γ a -> (a -> LACM Γ b) -> LACM Γ b

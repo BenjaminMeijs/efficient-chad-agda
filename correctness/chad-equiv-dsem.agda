@@ -216,7 +216,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l r) 
     LEtup2EV (LACMexec (interp (chad e) (Etup-to-val-primal a) .snd (just (inj₁ (body .fst))) .fst) (body .snd))
     ≡⟨ trans ih (sym $ ev+assoc _ _ _) ⟩
     (Etup2EV (to-witness de (ctg-l .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (ctg-l .snd)) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL (DSemᵀ-lemma-interp-case-cong a e l r de d-case (inj₁ x) interp-e-val≡inj-x (sparse2dense ctg) dl) ⟩
+    ≡⟨ ev+congL {! Ev-case.DSemᵀ-lemma-interp-case-cong a e l r de d-case (inj₁ x) interp-e-val≡inj-x (sparse2dense ctg) dl !}  ⟩
     Etup2EV (to-witness d-case (sparse2dense ctg)) ev+ LEtup2EV evIn
     ∎
 ... | inj₂ x = {!   !}

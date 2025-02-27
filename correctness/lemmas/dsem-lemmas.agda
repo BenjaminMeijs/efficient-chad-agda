@@ -17,7 +17,7 @@ open import Function.Base using (_$_; _∘_; id; case_of_; flip)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-open import correctness.lemmas.environment-vector-lemmas using (plusvDense-zeroR'; plusvDense-zeroL'; zerov-equiv-zerovDense)
+open import correctness.lemmas.LinRepDense-is-comm-monoid using (plusvDense-zeroR'; plusvDense-zeroL'; zerov-equiv-zerovDense)
 
 open import spec
 open import correctness.spec
@@ -62,10 +62,10 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
           → {v3 : Maybe (LinRepDense (D2τ' τ2) → LinRepDense (D2τ' σ))}
           → ( DSemᵀ g a ≡ v3  )
           → (v1 ?? (ctg-f , ctg-g)) ≡
-            map₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
+            fmap₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
       helper ctg-f ctg-g eq1 eq2 eq3 = trans₂ (DSemᵀ-pair {σ = σ} f g a ctg-f ctg-g)
                       (cong (λ x → x ?? (ctg-f , ctg-g)) eq1)
-                      (cong₂ (λ x y → map₂ (plusvDense (D2τ' _)) (x ?? ctg-f) (y ?? ctg-g)) eq2 eq3)
+                      (cong₂ (λ x y → fmap₂ (plusvDense (D2τ' _)) (x ?? ctg-f) (y ?? ctg-g)) eq2 eq3)
 
       helper2 : 
         let ctg-f = zerovDense (D2τ' τ1)
@@ -77,7 +77,7 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
         → {v3 : Maybe (LinRepDense (D2τ' τ2) → LinRepDense (D2τ' σ))}
         → ( DSemᵀ g a ≡ v3  )
         → (v1 ?? (ctg-f , ctg-g)) ≡
-          map₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
+          fmap₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
       helper2 = helper (zerovDense (D2τ' τ1)) (zerovDense (D2τ' τ2))
 
     DSemᵀ-exists-lemma-pair₁ : 
