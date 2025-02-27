@@ -118,6 +118,15 @@ postulate
               → (ctg : LinRepDense (D2τ' τ))
               → (to-witness df ctg ≡ to-witness dg ctg)
 
+    -- Question: klopt dit?
+    DSemᵀ-exists-extensionality : {σ τ : Typ Pr}
+              → (f : Rep σ →  Rep τ) 
+              → (g : Rep σ →  Rep τ) 
+              → (f ≗ g) -- f and g are equal for all inputs
+              → (a : Rep σ)
+              → (Is-just $ DSemᵀ {σ} {τ} f a) -- Note that this last arrow could also be ⇔, as the statement is symmetrical.
+              → (Is-just $ DSemᵀ {σ} {τ} g a)
+
 --     -- ======================
 --     -- DSem on linear functions (Derivative of a linear function f is f)
 --     -- ======================

@@ -159,7 +159,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
              → Etup2EV (to-witness d-case ctg)
                ≡ (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
     DSemᵀ-lemma-interp-case-left x interp-e-val≡inj-x dl
-      = let -- aaaaaaa = {!   !}
+      = let 
             Temp1 : Rep (ρ :* Inte)
             Temp1 = ((λ { (inj₁ x) → eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
                         ; (inj₂ y) → eval (push y (Etup-to-val a)) r .fst , one + eval (Etup-to-val a) e .snd + eval (push y (Etup-to-val a)) r .snd
