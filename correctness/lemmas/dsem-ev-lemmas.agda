@@ -98,7 +98,7 @@ DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body d-let d-rhs d-body =
       g : (env : Rep (Etup Pr Γ)) → Rep σ × Rep (Etup Pr Γ) -- Note that g constructs a pair, thus we can use the pair rule on it
       g = (λ env → (interp rhs (Etup-to-val env) , env))
       dg : Is-just (DSemᵀ {Etup Pr Γ } {σ :* (Etup Pr Γ)} g a)
-      dg = Equivalence.to (DSemᵀ-exists-chain (interp body ∘ Etup-to-val) g a) d-let .fst
+      dg = Pair.DSemᵀ-exists-lemma-pair₂ (interp rhs ∘ Etup-to-val) id a (d-rhs , DSemᵀ-identity a (zerovDense (D2τ' (Etup Pr Γ))) .fst)
       (d-id , eq1) = DSemᵀ-identity a (snd ctg-body)
   in begin
   Etup2EV (to-witness d-rhs (fst ctg-body)) ev+ Etup2EV (snd ctg-body)
@@ -106,7 +106,7 @@ DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body d-let d-rhs d-body =
   Etup2EV (to-witness d-rhs (fst ctg-body)) ev+ Etup2EV (to-witness d-id (snd ctg-body))
     ≡⟨ Ev-pair.DSemᵀ-ev-lemma-pair (interp rhs ∘ Etup-to-val) id a (fst ctg-body) (snd ctg-body) d-rhs d-id dg ⟩
   Etup2EV (to-witness dg ctg-body)
-    ≡⟨ cong Etup2EV (sym (DSemᵀ-chain _ g a d-let d-body dg ctg)) ⟩
+    ≡⟨ cong Etup2EV (sym (DSemᵀ-lemma-chain _ g a d-let d-body dg ctg)) ⟩
   Etup2EV (to-witness d-let ctg)
   ∎
   
@@ -159,11 +159,6 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
              → Etup2EV (to-witness d-case ctg)
                ≡ (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
     DSemᵀ-lemma-interp-case-left x interp-e-val≡inj-x dl
-      -- using foo ← DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
-      -- using bar ← Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) (fst foo)
-      -- using eq1 ← DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a (fst foo) (snd bar) (fst bar) ctg
-      -- rewrite snd foo
-      -- rewrite eq1
       = let -- aaaaaaa = {!   !}
             Temp1 : Rep (ρ :* Inte)
             Temp1 = ((λ { (inj₁ x) → eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
@@ -173,9 +168,10 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
             Temp2 = eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
             TempL = λ v' a' → interp l (Etup-to-val (v' , a' )) , one + eval (Etup-to-val a') e .snd + eval (push v' (Etup-to-val a')) l .snd
             TempR = λ v' a' → interp r (Etup-to-val (v' , a' )) , one + eval (Etup-to-val a') e .snd + eval (push v' (Etup-to-val a')) r .snd
-            foo = DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
-            bar = Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) (fst foo)
-            eq1 = DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a (fst foo) (snd bar) (fst bar) ctg
+            foo = DSemᵀ-lemma-cong-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
+            bar = {!   !}
+            -- bar = Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) (fst foo)
+            eq1 = DSemᵀ-lemma-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a (fst foo) (snd bar) (fst bar) ctg
             baz = DSemᵀ-fst Temp1 ctg
             bix = {!   !}
             biz = lemma-cong-DSemᵀ-case {τ = ρ :* Inte} a (interp e ∘ Etup-to-val) (inj₁ x) interp-e-val≡inj-x TempL TempR de (ctg , zerovDense LUn) bix
@@ -241,7 +237,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
     --     Temp2 =  ( λ α → (λ { (inj₁ x) → eval (push x (Etup-to-val a)) l .fst , one + eval (Etup-to-val a) e .snd + eval (push x (Etup-to-val a)) l .snd
     --                  ; (inj₂ y) → eval (push y (Etup-to-val a)) r .fst , one + eval (Etup-to-val a) e .snd + eval (push y (Etup-to-val a)) r .snd })
     --               α)
-    --     (d-foo , eq1) = DSemᵀ-exists-evaluation-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
+    --     (d-foo , eq1) = DSemᵀ-lemma-cong-f (interp (case' e l r) ∘ Etup-to-val) (fst ∘ (flip eval (case' e l r)) ∘ Etup-to-val) refl a d-case ctg
     --     ctg-l = to-witness dl ctg
     --     ctg-e = to-witness de (ctg-l .fst , zerovDense (D2τ' τ))
     --     (d-bar , d-baz) = Equivalence.to (DSemᵀ-exists-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a) d-foo
@@ -252,7 +248,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
     -- {! d-baz  !}
     -- ≡⟨ {!   !} ⟩
     -- Etup2EV (to-witness d-bar (to-witness d-baz ctg))
-    -- ≡⟨ cong Etup2EV (sym (DSemᵀ-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a d-foo d-baz d-bar ctg)) ⟩
+    -- ≡⟨ cong Etup2EV (sym (DSemᵀ-lemma-chain {τ2 = ρ :* Inte} fst ((flip eval (case' e l r)) ∘ Etup-to-val) a d-foo d-baz d-bar ctg)) ⟩
     -- Etup2EV (to-witness d-foo ctg)
     -- ≡⟨ cong Etup2EV (sym eq1) ⟩
     -- Etup2EV (to-witness d-case ctg)
@@ -274,7 +270,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
   -- {!   !}
   --   ≡⟨ {!   !} ⟩
   -- Etup2EV (to-witness d-g (to-witness d-f ctg))
-  --   ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a d-f∘g d-f d-g ctg)) ⟩
+  --   ≡⟨ cong Etup2EV (sym (DSemᵀ-lemma-chain f g a d-f∘g d-f d-g ctg)) ⟩
   -- Etup2EV (to-witness d-f∘g ctg)
   --   ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) (interp-case-extensionality e l r) a d-f∘g d-case ctg) ⟩
   -- Etup2EV (to-witness d-case ctg)
@@ -296,7 +292,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
 --   Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a dsem-f)
 --     ≡⟨ cong Etup2EV (cong (DSemᵀ g a) (cong (λ q → DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f q ctg) (cong₂ (_,_) (sym interp-e-val≡inj-x) refl))) ⟩
 --   Etup2EV (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* (Etup Pr Γ)} g a (DSemᵀ {(σ :+ τ) :* (Etup Pr Γ)} {ρ} f (g a) ctg))
---     ≡⟨ cong Etup2EV (sym (DSemᵀ-chain f g a ctg)) ⟩
+--     ≡⟨ cong Etup2EV (sym (DSemᵀ-lemma-chain f g a ctg)) ⟩
 --   Etup2EV (DSemᵀ (f ∘ g) a ctg)
 --     ≡⟨ cong Etup2EV (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg (interp-case-extensionality e l r)) ⟩
 --   Etup2EV (DSemᵀ (λ a' → interp (case' e l r) (Etup-to-val a')) a ctg)
@@ -308,7 +304,7 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
   -- using d-f∘g ← DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) (sym ∘ interp-case-extensionality e l r) a d-case
   -- rewrite DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) (interp-case-extensionality e l r) a d-f∘g d-case ctg
 --   rewrite sym (DSemᵀ-extensionality {Etup Pr Γ} {ρ} (f ∘ g) (interp (case' e l r) ∘ Etup-to-val) a ctg (interp-case-extensionality e l r))
---   rewrite DSemᵀ-chain {Etup Pr Γ} {(σ :+ τ) :* Etup Pr Γ} {ρ} f g a ctg
+--   rewrite DSemᵀ-lemma-chain {Etup Pr Γ} {(σ :+ τ) :* Etup Pr Γ} {ρ} f g a ctg
 --   rewrite interp-e-val≡inj-x
 --   using dsem-t ← DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a) ctg
 --   using dsem-e ← DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a (zerovDense (D2τ' σ) , dsem-t .fst)

@@ -37,6 +37,30 @@ private
     just-nothing-absurd : {A : Set} {x : A} → just x ≡ nothing → ⊥
     just-nothing-absurd ()
 
+DSemᵀ-lemma-cong-a : {σ τ : Typ Pr}
+          → (f : Rep σ →  Rep τ) 
+          → (a : Rep σ)
+          → (b : Rep σ)
+          → (a ≡ b)
+          → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+          → (ctg : LinRepDense (D2τ' τ))
+          → Σ (Is-just $ DSemᵀ {σ} {τ} f b)
+              ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
+DSemᵀ-lemma-cong-a f a b refl df ctg = df , refl
+
+DSemᵀ-lemma-cong-f : {σ τ : Typ Pr}
+          → (f : Rep σ →  Rep τ) 
+          → (g : Rep σ →  Rep τ) 
+          → (f ≡ g) -- Note that this is NOT pointwise equality. 
+          → (a : Rep σ)
+          → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+          → (ctg : LinRepDense (D2τ' τ))
+          → Σ (Is-just $ DSemᵀ {σ} {τ} g a)
+              ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
+DSemᵀ-lemma-cong-f f g refl a df ctg = df , refl
+
+
+
 module Zero {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
     { ctg : LinRepDense (D2τ' τ) }
     {{ w : ctg ≡ zerovDense (D2τ' τ)}}
@@ -162,14 +186,29 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
 -- Lemmas derivable from the postulations, that don't include interp
 -- ======================
 
-DSemᵀ-exists-lemma-inj₁ : {σ τ ρ : Typ Pr}
-        → (f : Rep σ →  Rep τ) → (a : Rep σ)
-        → (Is-just (DSemᵀ {σ} {τ} f a))
-          ⇔ (Is-just (DSemᵀ {σ} {τ :+ ρ} (inj₁ ∘ f) a))
-DSemᵀ-exists-lemma-inj₁ {σ} {τ} {ρ} f a = mk⇔ to from
-  where chain = DSemᵀ-exists-chain inj₁ f a
-        to   = λ df → Equivalence.from chain (df , (DSemᵀ-inj₁ (f a) (zerovDense (D2τ' τ :*! D2τ' ρ)) .fst))
-        from = λ dg → Equivalence.to   chain dg .fst
+DSemᵀ-lemma-chain : {τ1 τ2 τ3 : Typ Pr}
+            → (f : Rep τ2 → Rep τ3)
+            → (g : Rep τ1 → Rep τ2)
+            → (a : Rep τ1)
+            → (df∘g : Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a))
+            → (df : Is-just (DSemᵀ {τ2} {τ3} f (g a)))
+            → (dg : Is-just (DSemᵀ {τ1} {τ2} g a))
+            → (ctg : LinRepDense (D2τ' τ3))
+            → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg)
+DSemᵀ-lemma-chain f g a df∘g df dg ctg 
+  = let (df∘g' , eq1) = DSemᵀ-chain f g a df dg ctg
+        eq2 = DSemᵀ-extensionality _ _ (λ _ → refl) a df∘g' df∘g ctg
+    in trans₂ eq1 eq2 refl
+
+DSemᵀ-exists-lemma-chain : {τ1 τ2 τ3 : Typ Pr}
+            → (f : Rep τ2 → Rep τ3)
+            → (g : Rep τ1 → Rep τ2)
+            → (a : Rep τ1)
+            → (df : Is-just (DSemᵀ {τ2} {τ3} f (g a)))
+            → (dg : Is-just (DSemᵀ {τ1} {τ2} g a))
+            → Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a)
+DSemᵀ-exists-lemma-chain {τ3 = τ3} f g a df dg
+  = DSemᵀ-chain f g a df dg (zerovDense (D2τ' τ3)) .fst
 
 DSemᵀ-lemma-inj₁ : {σ τ ρ : Typ Pr}
         → (f : Rep σ →  Rep τ) → (a : Rep σ)
@@ -183,7 +222,7 @@ DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a df dg ctgL ctgR =
   to-witness df ctgL
   ≡⟨ cong (to-witness df) (sym eq) ⟩
   to-witness df (to-witness d-inj (ctgL , ctgR))
-  ≡⟨ sym ( DSemᵀ-chain inj₁ f a dg d-inj df (ctgL , ctgR)) ⟩
+  ≡⟨ sym ( DSemᵀ-lemma-chain inj₁ f a dg d-inj df (ctgL , ctgR)) ⟩
   to-witness dg (ctgL , ctgR)
   ∎
 

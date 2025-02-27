@@ -105,9 +105,12 @@ simplify-exec-chad-primop {Γ} {σ} {τ} val evIn ctg t op
 -- This lemma is used to simplify LACMexec of a case' after having done:
 -- 1. a rewrite using: rewrite chad-preserves-primal val e
 -- 2. a with and case distinction on: interp e val
--- Then, you can use this lemma, for example with a rewrite.
+-- Then, you can use this lemma>
 -- The argument f should be either inj₁ or inj₂, depending on the case distinction
--- TODO: Extra comment over lelijke type
+
+-- Please note that due to this specific use-case, type of this function is rather verbose.
+-- There is no function in Spec that normalizes to this type, as this type is the result of applying the above transformations to:
+--    LACMexec (interp (chad (let' e l r) (Etup-to-val-primal a) .snd ctg .fst ) evIn (t is either l or r, depending on the case distinction of 'interp e val')
 simplify-exec-chad-case : {Γ : Env Pr} {σ τ ρ π : Typ Pr} 
   → (val : Val Pr Γ)
     (evIn : LEtup (map D2τ' Γ) )

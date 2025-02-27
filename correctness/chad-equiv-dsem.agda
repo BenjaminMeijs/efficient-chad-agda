@@ -124,7 +124,8 @@ chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) ~τ ~Γ
 chad-equiv-DSemᵀ {Γ} a evIn ctg (fst' {σ = σ} {τ = τ} t) ~τ ~Γ d-fst
   = let ctg' = (just (ctg , zerov (D2τ' τ) .fst))
         d-t : Is-just (DSemᵀ {Etup Pr Γ} {σ :* τ} (interp t ∘ Etup-to-val) a)
-        d-t = Equivalence.to (DSemᵀ-exists-chain {τ2 = σ :* τ} fst (interp t ∘ Etup-to-val) a) d-fst .fst
+        -- d-t = Equivalence.to (DSemᵀ-exists-chain {τ2 = σ :* τ} fst (interp t ∘ Etup-to-val) a) d-fst .fst
+        d-t = {!   !}
         d-snd : Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp (snd' t) ∘ Etup-to-val) a)
         d-snd = Pair.DSemᵀ-exists-lemma-pair₁ _ _ a d-t .snd
   in begin
@@ -140,7 +141,8 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (snd' {σ = σ} {τ = τ} t) ~τ ~Γ d-snd = 
 chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) ~τ ~Γ dt =
   let -- DSems of subterms are defined
       g = (λ env → (interp rhs (Etup-to-val env) , env))
-      defined = Equivalence.to (DSemᵀ-exists-chain {Etup Pr Γ} {σ :* Etup Pr Γ} {τ} (interp body ∘ Etup-to-val) g a) dt
+      -- defined = Equivalence.to (DSemᵀ-exists-chain {Etup Pr Γ} {σ :* Etup Pr Γ} {τ} (interp body ∘ Etup-to-val) g a) dt
+      defined = {!   !}
       d-rhs = Pair.DSemᵀ-exists-lemma-pair₁ (interp rhs ∘ Etup-to-val) id a (defined .fst) .fst
       d-body = defined .snd
       -- Helpful shorthands
@@ -164,7 +166,9 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) ~τ ~Γ d
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ d-prim =
   let d-chad-op = interp (dprim' op) (Etup-to-val (ctg , (primal σ (interp t (Etup-to-val a)), tt))) 
-      (d-t , d-op) = Equivalence.to (DSemᵀ-exists-chain {τ2 = σ} (evalprim op) (interp t ∘ Etup-to-val) a) d-prim
+      -- (d-t , d-op) = Equivalence.to (DSemᵀ-exists-chain {τ2 = σ} (evalprim op) (interp t ∘ Etup-to-val) a) d-prim
+      d-t = {!   !}
+      d-op = {!   !}
   in begin
   LEtup2EV (LACMexec (interp (chad (prim op t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ gnoc (simplify-exec-chad-primop (Etup-to-val a) evIn ctg t op) LEtup2EV ⟩
@@ -173,17 +177,17 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ d-pri
   Etup2EV (to-witness d-t $ sparse2dense d-chad-op) ev+ LEtup2EV evIn
     ≡⟨ ev+congL (gnoc (gnoc (evalprim-equiv-DSem (interp t (Etup-to-val a)) ctg op d-op) (to-witness d-t)) Etup2EV) ⟩
   Etup2EV (to-witness d-t (to-witness d-op $ sparse2dense ctg)) ev+ LEtup2EV evIn
-    ≡⟨ ev+congL (gnoc (sym (DSemᵀ-chain (evalprim op) (interp t ∘ Etup-to-val) a d-prim d-op d-t (sparse2dense ctg))) Etup2EV) ⟩
+    ≡⟨ ev+congL (gnoc (sym (DSemᵀ-lemma-chain (evalprim op) (interp t ∘ Etup-to-val) a d-prim d-op d-t (sparse2dense ctg))) Etup2EV) ⟩
   Etup2EV (to-witness d-prim $ sparse2dense ctg) ev+ LEtup2EV evIn
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn (just (inj₁ ctg)) (inl {σ = σ} {τ = τ} t) ~τ ~Γ d-inl =
   let ctg' = sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₁ ctg))
-      dt = Equivalence.from (DSemᵀ-exists-lemma-inj₁ (interp t ∘ Etup-to-val) a) d-inl
+      dt = Equivalence.from (DSemᵀ-exists-inj₁ (interp t ∘ Etup-to-val) a) d-inl
   in begin
   LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst) evIn)
-  ≡⟨ chad-equiv-DSemᵀ a evIn ctg t ~τ ~Γ dt ⟩
+    ≡⟨ chad-equiv-DSemᵀ a evIn ctg t ~τ ~Γ dt ⟩
   Etup2EV (to-witness dt (sparse2dense ctg)) ev+ LEtup2EV evIn
-  ≡⟨ ev+congL (gnoc (DSemᵀ-lemma-inj₁ _ a dt d-inl _ _) Etup2EV) ⟩
+    ≡⟨ ev+congL (gnoc (DSemᵀ-lemma-inj₁ _ a dt d-inl _ _) Etup2EV) ⟩
   Etup2EV (to-witness d-inl ctg') ev+ LEtup2EV evIn
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn (just (inj₂ ctg)) (inr {σ = σ} {τ = τ} t) ~τ ~Γ d-inr = {!   !}
@@ -262,7 +266,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ}  e l r) 
 --   Etup2EV (DSemᵀ (interp t ∘ Etup-to-val) a (sparse2dense d-op)) ev+ LEtup2EV evIn
 --     ≡⟨ ev+congL (gnoc (gnoc (evalprim-equiv-DSem (interp t (Etup-to-val a)) ctg op) (DSemᵀ _ a)) Etup2EV) ⟩
 --   Etup2EV (DSemᵀ {σ = Etup Pr Γ} {τ = σ} (interp t ∘ Etup-to-val) a (DSemᵀ {σ = σ} {τ = τ} (evalprim op) (interp t (Etup-to-val a)) (sparse2dense ctg))) ev+ LEtup2EV evIn
---     ≡⟨ ev+congL (gnoc (sym (DSemᵀ-chain (evalprim op) (interp t ∘ Etup-to-val) a (sparse2dense ctg))) Etup2EV) ⟩
+--     ≡⟨ ev+congL (gnoc (sym (DSemᵀ-lemma-chain (evalprim op) (interp t ∘ Etup-to-val) a (sparse2dense ctg))) Etup2EV) ⟩
 --   Etup2EV (DSemᵀ (evalprim op ∘ interp t ∘ Etup-to-val) a (sparse2dense ctg)) ev+ LEtup2EV evIn
 --   ∎
 -- chad-equiv-DSemᵀ {Γ} a evIn nothing (inl {σ = σ} {τ = τ} t) w1 w2

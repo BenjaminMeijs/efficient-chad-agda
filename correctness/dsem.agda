@@ -54,23 +54,15 @@ postulate
             → (dsem : Is-just (DSemᵀ {σ} {τ} f a))
             → (to-witness dsem) (zerovDense (D2τ' τ)) ≡ zerovDense (D2τ' σ)
 
-    -- TODO: Merge the chain rules. Note that f . g only exists if f and g exist (at point a ofc.)
     DSemᵀ-chain : {τ1 τ2 τ3 : Typ Pr}
                 → (f : Rep τ2 → Rep τ3)
                 → (g : Rep τ1 → Rep τ2)
                 → (a : Rep τ1)
-                → (df∘g : Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a))
                 → (df : Is-just (DSemᵀ {τ2} {τ3} f (g a)))
                 → (dg : Is-just (DSemᵀ {τ1} {τ2} g a))
                 → (ctg : LinRepDense (D2τ' τ3))
-                → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg)
-
-    DSemᵀ-exists-chain : {τ1 τ2 τ3 : Typ Pr}
-                → (f : Rep τ2 → Rep τ3)
-                → (g : Rep τ1 → Rep τ2)
-                → (a : Rep τ1)
-                → (Is-just $ DSemᵀ {τ1} {τ3} (f ∘ g) a)
-                  ⇔ (Is-just (DSemᵀ {τ1} {τ2} g a) × Is-just (DSemᵀ {τ2} {τ3} f (g a)))
+                → Σ (Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a)) 
+                    ( λ df∘g → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg))
 
     -- QUESTION: Welke stijl willen we voor de postualtions?
     -- Voorstel: Equality van de LinRepDense met behulp van 'Is-just' en dependent products, eventueel ook een extra 'exists' postulation (e.g. alles behalve DSemᵀ-pair)  
@@ -115,33 +107,6 @@ postulate
                          → Σ (Is-just $ DSemᵀ {ρ} {τ} f a)
                              ( λ df → to-witness df ctg ≡ to-witness dr ctg))
                   ]
-        --       → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
-                --     f = λ (xs , a') → [ (λ x → l (x , a'))
-                --                       , (λ x → r (x , a'))
-                --                      ] xs
-        --       in  [ (λ v → let dsem-l = DSemᵀ {σ1 :* ρ} {τ} l (v , snd a) ctg
-        --                      in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
-        --                         ≡  ( (dsem-l .fst , zerovDense (D2τ' σ2)) , dsem-l .snd)  )
-        --           , (λ v → let dsem-r = DSemᵀ {σ2 :* ρ} {τ} r (v , snd a) ctg
-        --                      in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
-        --                         ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
-        --           ] (a .fst)
---     DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
---               → (a : Rep ((σ1 :+ σ2) :* ρ))
---               → (l : Rep (σ1 :* ρ) → Rep τ) 
---               → (r : Rep (σ2 :* ρ) → Rep τ) 
---               → (ctg : LinRepDense (D2τ' τ))
---               → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
---                     f = λ (xs , a') → [ (λ x → l (x , a'))
---                                       , (λ x → r (x , a'))
---                                      ] xs
---               in  [ (λ v → let dsem-l = DSemᵀ {σ1 :* ρ} {τ} l (v , snd a) ctg
---                              in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
---                                 ≡  ( (dsem-l .fst , zerovDense (D2τ' σ2)) , dsem-l .snd)  )
---                   , (λ v → let dsem-r = DSemᵀ {σ2 :* ρ} {τ} r (v , snd a) ctg
---                              in DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a ctg 
---                                 ≡  ( (zerovDense (D2τ' σ1) , dsem-r .fst) , dsem-r .snd)  )
---                   ] (a .fst)
                   
     DSemᵀ-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 
@@ -152,28 +117,6 @@ postulate
               → (dg : Is-just $ DSemᵀ {σ} {τ} g a)
               → (ctg : LinRepDense (D2τ' τ))
               → (to-witness df ctg ≡ to-witness dg ctg)
-
-    -- TODO: Give an actual proof for this
-    DSemᵀ-exists-evaluation-f : {σ τ : Typ Pr}
-              → (f : Rep σ →  Rep τ) 
-              → (g : Rep σ →  Rep τ) 
-              → (f ≡ g) -- Note that this is NOT pointwise equality. 
-              → (a : Rep σ)
-              → (df : Is-just $ DSemᵀ {σ} {τ} f a)
-              → (ctg : LinRepDense (D2τ' τ))
-              → Σ (Is-just $ DSemᵀ {σ} {τ} g a)
-                  ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
-
-    -- TODO: Give an actual proof for this
-    DSemᵀ-exists-evaluation-a : {σ τ : Typ Pr}
-              → (f : Rep σ →  Rep τ) 
-              → (a : Rep σ)
-              → (b : Rep σ)
-              → (a ≡ b)
-              → (df : Is-just $ DSemᵀ {σ} {τ} f a)
-              → (ctg : LinRepDense (D2τ' τ))
-              → Σ (Is-just $ DSemᵀ {σ} {τ} f b)
-                  ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
 
 --     -- ======================
 --     -- DSem on linear functions (Derivative of a linear function f is f)
@@ -190,13 +133,19 @@ postulate
             → Σ (Is-just $ DSemᵀ {σ} {σ :+ τ} inj₁ a)
                 ( λ df → to-witness df ctg ≡ fst ctg)
 
+    DSemᵀ-exists-inj₁ : {σ τ1 τ2 : Typ Pr}
+            → (f : Rep σ → Rep τ1) 
+            → (a : Rep σ)
+            → (Is-just $ DSemᵀ {σ} {τ1} f a)
+              ⇔ (Is-just $ DSemᵀ {σ} {τ1 :+ τ2} (inj₁ ∘ f) a)
+
     DSemᵀ-inj₂ : {σ τ : Typ Pr}
             → (a : Rep σ)
             → (ctg : LinRepDense (D2τ' (τ :+ σ)))
             → Σ (Is-just $ DSemᵀ {σ} {τ :+ σ} inj₂ a)
                 ( λ df → to-witness df ctg ≡ snd ctg)
 
-    -- Check: Is dit echt nodig?
+    -- Check: Is dit echt nodig, wordt het gebruikt?
     DSemᵀ-fst : {σ τ : Typ Pr}
             → (a : Rep (σ :* τ))
             → (ctg : LinRepDense (D2τ' σ))
