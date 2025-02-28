@@ -4,7 +4,7 @@ open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Float using (primFloatPlus; primFloatTimes; primFloatNegate)
 open import Agda.Builtin.Unit using (⊤)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]; isInj₁; isInj₂)
 open import Data.Empty using (⊥)
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing)
 open import Data.List using (_∷_)
@@ -91,22 +91,52 @@ postulate
               → Σ (Is-just $ DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a)
                   (λ df → to-witness df ctg ≡ onehot idx ctg)
 
-    DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
-              → (a : Rep ρ)
-              → (c : Rep ρ → Rep (σ1 :+ σ2))
-              → (l : Rep σ1 → Rep ρ → Rep τ) 
-              → (r : Rep σ2 → Rep ρ → Rep τ) 
-              → (dc : Is-just $ DSemᵀ {ρ} {σ1 :+ σ2} c a)
+    DSemᵀ-case-inj₁ : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ) 
+              → (v : Is-just (isInj₁ (fst a)))
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                     ] xs
+              in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
               → (ctg : LinRepDense (D2τ' τ))
-              → let f = case c a of [ l , r ]
-              in case c a of
-                  [ (λ v → (dl : Is-just $ DSemᵀ {ρ} {τ} (l v) a )
-                         → Σ (Is-just $ DSemᵀ {ρ} {τ} f a)
-                             ( λ df → to-witness df ctg ≡ to-witness dl ctg))
-                  , (λ v → (dr : Is-just $ DSemᵀ {ρ} {τ} (r v) a )
-                         → Σ (Is-just $ DSemᵀ {ρ} {τ} f a)
-                             ( λ df → to-witness df ctg ≡ to-witness dr ctg))
-                  ]
+              → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (to-witness v , snd a))
+                  ( λ dl → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))
+
+    DSemᵀ-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ) 
+              → (v : Is-just (isInj₂ (fst a)))
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                     ] xs
+              in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+              → (ctg : LinRepDense (D2τ' τ))
+              → Σ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (to-witness v , snd a))
+                  ( λ dr → to-witness df ctg ≡ (( zerovDense (D2τ' σ1), to-witness dr ctg .fst) , to-witness dr ctg .snd))
+
+    DSemᵀ-case-moeilijk : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ) 
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                     ] xs
+              in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+              → (ctg : LinRepDense (D2τ' τ))
+              → [ (λ v → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a))
+                           ( λ dl → to-witness df ctg 
+                                    ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))) 
+                , (λ v → Σ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a))
+                           ( λ dr → to-witness df ctg 
+                                    ≡ ((zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd))) 
+                ] (a .fst)
+
                   
     DSemᵀ-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 
@@ -118,7 +148,6 @@ postulate
               → (ctg : LinRepDense (D2τ' τ))
               → (to-witness df ctg ≡ to-witness dg ctg)
 
-    -- Question: klopt dit?
     DSemᵀ-exists-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 
               → (g : Rep σ →  Rep τ) 

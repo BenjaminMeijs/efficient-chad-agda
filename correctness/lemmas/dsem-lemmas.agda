@@ -1,12 +1,15 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.dsem-lemmas where 
 
+open import Agda.Primitive using (Level)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (tt)
+open import Data.Bool using (Bool; true; false)
 open import Data.List using ([]; _∷_; map)
 open import Data.Product using (_×_; uncurry; Σ)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]; isInj₁; isInj₂)
+import Data.Sum as Sum using (map)
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing; maybe; from-just)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Integer using (ℤ)
@@ -37,16 +40,26 @@ private
     just-nothing-absurd : {A : Set} {x : A} → just x ≡ nothing → ⊥
     just-nothing-absurd ()
 
+-- DSemᵀ-lemma-cong-a : {σ τ : Typ Pr}
+--           → (f : Rep σ →  Rep τ) 
+--           → (a : Rep σ)
+--           → (b : Rep σ)
+--           → (a ≡ b)
+--           → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+--           → (ctg : LinRepDense (D2τ' τ))
+--           → Σ (Is-just $ DSemᵀ {σ} {τ} f b)
+--               ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
+-- DSemᵀ-lemma-cong-a f a b refl df ctg = df , refl
 DSemᵀ-lemma-cong-a : {σ τ : Typ Pr}
           → (f : Rep σ →  Rep τ) 
           → (a : Rep σ)
           → (b : Rep σ)
           → (a ≡ b)
           → (df : Is-just $ DSemᵀ {σ} {τ} f a)
+          → (dg : Is-just $ DSemᵀ {σ} {τ} f b)
           → (ctg : LinRepDense (D2τ' τ))
-          → Σ (Is-just $ DSemᵀ {σ} {τ} f b)
-              ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
-DSemᵀ-lemma-cong-a f a b refl df ctg = df , refl
+          → to-witness df ctg ≡ to-witness dg ctg
+DSemᵀ-lemma-cong-a f a b refl df dg ctg = DSemᵀ-extensionality f f (λ _ → refl) a df dg ctg
 
 DSemᵀ-lemma-cong-f : {σ τ : Typ Pr}
           → (f : Rep σ →  Rep τ) 
@@ -182,10 +195,6 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
         in trans (DSemᵀ-lemma-pair dh df dg ctg-f ctg-g)
                  (plusvDense-zeroL' {{Zero.DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ1)}} df}})
 
--- ======================
--- Lemmas derivable from the postulations, that don't include interp
--- ======================
-
 DSemᵀ-lemma-chain : {τ1 τ2 τ3 : Typ Pr}
             → (f : Rep τ2 → Rep τ3)
             → (g : Rep τ1 → Rep τ2)
@@ -225,6 +234,64 @@ DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a df dg ctgL ctgR =
   ≡⟨ sym ( DSemᵀ-lemma-chain inj₁ f a dg d-inj df (ctgL , ctgR)) ⟩
   to-witness dg (ctgL , ctgR)
   ∎
+
+private 
+    unpack-isInj₁ : {A B : Set} (x : A) (y : A ⊎ B)
+          → (y ≡ inj₁ x)
+          → (w : Is-just (isInj₁ y)) 
+          → (x ≡ to-witness w)
+    unpack-isInj₁ _ _ refl (Any.just _) = refl
+
+    unpack-isInj₂ : {A B : Set} (x : B) (y : A ⊎ B)
+          → (y ≡ inj₂ x)
+          → (w : Is-just (isInj₂ y)) 
+          → (x ≡ to-witness w)
+    unpack-isInj₂ _ _ refl (Any.just _) = refl
+
+DSemᵀ-lemma-case-inj₁ : {σ1 σ2 ρ τ : Typ Pr}
+          → (a : Rep ((σ1 :+ σ2) :* ρ))
+          → (l : Rep (σ1 :* ρ) → Rep τ) 
+          → (r : Rep (σ2 :* ρ) → Rep τ) 
+          → (v : Rep σ1) → (fst a ≡ inj₁ v)
+          → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                f = λ (xs , a') → [ (λ x → l (x , a'))
+                                  , (λ x → r (x , a'))
+                                  ] xs
+          in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+          → (dl : Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a))
+          → (ctg : LinRepDense (D2τ' τ))
+          → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd)
+DSemᵀ-lemma-case-inj₁ {σ1 = σ1} {σ2 = σ2} a l r v w df dl ctg = ans
+  where isLeft : Is-just (isInj₁ (fst a))
+        isLeft rewrite w = Any.just tt
+        rule = DSemᵀ-case-inj₁ a l r isLeft df ctg
+        -- convincing agda that d-rule ≡ dl by propagating the fact that 'fst a ≡ inj₁ v'
+        d-rule≡dl = DSemᵀ-lemma-cong-a l (v , snd a) (to-witness isLeft , snd a) (cong₂ _,_ (unpack-isInj₁ v (fst a) w isLeft) refl) dl (rule .fst) ctg
+        ans : to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd)
+        ans rewrite snd rule rewrite d-rule≡dl = refl
+        
+DSemᵀ-lemma-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
+          → (a : Rep ((σ1 :+ σ2) :* ρ))
+          → (l : Rep (σ1 :* ρ) → Rep τ) 
+          → (r : Rep (σ2 :* ρ) → Rep τ) 
+          → (v : Rep σ2) → (fst a ≡ inj₂ v)
+          → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                f = λ (xs , a') → [ (λ x → l (x , a'))
+                                  , (λ x → r (x , a'))
+                                  ] xs
+          in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+          → (dr : Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a))
+          → (ctg : LinRepDense (D2τ' τ))
+          → to-witness df ctg ≡ (( zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd)
+DSemᵀ-lemma-case-inj₂ {σ1 = σ1} {σ2 = σ2} a l r v w df dr ctg = ans
+  where isRight : Is-just (isInj₂ (fst a))
+        isRight rewrite w = Any.just tt
+        rule = DSemᵀ-case-inj₂ a l r isRight df ctg
+        -- convincing agda that d-rule ≡ dl by propagating the fact that 'fst a ≡ inj₂ v'
+        d-rule≡dl = DSemᵀ-lemma-cong-a r (v , snd a) (to-witness isRight , snd a) (cong₂ _,_ (unpack-isInj₂ v (fst a) w isRight) refl) dr (rule .fst) ctg
+        ans : to-witness df ctg ≡ (( zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd)
+        ans rewrite snd rule rewrite d-rule≡dl = refl
+
 
 -- DSemᵀ-lemma-inj₂ : {σ τ ρ : Typ Pr}
 --         → (f : Rep σ →  Rep τ) → (a : Rep σ)
