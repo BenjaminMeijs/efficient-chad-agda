@@ -54,6 +54,8 @@ postulate
             → (dsem : Is-just (DSemᵀ {σ} {τ} f a))
             → (to-witness dsem) (zerovDense (D2τ' τ)) ≡ zerovDense (D2τ' σ)
 
+    DSemᵀ-exists-unit : {σ : Typ Pr} { f : Rep σ → ⊤ } → ( a : Rep σ ) → Is-just (DSemᵀ {σ} {Typ.Un} f a)
+
     DSemᵀ-chain : {τ1 τ2 τ3 : Typ Pr}
                 → (f : Rep τ2 → Rep τ3)
                 → (g : Rep τ1 → Rep τ2)
@@ -105,6 +107,18 @@ postulate
               → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (to-witness v , snd a))
                   ( λ dl → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))
 
+    DSemᵀ-exists-case-inj₁ : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ)
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                      ] xs
+              in (v : Is-just (isInj₁ (fst a)))
+              → (dl : Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (to-witness v , snd a))
+              → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+
     DSemᵀ-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
               → (a : Rep ((σ1 :+ σ2) :* ρ))
               → (l : Rep (σ1 :* ρ) → Rep τ) 
@@ -118,6 +132,18 @@ postulate
               → (ctg : LinRepDense (D2τ' τ))
               → Σ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (to-witness v , snd a))
                   ( λ dr → to-witness df ctg ≡ (( zerovDense (D2τ' σ1), to-witness dr ctg .fst) , to-witness dr ctg .snd))
+
+    DSemᵀ-exists-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ)
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                      ] xs
+              in (v : Is-just (isInj₂ (fst a)))
+              → (dr : Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (to-witness v , snd a))
+              → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
 
     DSemᵀ-case-moeilijk : {σ1 σ2 ρ τ : Typ Pr}
               → (a : Rep ((σ1 :+ σ2) :* ρ))
@@ -189,6 +215,12 @@ postulate
             → (ctg : LinRepDense (D2τ' σ))
             → Σ (Is-just $ DSemᵀ {σ :* τ} {σ} fst a)
                 ( λ df → to-witness df ctg ≡ (ctg , zerovDense (D2τ' τ)))
+
+    DSemᵀ-snd : {σ τ : Typ Pr}
+            → (a : Rep (σ :* τ))
+            → (ctg : LinRepDense (D2τ' τ))
+            → Σ (Is-just $ DSemᵀ {σ :* τ} {τ} snd a)
+                ( λ df → to-witness df ctg ≡ (zerovDense (D2τ' σ) , ctg))
 
 --     -- ======================
 --     -- (primitive) Operations on Floats
