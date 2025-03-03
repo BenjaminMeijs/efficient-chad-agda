@@ -1,5 +1,5 @@
 {-# OPTIONS --allow-unsolved-metas #-}
-module correctness.lemmas.dsem-ev-lemmas where
+module correctness.lemmas.dsem-interp-lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -18,69 +18,13 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import correctness.lemmas.dsem-lemmas
+open import correctness.lemmas.DSyn-lemmas
 
 open import spec
 open import correctness.spec
 open import correctness.lemmas.value-compatibility-lemmas using (≃τ-and-≃Γ-implies-Compatible-idx-LEtup)
 open import correctness.dsem
 import spec.LACM as LACM
-
-private
-    trans₂ : {A : Set} {x y a b : A} → x ≡ y → x ≡ a → y ≡ b → a ≡ b
-    trans₂ refl refl refl = refl
-
-module Onehot where
-    private
-        onehot-equiv-addLEτ : {Γ : Env Pr} {τ : Typ Pr}
-            → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
-            in (ctg : LinRep (D2τ' τ))
-            → (evIn : LEtup (map D2τ' Γ) )
-            → Compatible-idx-LEtup (idx , ctg) evIn
-            → LEtup2EV (addLEτ idx' ctg evIn)
-              ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
-        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' Etup-zerovDense-equiv-zero-EV))
-        onehot-equiv-addLEτ {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym plusvDense-zeroL') (onehot-equiv-addLEτ idx ctg xs w)
-
-    onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
-        → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
-        in (ctg : LinRep (D2τ' τ))
-        → (evIn : LEtup (map D2τ' Γ) )
-        → (val : Val Pr Γ) → (ctg ≃τ valprj val idx) → (evIn ≃Γ val)
-        → LEtup2EV (addLEτ idx' ctg evIn)
-          ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
-    onehot-equiv-addLEτ-lemma idx ctg evIn val ~τ ~Γ = onehot-equiv-addLEτ idx ctg evIn (≃τ-and-≃Γ-implies-Compatible-idx-LEtup idx ctg evIn val ~τ ~Γ)
-
-module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (Etup Pr Γ)  →  Rep τ } { a : Rep (Etup Pr Γ) }
-    { ctg : LinRepDense (D2τ' τ) }
-    {{ w : ctg ≡ zerovDense (D2τ' τ)}}
-    ( df : Is-just (DSemᵀ {Etup Pr Γ} {τ} f a) )
-    where
-
-    DSemᵀ-ev-lemma-ctg-zero' : Etup2EV (to-witness df ctg) ≡ zero-EV (map D2τ' Γ)
-    DSemᵀ-ev-lemma-ctg-zero'
-      = trans (cong (Etup2EV ∘ to-witness df) w) 
-              (trans (cong Etup2EV (Zero.DSemᵀ-lemma-ctg-zero' df)) Etup-zerovDense-equiv-zero-EV)
-
-    DSemᵀ-ev-lemma-ctg-zero-evIn' : { evIn : LEtup (map D2τ' Γ)  }
-                    → LEtup2EV {map D2τ' Γ} evIn 
-                      ≡ Etup2EV (to-witness df ctg) ev+ LEtup2EV {map D2τ' Γ} evIn
-    DSemᵀ-ev-lemma-ctg-zero-evIn' {evIn} = sym (ev+zeroL' DSemᵀ-ev-lemma-ctg-zero')
-
-module Ev-pair {Γ : Env Pr} {τ1 τ2 : Typ Pr } (f : Rep (Etup Pr Γ) →  Rep τ1) (g : Rep (Etup Pr Γ) →  Rep τ2) (a : Rep (Etup Pr Γ))
-            (ctg-f : LinRepDense (D2τ' τ1)) (ctg-g : LinRepDense (D2τ' τ2))
-            (df : Is-just (DSemᵀ {Etup Pr Γ} {τ1} f a))
-            (dg : Is-just (DSemᵀ {Etup Pr Γ} {τ2} g a))
-            (dh : Is-just (DSemᵀ {Etup Pr Γ} {τ1 :* τ2} (λ e → (f e , g e) ) a))
-    where
-    private
-      h : Rep (Etup Pr Γ) → Rep (τ1 :* τ2)
-      h e = (f e , g e)
-
-    DSemᵀ-ev-lemma-pair : (Etup2EV (to-witness df ctg-f) ev+ Etup2EV (to-witness dg ctg-g)) 
-                           ≡ Etup2EV (to-witness dh (ctg-f , ctg-g))
-    DSemᵀ-ev-lemma-pair 
-      = let rule = Pair.DSemᵀ-lemma-pair f g a dh df dg ctg-f ctg-g
-        in sym (trans₂ (cong Etup2EV rule) refl (plusvDense-equiv-ev+ (to-witness df ctg-f) (to-witness dg ctg-g)))
 
 DSemᵀ-lemma-interp-let : {Γ : Env Pr} {σ τ : Typ Pr}
   → (a : Rep (Etup Pr Γ))
@@ -110,13 +54,13 @@ DSemᵀ-lemma-interp-let {Γ} {σ} {τ} a ctg rhs body d-let d-rhs d-body =
   Etup2EV (to-witness d-let ctg)
   ∎
   
-module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
+module Interp-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
   (a : Rep (Etup Pr Γ))
   (e : Term Pr Γ (σ :+ τ))
   (l : Term Pr (σ ∷ Γ) ρ)
   (r : Term Pr (τ ∷ Γ) ρ)
   (de : Is-just $ DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a)
-  (d-case : Is-just $ DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
+  (dsyn : DSyn-Exists (Etup-to-val a) (case' e l r))
   (ctg : LinRepDense (D2τ' ρ))
   where
 
@@ -130,11 +74,16 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
     g : (a' : Rep (Etup Pr Γ)) → Σ (Rep σ ⊎ Rep τ) (λ v → Rep (Etup Pr Γ))
     g = λ a' → interp e (Etup-to-val a') , a'
 
-    df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
-    df = {!   !}
+    d-case : Is-just $ DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a
+    d-case = DSyn-Exists→DSem-Exists a (case' e l r) dsyn
+
+  -- using de ← DSyn→DSem a e (fst w)
+  -- using dg ← Pair.DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , DSemᵀ-exists-lemma-identity a)
+    -- df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
+    -- df = {!   !}
 
     dg : Is-just (DSemᵀ {Etup Pr Γ} {(σ :+ τ) :* Etup Pr Γ} g a)
-    dg = {!   !}
+    dg = Pair.DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , DSemᵀ-exists-lemma-identity a)
 
     case-simp-ext : interp (case' e l r) ∘ Etup-to-val ≗ (f ∘ g)
     case-simp-ext a' with (interp e (Etup-to-val a'))
@@ -144,9 +93,10 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
     d-case-simp : Is-just (DSemᵀ {Etup Pr Γ} {ρ} (f ∘ g) a)
     d-case-simp = DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) case-simp-ext a d-case 
 
-    DSemᵀ-lemma-interp-case-simplify : Etup2EV (to-witness d-case ctg) 
+    DSemᵀ-lemma-interp-case-simplify : (df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))) →
+                                        Etup2EV (to-witness d-case ctg) 
                                       ≡ (Etup2EV (to-witness de (to-witness df ctg . fst)) ev+ Etup2EV (to-witness df ctg .snd)) 
-    DSemᵀ-lemma-interp-case-simplify =
+    DSemᵀ-lemma-interp-case-simplify df =
       let ctg-f = to-witness df ctg
           (d-id , eq) = DSemᵀ-identity a (to-witness df ctg .snd)
       in begin
@@ -161,21 +111,46 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
       Etup2EV (to-witness de (to-witness df ctg .fst)) ev+ Etup2EV (to-witness df ctg .snd)
       ∎
 
-    DSemᵀ-lemma-interp-case-left : (x : Rep σ) → (interp-e-val≡inj-x : interp e (Etup-to-val a) ≡ inj₁ x)
+    DSemᵀ-lemma-interp-case-left : (df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))) →
+              (x : Rep σ) → (interp-e-val≡inj-x : interp e (Etup-to-val a) ≡ inj₁ x)
              → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
              → (Etup2EV (to-witness de (to-witness df ctg . fst)) ev+ Etup2EV (to-witness df ctg .snd)) 
                ≡ (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
-    DSemᵀ-lemma-interp-case-left x interp-e-val≡inj-x dl 
+    DSemᵀ-lemma-interp-case-left df x interp-e-val≡inj-x dl 
       rewrite DSemᵀ-lemma-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x interp-e-val≡inj-x df dl ctg
       = refl
 
-    DSemᵀ-lemma-interp-case-right : (x : Rep τ) → (interp-e-val≡inj-x : interp e (Etup-to-val a) ≡ inj₂ x)
+    DSemᵀ-lemma-interp-case-right : (df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))) →
+              (x : Rep τ) → (interp-e-val≡inj-x : interp e (Etup-to-val a) ≡ inj₂ x)
              → (dr : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
              → (Etup2EV (to-witness de (to-witness df ctg . fst)) ev+ Etup2EV (to-witness df ctg .snd)) 
                ≡ (Etup2EV (to-witness de (zerovDense (D2τ' σ) , to-witness dr ctg .fst )) ev+ Etup2EV (to-witness dr ctg .snd))
-    DSemᵀ-lemma-interp-case-right x interp-e-val≡inj-x dr
+    DSemᵀ-lemma-interp-case-right df x interp-e-val≡inj-x dr
       rewrite DSemᵀ-lemma-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x interp-e-val≡inj-x df dr ctg
       = refl
+
+
+
+    mk-df-inj₁ : (x : Rep σ) → interp e (Etup-to-val a) ≡ inj₁ x 
+                → Is-just (DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a)) → Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
+    mk-df-inj₁ x w dl = DSemᵀ-exists-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) v dl2
+      where v : Is-just (isInj₁ (interp e (Etup-to-val a)))
+            v rewrite w = Any.just tt
+            unpack-isInj₁ : {A B : Set} (x : A) (y : A ⊎ B) → (y ≡ inj₁ x) → (w : Is-just (isInj₁ y)) → (x ≡ to-witness w)
+            unpack-isInj₁ _ _ refl (Any.just _) = refl
+            dl2 : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (to-witness v , a)
+            dl2 rewrite sym (unpack-isInj₁ x (interp e (Etup-to-val a)) w v) = dl
+
+    mk-df-inj₂ : (x : Rep τ) → interp e (Etup-to-val a) ≡ inj₂ x 
+                → Is-just (DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a)) → Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
+    mk-df-inj₂ x w dl = DSemᵀ-exists-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) v dl2
+      where v : Is-just (isInj₂ (interp e (Etup-to-val a)))
+            v rewrite w = Any.just tt
+            unpack-isInj₂ : {A B : Set} (x : B) (y : A ⊎ B) → (y ≡ inj₂ x) → (w : Is-just (isInj₂ y)) → (x ≡ to-witness w)
+            unpack-isInj₂ _ _ refl (Any.just _) = refl
+            dl2 : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (to-witness v , a)
+            dl2 rewrite sym (unpack-isInj₂ x (interp e (Etup-to-val a)) w v) = dl
+    
 
   DSemᵀ-lemma-interp-case : 
       [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
@@ -187,10 +162,12 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
               in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
                 ≡ Etup2EV (to-witness d-case ctg))
       ] (interp e (Etup-to-val a))
-  DSemᵀ-lemma-interp-case 
+  DSemᵀ-lemma-interp-case
     with interp e (Etup-to-val a) in interp-e-val≡inj-x  
-  ... | (inj₁ x) = λ dl → sym (trans DSemᵀ-lemma-interp-case-simplify $ DSemᵀ-lemma-interp-case-left  x interp-e-val≡inj-x dl)
-  ... | (inj₂ x) = λ dr → sym (trans DSemᵀ-lemma-interp-case-simplify $ DSemᵀ-lemma-interp-case-right x interp-e-val≡inj-x dr)
+  ... | (inj₁ x) = λ dl → let df = mk-df-inj₁ x interp-e-val≡inj-x dl
+                          in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-left  df x interp-e-val≡inj-x dl))
+  ... | (inj₂ x) = λ dr → let df = mk-df-inj₂ x interp-e-val≡inj-x dr
+                          in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-right df x interp-e-val≡inj-x dr))
 
   DSemᵀ-lemma-cong-interp-case : (c : Rep (σ :+ τ)) → (w : interp e (Etup-to-val a) ≡ c) →
       [ (λ x  → (dl : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
@@ -203,3 +180,4 @@ module Ev-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
                 ≡ Etup2EV (to-witness d-case ctg))
       ] c
   DSemᵀ-lemma-cong-interp-case c refl = DSemᵀ-lemma-interp-case
+open Interp-case public

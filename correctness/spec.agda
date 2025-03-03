@@ -1,15 +1,17 @@
 module correctness.spec where
 
 open import Agda.Builtin.Equality using (_≡_)
-open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primNatToFloat)
+open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primNatToFloat; primFloatLess)
 open import Agda.Builtin.Maybe using (just; nothing)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
+open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Unit using (⊤; tt)
 
 open import Data.Empty using (⊥)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Product using (_×_)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Function.Base using (case_of_)
 
 open import spec
 import spec.LACM as LACM
@@ -149,3 +151,35 @@ module value-compatibility where
     Compatible-idx-val {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 
     Compatible-idx-val {Γ} {τ} (S idx , x) (push y ys) = Compatible-idx-val (idx , x) ys
 open value-compatibility public
+
+module dsyn-existence where
+    DSyn-ExistsP-Prim : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Set
+    DSyn-ExistsP-Prim SIGN x =
+        case primFloatLess x 0.0 of
+            λ where true → ⊤ -- x < 0 , thus the derivative exists
+                    false → case primFloatLess 0.0 x of
+                            λ where true → ⊤ -- x > 0 , thus the derivative exists
+                                    false → ⊥ -- x is zero or NaN, thsu the derivative does not exists.
+    DSyn-ExistsP-Prim op x = ⊤
+
+
+    DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
+    DSyn-ExistsP val (unit) = ⊤ 
+    DSyn-ExistsP val (var idx) = ⊤
+    DSyn-ExistsP val (pair l r) = DSyn-ExistsP val l × DSyn-ExistsP val r
+    DSyn-ExistsP val (fst' t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (snd' t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (let' rhs body) = DSyn-ExistsP val rhs × DSyn-ExistsP (push (interp rhs val) val) body
+    DSyn-ExistsP val (prim op t) = DSyn-ExistsP-Prim op (interp t val) × DSyn-ExistsP val t
+    DSyn-ExistsP val (inl t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (inr t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (case' e l r) = DSyn-ExistsP val e × (case interp e val of
+                        [ ( λ v' → DSyn-ExistsP (push v' val) l )
+                        , ( λ v' → DSyn-ExistsP (push v' val) r )
+                        ])
+
+    -- TODO: Comment explaining why this is needed
+    data DSyn-Exists : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set where
+        ∃dsyn :  {Γ : Env Pr} {τ : Typ Pr} → { val : Val Pr Γ } → { t : Term Pr Γ τ } → (DSyn-ExistsP val t)  → DSyn-Exists val t
+
+open dsyn-existence public

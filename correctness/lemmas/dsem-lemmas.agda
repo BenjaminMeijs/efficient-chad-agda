@@ -20,12 +20,15 @@ open import Function.Base using (_$_; _∘_; id; case_of_; flip)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-open import correctness.lemmas.LinRepDense-is-comm-monoid using (plusvDense-zeroR'; plusvDense-zeroL'; zerov-equiv-zerovDense)
+open import correctness.lemmas.LinRepDense-is-comm-monoid
+open import correctness.lemmas.value-compatibility-lemmas
 
 open import spec
 open import correctness.spec
 open import correctness.dsem
 import spec.LACM as LACM
+
+-- TODO: Clean up this file
 
 -- ======================
 -- internal helpers
@@ -40,16 +43,6 @@ private
     just-nothing-absurd : {A : Set} {x : A} → just x ≡ nothing → ⊥
     just-nothing-absurd ()
 
--- DSemᵀ-lemma-cong-a : {σ τ : Typ Pr}
---           → (f : Rep σ →  Rep τ) 
---           → (a : Rep σ)
---           → (b : Rep σ)
---           → (a ≡ b)
---           → (df : Is-just $ DSemᵀ {σ} {τ} f a)
---           → (ctg : LinRepDense (D2τ' τ))
---           → Σ (Is-just $ DSemᵀ {σ} {τ} f b)
---               ( λ dg → to-witness df ctg ≡ to-witness dg ctg  )
--- DSemᵀ-lemma-cong-a f a b refl df ctg = df , refl
 DSemᵀ-lemma-cong-a : {σ τ : Typ Pr}
           → (f : Rep σ →  Rep τ) 
           → (a : Rep σ)
@@ -243,6 +236,22 @@ DSemᵀ-lemma-inj₁ {σ} {τ} {ρ} f a df dg ctgL ctgR =
   to-witness dg (ctgL , ctgR)
   ∎
 
+DSemᵀ-lemma-inj₂ : {σ τ ρ : Typ Pr}
+        → (f : Rep σ →  Rep ρ) → (a : Rep σ)
+        → (df : Is-just (DSemᵀ {σ} {ρ} f a))
+        → (dg : Is-just (DSemᵀ {σ} {τ :+ ρ} (inj₂ ∘ f) a))
+        → (ctgL : LinRepDense (D2τ' τ)) → (ctgR : LinRepDense (D2τ' ρ))
+        → to-witness df ctgR ≡ to-witness dg (ctgL , ctgR)
+DSemᵀ-lemma-inj₂ {σ} {τ} {ρ} f a df dg ctgL ctgR = 
+  let (d-inj , eq) = DSemᵀ-inj₂ (f a) ((ctgL , ctgR))
+  in begin
+  to-witness df ctgR
+  ≡⟨ cong (to-witness df) (sym eq) ⟩
+  to-witness df (to-witness d-inj (ctgL , ctgR))
+  ≡⟨ sym ( DSemᵀ-lemma-chain inj₂ f a dg d-inj df (ctgL , ctgR)) ⟩
+  to-witness dg (ctgL , ctgR)
+  ∎
+
 private 
     unpack-isInj₁ : {A B : Set} (x : A) (y : A ⊎ B)
           → (y ≡ inj₁ x)
@@ -299,3 +308,56 @@ DSemᵀ-lemma-case-inj₂ {σ1 = σ1} {σ2 = σ2} a l r v w df dr ctg = ans
         d-rule≡dl = DSemᵀ-lemma-cong-a r (v , snd a) (to-witness isRight , snd a) (cong₂ _,_ (unpack-isInj₂ v (fst a) w isRight) refl) dr (rule .fst) ctg
         ans : to-witness df ctg ≡ (( zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd)
         ans rewrite snd rule rewrite d-rule≡dl = refl
+
+module Onehot where
+    private
+        onehot-equiv-addLEτ : {Γ : Env Pr} {τ : Typ Pr}
+            → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
+            in (ctg : LinRep (D2τ' τ))
+            → (evIn : LEtup (map D2τ' Γ) )
+            → Compatible-idx-LEtup (idx , ctg) evIn
+            → LEtup2EV (addLEτ idx' ctg evIn)
+              ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
+        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' Etup-zerovDense-equiv-zero-EV))
+        onehot-equiv-addLEτ {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym plusvDense-zeroL') (onehot-equiv-addLEτ idx ctg xs w)
+
+    onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
+        → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
+        in (ctg : LinRep (D2τ' τ))
+        → (evIn : LEtup (map D2τ' Γ) )
+        → (val : Val Pr Γ) → (ctg ≃τ valprj val idx) → (evIn ≃Γ val)
+        → LEtup2EV (addLEτ idx' ctg evIn)
+          ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
+    onehot-equiv-addLEτ-lemma idx ctg evIn val ~τ ~Γ = onehot-equiv-addLEτ idx ctg evIn (≃τ-and-≃Γ-implies-Compatible-idx-LEtup idx ctg evIn val ~τ ~Γ)
+
+module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (Etup Pr Γ)  →  Rep τ } { a : Rep (Etup Pr Γ) }
+    { ctg : LinRepDense (D2τ' τ) }
+    {{ w : ctg ≡ zerovDense (D2τ' τ)}}
+    ( df : Is-just (DSemᵀ {Etup Pr Γ} {τ} f a) )
+    where
+
+    DSemᵀ-ev-lemma-ctg-zero' : Etup2EV (to-witness df ctg) ≡ zero-EV (map D2τ' Γ)
+    DSemᵀ-ev-lemma-ctg-zero'
+      = trans (cong (Etup2EV ∘ to-witness df) w) 
+              (trans (cong Etup2EV (Zero.DSemᵀ-lemma-ctg-zero' df)) Etup-zerovDense-equiv-zero-EV)
+
+    DSemᵀ-ev-lemma-ctg-zero-evIn' : { evIn : LEtup (map D2τ' Γ)  }
+                    → LEtup2EV {map D2τ' Γ} evIn 
+                      ≡ Etup2EV (to-witness df ctg) ev+ LEtup2EV {map D2τ' Γ} evIn
+    DSemᵀ-ev-lemma-ctg-zero-evIn' {evIn} = sym (ev+zeroL' DSemᵀ-ev-lemma-ctg-zero')
+
+module Ev-pair {Γ : Env Pr} {τ1 τ2 : Typ Pr } (f : Rep (Etup Pr Γ) →  Rep τ1) (g : Rep (Etup Pr Γ) →  Rep τ2) (a : Rep (Etup Pr Γ))
+            (ctg-f : LinRepDense (D2τ' τ1)) (ctg-g : LinRepDense (D2τ' τ2))
+            (df : Is-just (DSemᵀ {Etup Pr Γ} {τ1} f a))
+            (dg : Is-just (DSemᵀ {Etup Pr Γ} {τ2} g a))
+            (dh : Is-just (DSemᵀ {Etup Pr Γ} {τ1 :* τ2} (λ e → (f e , g e) ) a))
+    where
+    private
+      h : Rep (Etup Pr Γ) → Rep (τ1 :* τ2)
+      h e = (f e , g e)
+
+    DSemᵀ-ev-lemma-pair : (Etup2EV (to-witness df ctg-f) ev+ Etup2EV (to-witness dg ctg-g)) 
+                           ≡ Etup2EV (to-witness dh (ctg-f , ctg-g))
+    DSemᵀ-ev-lemma-pair 
+      = let rule = Pair.DSemᵀ-lemma-pair f g a dh df dg ctg-f ctg-g
+        in sym (trans₂ (cong Etup2EV rule) refl (plusvDense-equiv-ev+ (to-witness df ctg-f) (to-witness dg ctg-g)))
