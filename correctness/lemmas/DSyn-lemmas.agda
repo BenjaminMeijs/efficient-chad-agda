@@ -18,11 +18,8 @@ open import spec
 open import correctness.spec
 open import correctness.dsem
 open import correctness.lemmas.dsem-lemmas
+open unpack-isInj
 
-
-
--- TODO: move this to simplify interp-exec-chad? 
--- It is also used in dsem-lemmas 
 private module case-helper {Γ : Env Pr} {σ τ ρ : Typ Pr} (a : Rep (Etup Pr Γ)) (e : Term Pr Γ (σ :+ τ)) (l : Term Pr (σ ∷ Γ) ρ) (r : Term Pr (τ ∷ Γ) ρ) where
     f : (Rep $ (σ :+ τ) :* Etup Pr Γ) → Rep ρ
     f = λ (cond , a') → [ (λ v → interp l $ Etup-to-val (v , a'))
@@ -36,32 +33,16 @@ private module case-helper {Γ : Env Pr} {σ τ ρ : Typ Pr} (a : Rep (Etup Pr �
     ... | inj₁ _ = refl
     ... | inj₂ _ = refl
 
-private
-    unpack-isInj₁ : {A B : Set} (x : A) (y : A ⊎ B)
-          → (y ≡ inj₁ x)
-          → (w : Is-just (isInj₁ y)) 
-          → (x ≡ to-witness w)
-    unpack-isInj₁ _ _ refl (Any.just _) = refl
-
-    unpack-isInj₂ : {A B : Set} (x : B) (y : A ⊎ B)
-          → (y ≡ inj₂ x)
-          → (w : Is-just (isInj₂ y)) 
-          → (x ≡ to-witness w)
-    unpack-isInj₂ _ _ refl (Any.just _) = refl
-
-    -- d-case-simp : Is-just (DSemᵀ {Etup Pr Γ} {ρ} (f ∘ g) a)
-    -- d-case-simp = DSemᵀ-exists-extensionality (interp (case' e l r) ∘ Etup-to-val) (f ∘ g) case-simp-ext a d-case 
-
 -- Question: How to handle ∃DSyn→∃DSem ?
 -- Question: How to name this? 
 DSyn→DSem : {Γ : Env Pr} {τ : Typ Pr}  ( a : Rep (Etup Pr Γ) ) → ( t : Term Pr Γ τ ) → DSyn-ExistsP (Etup-to-val a) t → (Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) a))
 DSyn→DSem {Γ} {τ} a ( unit ) w = DSemᵀ-exists-unit a
 DSyn→DSem {Γ} {τ} a ( var idx ) w = DSemᵀ-var a idx (zerovDense (D2τ' τ)) .fst
-DSyn→DSem {Γ} {τ} a ( pair l r ) w = Pair.DSemᵀ-exists-lemma-pair₂ (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) a (DSyn→DSem a l (w .fst) , DSyn→DSem a r (w .snd))
+DSyn→DSem {Γ} {τ} a ( pair l r ) w = DSemᵀ-exists-lemma-pair₂ (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) a (DSyn→DSem a l (w .fst) , DSyn→DSem a r (w .snd))
 DSyn→DSem {Γ} {τ} a ( fst' t ) w = DSemᵀ-exists-lemma-chain fst (interp t ∘ Etup-to-val) a (DSemᵀ-fst (interp t $ Etup-to-val a) (zerovDense (D2τ' τ))  .fst) (DSyn→DSem a t w)
 DSyn→DSem {Γ} {τ} a ( snd' t ) w = DSemᵀ-exists-lemma-chain snd (interp t ∘ Etup-to-val) a (DSemᵀ-snd (interp t $ Etup-to-val a) (zerovDense (D2τ' τ))  .fst) (DSyn→DSem a t w)
 DSyn→DSem {Γ} {τ} a ( let' {σ = σ} rhs body ) w =
-  let ih-rhs = Pair.DSemᵀ-exists-lemma-pair₂ (interp rhs ∘ Etup-to-val) id a (DSyn→DSem a rhs (fst w) , DSemᵀ-identity a (zerovDense (D2τ' (Etup Pr Γ))) .fst) 
+  let ih-rhs = DSemᵀ-exists-lemma-pair₂ (interp rhs ∘ Etup-to-val) id a (DSyn→DSem a rhs (fst w) , DSemᵀ-exists-lemma-identity a) 
       ih-body = DSyn→DSem (interp rhs (Etup-to-val a) , a) body (snd w)
   in DSemᵀ-exists-lemma-chain {Etup Pr Γ} {σ :* Etup Pr Γ} {τ} (interp body ∘ Etup-to-val) (λ z → interp rhs (Etup-to-val z) , z) a ih-body ih-rhs
 DSyn→DSem {Γ} {τ} a ( prim {σ = σ} op t ) w = DSemᵀ-exists-lemma-chain {τ2 = σ} (evalprim op) (interp t ∘ Etup-to-val) a (w .fst) (DSyn→DSem a t (w .snd))
@@ -72,7 +53,7 @@ DSyn→DSem {Γ} {τ} a ( case' e l r ) w
   using g ← case-helper.g a e l r
   using ext ← case-helper.case-simp-ext a e l r
   using de ← DSyn→DSem a e (fst w)
-  using dg ← Pair.DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , DSemᵀ-exists-lemma-identity a)
+  using dg ← DSemᵀ-exists-lemma-pair₂ (interp e ∘ Etup-to-val) id a (de , DSemᵀ-exists-lemma-identity a)
   with interp e (Etup-to-val a) in eq1
 DSyn→DSem {Γ} a (case' {σ = σ} {τ = τ} e l r) (we , wl) | inj₁ x
   = DSemᵀ-exists-extensionality (f ∘ g) _ ext a df∘g
