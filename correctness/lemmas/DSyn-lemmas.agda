@@ -47,7 +47,10 @@ DSyn-Exists val (case' e l r) = DSyn-Exists val e × (case interp e val of
                       [ ( λ v' → DSyn-Exists (push v' val) l )
                       , ( λ v' → DSyn-Exists (push v' val) r )
                       ])
+data DSyn-Exists : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set where
+  foobar :  {Γ : Env Pr} {τ : Typ Pr} → { val : Val Pr Γ } → { t : Term Pr Γ τ } → (DSyn-Exists val t)  → FooBar val t
 
+∃DSyn
 
 DSyn-to-IsJustDSem-prim : ∀ {σ τ : Typ Pr} → (op : Primop Pr σ τ) → (x : Rep σ) → (DSyn-Exists-Prim op x) → (Is-just $ DSemᵀ {σ} {τ} (evalprim op) x)
 DSyn-to-IsJustDSem-prim op x w = {!   !}
@@ -126,43 +129,45 @@ DSyn→DSem {Γ} a (case' {σ = σ} {τ = τ} e l r) (we , wr) | inj₂ x
         df = DSemᵀ-exists-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) v dr 
         df∘g = DSemᵀ-exists-lemma-chain {τ2 = (σ :+ τ) :* Etup Pr Γ} f g a df dg
 
+FooBar→DSem : {Γ : Env Pr} {τ : Typ Pr}  ( a : Rep (Etup Pr Γ) ) → ( t : Term Pr Γ τ ) → FooBar (Etup-to-val a) t → (Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) a))
+FooBar→DSem a t (foobar x) = DSyn→DSem a t x
 
 -- TODO: Delete this old stuff
 
-_>>_ : {A B : Set} → Maybe A → Maybe B → Maybe B
-_>>_ x y = x >>= λ _ → y
+-- _>>_ : {A B : Set} → Maybe A → Maybe B → Maybe B
+-- _>>_ x y = x >>= λ _ → y
 
-DSyn-Exists-Prim' : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Maybe ⊤
-DSyn-Exists-Prim' SIGN x =
-  case primFloatLess x 0.0 of
-    λ where true → just tt -- x < 0 , thus the derivative exists
-            false → case primFloatLess 0.0 x of
-                      λ where true → just tt -- x > 0 , thus the derivative exists
-                              false → nothing -- x is zero or NaN, thsu the derivative does not exists.
-DSyn-Exists-Prim' op x = just tt
+-- DSyn-Exists-Prim' : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Maybe ⊤
+-- DSyn-Exists-Prim' SIGN x =
+--   case primFloatLess x 0.0 of
+--     λ where true → just tt -- x < 0 , thus the derivative exists
+--             false → case primFloatLess 0.0 x of
+--                       λ where true → just tt -- x > 0 , thus the derivative exists
+--                               false → nothing -- x is zero or NaN, thsu the derivative does not exists.
+-- DSyn-Exists-Prim' op x = just tt
 
--- Evaluator die bepaalt of het differentieerbaar is
-DSyn-Exists' : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Maybe (Rep τ)
-DSyn-Exists' {Γ} {τ} val term
-  using v ← interp term val
-  with term
-... | unit = just v
-... | var idx = just v
-... | pair l r = do DSyn-Exists' val l
-                    DSyn-Exists' val r
-                    just v
-... | fst' t = do DSyn-Exists' val t
-                  just v
-... | snd' t = do DSyn-Exists' val t
-                  just v
-... | let' rhs body = do v' ← DSyn-Exists' val rhs
-                         DSyn-Exists' (push v' val) body
-                         just v
-... | prim op t = do v' ← DSyn-Exists' val t
-                     DSyn-Exists-Prim' op v'
-                     just v
-... | inl t = DSyn-Exists' val t >> just v
-... | inr t = DSyn-Exists' val t >> just v
-... | case' e l r = case interp e val of
-                      [ (λ v' → DSyn-Exists' (push v' val) l >> just v) 
-                      , (λ v' → DSyn-Exists' (push v' val) r >> just v) ]
+-- -- Evaluator die bepaalt of het differentieerbaar is
+-- DSyn-Exists' : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Maybe (Rep τ)
+-- DSyn-Exists' {Γ} {τ} val term
+--   using v ← interp term val
+--   with term
+-- ... | unit = just v
+-- ... | var idx = just v
+-- ... | pair l r = do DSyn-Exists' val l
+--                     DSyn-Exists' val r
+--                     just v
+-- ... | fst' t = do DSyn-Exists' val t
+--                   just v
+-- ... | snd' t = do DSyn-Exists' val t
+--                   just v
+-- ... | let' rhs body = do v' ← DSyn-Exists' val rhs
+--                          DSyn-Exists' (push v' val) body
+--                          just v
+-- ... | prim op t = do v' ← DSyn-Exists' val t
+--                      DSyn-Exists-Prim' op v'
+--                      just v
+-- ... | inl t = DSyn-Exists' val t >> just v
+-- ... | inr t = DSyn-Exists' val t >> just v
+-- ... | case' e l r = case interp e val of
+--                       [ (λ v' → DSyn-Exists' (push v' val) l >> just v) 
+--                       , (λ v' → DSyn-Exists' (push v' val) r >> just v) ]
