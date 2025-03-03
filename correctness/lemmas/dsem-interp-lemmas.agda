@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.dsem-interp-lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)

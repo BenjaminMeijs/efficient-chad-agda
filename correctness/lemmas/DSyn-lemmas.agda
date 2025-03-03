@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.DSyn-lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -21,8 +20,6 @@ open import correctness.dsem
 open import correctness.lemmas.dsem-lemmas
 
 
-DSyn-to-IsJustDSem-prim : ∀ {σ τ : Typ Pr} → (op : Primop Pr σ τ) → (x : Rep σ) → (DSyn-ExistsP-Prim op x) → (Is-just $ DSemᵀ {σ} {τ} (evalprim op) x)
-DSyn-to-IsJustDSem-prim op x w = {!   !}
 
 -- TODO: move this to simplify interp-exec-chad? 
 -- It is also used in dsem-lemmas 
@@ -67,7 +64,7 @@ DSyn→DSem {Γ} {τ} a ( let' {σ = σ} rhs body ) w =
   let ih-rhs = Pair.DSemᵀ-exists-lemma-pair₂ (interp rhs ∘ Etup-to-val) id a (DSyn→DSem a rhs (fst w) , DSemᵀ-identity a (zerovDense (D2τ' (Etup Pr Γ))) .fst) 
       ih-body = DSyn→DSem (interp rhs (Etup-to-val a) , a) body (snd w)
   in DSemᵀ-exists-lemma-chain {Etup Pr Γ} {σ :* Etup Pr Γ} {τ} (interp body ∘ Etup-to-val) (λ z → interp rhs (Etup-to-val z) , z) a ih-body ih-rhs
-DSyn→DSem {Γ} {τ} a ( prim {σ = σ} op t ) w = DSemᵀ-exists-lemma-chain {τ2 = σ} (evalprim op) (interp t ∘ Etup-to-val) a (DSyn-to-IsJustDSem-prim op _ (w .fst)) (DSyn→DSem a t (w .snd))
+DSyn→DSem {Γ} {τ} a ( prim {σ = σ} op t ) w = DSemᵀ-exists-lemma-chain {τ2 = σ} (evalprim op) (interp t ∘ Etup-to-val) a (w .fst) (DSyn→DSem a t (w .snd))
 DSyn→DSem {Γ} {τ} a ( inl t ) w = DSemᵀ-exists-lemma-chain inj₁ (interp t ∘ Etup-to-val) a (DSemᵀ-inj₁ (interp t $ Etup-to-val a) (zerovDense (D2τ' _ :*! D2τ' _)) .fst) (DSyn→DSem a t w) 
 DSyn→DSem {Γ} {τ} a ( inr t ) w = DSemᵀ-exists-lemma-chain inj₂ (interp t ∘ Etup-to-val) a (DSemᵀ-inj₂ (interp t $ Etup-to-val a) (zerovDense (D2τ' _ :*! D2τ' _)) .fst) (DSyn→DSem a t w) 
 DSyn→DSem {Γ} {τ} a ( case' e l r ) w

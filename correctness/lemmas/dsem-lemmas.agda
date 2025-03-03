@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.dsem-lemmas where 
 
 open import Agda.Primitive using (Level)

@@ -172,7 +172,7 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ (∃d
   let d-chad-op = interp (dprim' op) (Etup-to-val (ctg , (primal σ (interp t (Etup-to-val a)), tt))) 
       d-prim = DSyn→DSem a (prim op t) dsyn
       d-t = DSyn→DSem a t (dsyn .snd) 
-      d-op = DSyn-to-IsJustDSem-prim op (interp t $ Etup-to-val a)  (dsyn .fst)
+      d-op = dsyn .fst
   in begin
   LEtup2EV (LACMexec (interp (chad (prim op t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ gnoc (simplify-exec-chad-primop (Etup-to-val a) evIn ctg t op) LEtup2EV ⟩

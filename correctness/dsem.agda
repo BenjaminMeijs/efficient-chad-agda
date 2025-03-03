@@ -209,7 +209,7 @@ postulate
             → Σ (Is-just $ DSemᵀ {σ} {τ :+ σ} inj₂ a)
                 ( λ df → to-witness df ctg ≡ snd ctg)
 
-    -- Check: Is dit echt nodig, wordt het gebruikt?
+    -- TODO: Is dit echt nodig, wordt het gebruikt?
     DSemᵀ-fst : {σ τ : Typ Pr}
             → (a : Rep (σ :* τ))
             → (ctg : LinRepDense (D2τ' σ))
@@ -246,3 +246,47 @@ postulate
             → (ctg : LinRepDense (D2τ' τ))
             → Σ (Is-just $ DSemᵀ {σ} {τ} primFloatNegate a)
                 ( λ df → to-witness df ctg ≡ primFloatNegate ctg)
+
+
+
+module dsyn-existence where
+    open import spec 
+    open import correctness.spec
+
+    -- Question: Welke definitie is beter?
+    -- De uitgecommente definitie vereist dat er veel mer DSem postulations komen om de lemmas te bewijzen.
+    -- Bij de huidige definitie wordt deze bewijslast (en feitelijk de beslisbaarheid van IsJust DSem) weggelaten als precondition.
+
+    -- De huidige definitie is naar mijn mening iets beter, omdat het beter aansluit bij wat DSyn-exists betekent. 
+    -- De syntactische afgeleide van een primitieve operatie bestaat als de semantische afgeleide van de primitieve operatie bestaat.
+    DSyn-ExistsP-Prim : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Set
+    DSyn-ExistsP-Prim {σ} {τ} op x = Is-just (DSemᵀ {σ} {τ} (evalprim op) x)
+    -- DSyn-ExistsP-Prim SIGN x =
+    --     case primFloatLess x 0.0 of
+    --         λ where true → ⊤ -- x < 0 , thus the derivative exists
+    --                 false → case primFloatLess 0.0 x of
+    --                         λ where true → ⊤ -- x > 0 , thus the derivative exists
+    --                                 false → ⊥ -- x is zero or NaN, thsu the derivative does not exists.
+    -- DSyn-ExistsP-Prim op x = ⊤
+
+
+    DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
+    DSyn-ExistsP val (unit) = ⊤ 
+    DSyn-ExistsP val (var idx) = ⊤
+    DSyn-ExistsP val (pair l r) = DSyn-ExistsP val l × DSyn-ExistsP val r
+    DSyn-ExistsP val (fst' t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (snd' t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (let' rhs body) = DSyn-ExistsP val rhs × DSyn-ExistsP (push (interp rhs val) val) body
+    DSyn-ExistsP val (prim op t) = DSyn-ExistsP-Prim op (interp t val) × DSyn-ExistsP val t
+    DSyn-ExistsP val (inl t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (inr t) = DSyn-ExistsP val t
+    DSyn-ExistsP val (case' e l r) = DSyn-ExistsP val e × (case interp e val of
+                        [ ( λ v' → DSyn-ExistsP (push v' val) l )
+                        , ( λ v' → DSyn-ExistsP (push v' val) r )
+                        ])
+
+    -- TODO: Comment explaining why this is needed
+    data DSyn-Exists : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set where
+        ∃dsyn :  {Γ : Env Pr} {τ : Typ Pr} → { val : Val Pr Γ } → { t : Term Pr Γ τ } → (DSyn-ExistsP val t)  → DSyn-Exists val t
+
+open dsyn-existence public
