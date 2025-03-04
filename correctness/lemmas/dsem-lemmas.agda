@@ -14,9 +14,9 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Integer using (ℤ)
 import Data.Maybe.Relation.Unary.Any as Any
 open import Function.Bundles using (_⇔_;  mk⇔; Equivalence)
--- import Data.Maybe.Relation.Unary.All as All
 open import Function.Base using (_$_; _∘_; id; case_of_; flip)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
+open import Relation.Nullary.Negation using (¬_)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import correctness.lemmas.LinRepDense-is-comm-monoid
@@ -293,18 +293,20 @@ module Inj where
 open Inj public
 
 
-module unpack-isInj where
-    unpack-isInj₁ : {A B : Set} (x : A) (y : A ⊎ B)
-          → (y ≡ inj₁ x)
-          → (w : Is-just (isInj₁ y)) 
-          → (x ≡ to-witness w)
-    unpack-isInj₁ _ _ refl (Any.just _) = refl
+module apply-cong[,] where
+    apply-cong[-,] : { A B : Set } 
+            → (l : A → Set) (r : B → Set) (cond : A ⊎ B) 
+            → [ l , r ] cond
+            → (x : A) → (inj₁ x ≡ cond)
+            → l x
+    apply-cong[-,] {A} {B} _ _ (inj₁ _) f _ refl = f
 
-    unpack-isInj₂ : {A B : Set} (x : B) (y : A ⊎ B)
-          → (y ≡ inj₂ x)
-          → (w : Is-just (isInj₂ y)) 
-          → (x ≡ to-witness w)
-    unpack-isInj₂ _ _ refl (Any.just _) = refl
+    apply-cong[,-] : { A B : Set } 
+            → (l : A → Set) (r : B → Set) (cond : A ⊎ B) 
+            → [ l , r ] cond
+            → (x : B) → (inj₂ x ≡ cond)
+            → r x
+    apply-cong[,-] {A} {B} _ _ (inj₂ _) f _ refl = f
 
 
 module Case 
@@ -312,39 +314,78 @@ module Case
       (a : Rep ((σ1 :+ σ2) :* ρ))
       (l : Rep (σ1 :* ρ) → Rep τ) 
       (r : Rep (σ2 :* ρ) → Rep τ) 
+      (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} (λ (xs , a') → [ (λ x → l (x , a')) , (λ x → r (x , a')) ] xs) a)
+      (ctg : LinRepDense (D2τ' τ))
   where
-    open unpack-isInj
+    open apply-cong[,]
     private
       f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
       f = λ (xs , a') → [ (λ x → l (x , a'))
                         , (λ x → r (x , a'))
                         ] xs
 
+      Fl : (v : Rep σ1) → Set
+      Fr : (v : Rep σ2) → Set
+      Fl = (λ v → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a)) ( λ dl → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))) 
+      Fr = (λ v → Σ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a)) ( λ dr → to-witness df ctg ≡ ((zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd))) 
+
+      case-rule : [ Fl , Fr ] (a . fst)
+      case-rule = DSemᵀ-case {σ1} {σ2} {ρ} {τ} a l r df ctg
+
+      apply₁-case-rule : (x : Rep σ1) → inj₁ x ≡ fst a → Fl x
+      apply₁-case-rule = apply-cong[-,] Fl Fr (fst a) case-rule
+
+      apply₂-case-rule : (x : Rep σ2) → inj₂ x ≡ fst a → Fr x
+      apply₂-case-rule = apply-cong[,-] Fl Fr (fst a) case-rule
+
     DSemᵀ-lemma-case-inj₁ : (v : Rep σ1) → (fst a ≡ inj₁ v)
-              → (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
               → (dl : Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a))
-              → (ctg : LinRepDense (D2τ' τ))
               → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd)
-    DSemᵀ-lemma-case-inj₁  v w df dl ctg = ans
-      where isLeft : Is-just (isInj₁ (fst a))
-            isLeft rewrite w = Any.just tt
-            rule = DSemᵀ-case-inj₁ a l r isLeft df ctg
-            -- convincing agda that d-rule ≡ dl by propagating the fact that 'fst a ≡ inj₁ v'
-            d-rule≡dl = DSemᵀ-lemma-cong-a l (v , snd a) (to-witness isLeft , snd a) (cong₂ _,_ (unpack-isInj₁ v (fst a) w isLeft) refl) dl (rule .fst) ctg
+    DSemᵀ-lemma-case-inj₁  v eq1 dl = ans
+      where rule = apply₁-case-rule v (sym eq1)
+            dl2 = fst rule
+            dl≡dl2 : to-witness dl ctg ≡ to-witness dl2 ctg
+            dl≡dl2 = DSemᵀ-extensionality _ _ (λ _ → refl) (v , snd a) dl dl2 ctg
             ans : to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd)
-            ans rewrite snd rule rewrite d-rule≡dl = refl
-            
+            ans rewrite dl≡dl2 = snd rule
+
     DSemᵀ-lemma-case-inj₂ : (v : Rep σ2) → (fst a ≡ inj₂ v)
-              → (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
               → (dr : Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a))
-              → (ctg : LinRepDense (D2τ' τ))
-              → to-witness df ctg ≡ (( zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd)
-    DSemᵀ-lemma-case-inj₂ v w df dr ctg = ans
-      where isRight : Is-just (isInj₂ (fst a))
-            isRight rewrite w = Any.just tt
-            rule = DSemᵀ-case-inj₂ a l r isRight df ctg
-            -- convincing agda that d-rule ≡ dl by propagating the fact that 'fst a ≡ inj₂ v'
-            d-rule≡dl = DSemᵀ-lemma-cong-a r (v , snd a) (to-witness isRight , snd a) (cong₂ _,_ (unpack-isInj₂ v (fst a) w isRight) refl) dr (rule .fst) ctg
-            ans : to-witness df ctg ≡ (( zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd)
-            ans rewrite snd rule rewrite d-rule≡dl = refl
+              → to-witness df ctg ≡ ((zerovDense (D2τ' σ1), to-witness dr ctg .fst) , to-witness dr ctg .snd)
+    DSemᵀ-lemma-case-inj₂ v eq1 dr = ans
+      where rule = apply₂-case-rule v (sym eq1)
+            dr2 = fst rule -- fst rule
+            dr≡dr2 : to-witness dr ctg ≡ to-witness dr2 ctg
+            dr≡dr2 = DSemᵀ-extensionality _ _ (λ _ → refl) (v , snd a) dr dr2 ctg
+            ans : to-witness df ctg ≡ ((zerovDense (D2τ' σ1), to-witness dr ctg .fst) , to-witness dr ctg .snd)
+            ans rewrite dr≡dr2 = rule .snd
+
 open Case public
+
+module Exists-Case
+    {σ1 σ2 ρ τ : Typ Pr}
+    (a : Rep ((σ1 :+ σ2) :* ρ))
+    (l : Rep (σ1 :* ρ) → Rep τ) 
+    (r : Rep (σ2 :* ρ) → Rep τ) 
+  where
+    private
+      f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+      f = λ (xs , a') → [ (λ x → l (x , a'))
+                        , (λ x → r (x , a'))
+                        ] xs
+
+      Fl : (v : Rep σ1) → Set
+      Fr : (v : Rep σ2) → Set
+      Fl = (λ v → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a) ⇔ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a)))
+      Fr = (λ v → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a) ⇔ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a)))
+
+      case-rule : [ Fl , Fr ] (a . fst)
+      case-rule = DSemᵀ-exists-case {σ1} {σ2} {ρ} {τ} a l r
+
+    DSemᵀ-exists-lemma-case-inj₁ : (v : Rep σ1) → (fst a ≡ inj₁ v) → Fl v
+    DSemᵀ-exists-lemma-case-inj₁ v refl = case-rule
+
+    DSemᵀ-exists-lemma-case-inj₂ : (v : Rep σ2) → (fst a ≡ inj₂ v) → Fr v
+    DSemᵀ-exists-lemma-case-inj₂ v refl = case-rule
+
+open Exists-Case public

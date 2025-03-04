@@ -17,7 +17,7 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import correctness.lemmas.dsem-lemmas
-open unpack-isInj
+open apply-cong[,]
 open import correctness.lemmas.DSyn-lemmas
 
 open import spec
@@ -122,7 +122,7 @@ module Interp-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
              → (Etup2EV (to-witness de (to-witness df ctg . fst)) ev+ Etup2EV (to-witness df ctg .snd)) 
                ≡ (Etup2EV (to-witness de (to-witness dl ctg .fst , zerovDense (D2τ' τ))) ev+ Etup2EV (to-witness dl ctg .snd))
     DSemᵀ-lemma-interp-case-left df x interp-e-val≡inj-x dl 
-      rewrite DSemᵀ-lemma-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x interp-e-val≡inj-x df dl ctg
+      rewrite DSemᵀ-lemma-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) df ctg x interp-e-val≡inj-x dl 
       = refl
 
     DSemᵀ-lemma-interp-case-right : (df : Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))) →
@@ -131,7 +131,7 @@ module Interp-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
              → (Etup2EV (to-witness de (to-witness df ctg . fst)) ev+ Etup2EV (to-witness df ctg .snd)) 
                ≡ (Etup2EV (to-witness de (zerovDense (D2τ' σ) , to-witness dr ctg .fst )) ev+ Etup2EV (to-witness dr ctg .snd))
     DSemᵀ-lemma-interp-case-right df x interp-e-val≡inj-x dr
-      rewrite DSemᵀ-lemma-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x interp-e-val≡inj-x df dr ctg
+      rewrite DSemᵀ-lemma-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) df ctg x interp-e-val≡inj-x dr
       = refl
 
     -- ===================
@@ -139,19 +139,15 @@ module Interp-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
     -- ===================
     mk-df-inj₁ : (x : Rep σ) → interp e (Etup-to-val a) ≡ inj₁ x 
                 → Is-just (DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a)) → Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
-    mk-df-inj₁ x w dl = DSemᵀ-exists-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) v dl2
-      where v : Is-just (isInj₁ (interp e (Etup-to-val a)))
-            v rewrite w = Any.just tt
-            dl2 : Is-just $ DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (to-witness v , a)
-            dl2 rewrite sym (unpack-isInj₁ x (interp e (Etup-to-val a)) w v) = dl
+    mk-df-inj₁ x w dl
+      = let rule = DSemᵀ-exists-lemma-case-inj₁ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x w
+      in Equivalence.from rule dl
 
     mk-df-inj₂ : (x : Rep τ) → interp e (Etup-to-val a) ≡ inj₂ x 
                 → Is-just (DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a)) → Is-just (DSemᵀ {(σ :+ τ) :* Etup Pr Γ} {ρ} f (g a))
-    mk-df-inj₂ x w dl = DSemᵀ-exists-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) v dl2
-      where v : Is-just (isInj₂ (interp e (Etup-to-val a)))
-            v rewrite w = Any.just tt
-            dl2 : Is-just $ DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (to-witness v , a)
-            dl2 rewrite sym (unpack-isInj₂ x (interp e (Etup-to-val a)) w v) = dl
+    mk-df-inj₂ x w dr
+      = let rule = DSemᵀ-exists-lemma-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x w
+      in Equivalence.from rule dr
     
   -- ===================
   -- The main lemma

@@ -93,59 +93,7 @@ postulate
               → Σ (Is-just $ DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a)
                   (λ df → to-witness df ctg ≡ onehot idx ctg)
 
-    DSemᵀ-case-inj₁ : {σ1 σ2 ρ τ : Typ Pr}
-              → (a : Rep ((σ1 :+ σ2) :* ρ))
-              → (l : Rep (σ1 :* ρ) → Rep τ) 
-              → (r : Rep (σ2 :* ρ) → Rep τ) 
-              → (v : Is-just (isInj₁ (fst a)))
-              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
-                    f = λ (xs , a') → [ (λ x → l (x , a'))
-                                      , (λ x → r (x , a'))
-                                     ] xs
-              in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
-              → (ctg : LinRepDense (D2τ' τ))
-              → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (to-witness v , snd a))
-                  ( λ dl → to-witness df ctg ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))
-
-    DSemᵀ-exists-case-inj₁ : {σ1 σ2 ρ τ : Typ Pr}
-              → (a : Rep ((σ1 :+ σ2) :* ρ))
-              → (l : Rep (σ1 :* ρ) → Rep τ) 
-              → (r : Rep (σ2 :* ρ) → Rep τ)
-              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
-                    f = λ (xs , a') → [ (λ x → l (x , a'))
-                                      , (λ x → r (x , a'))
-                                      ] xs
-              in (v : Is-just (isInj₁ (fst a)))
-              → (dl : Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (to-witness v , snd a))
-              → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
-
-    DSemᵀ-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
-              → (a : Rep ((σ1 :+ σ2) :* ρ))
-              → (l : Rep (σ1 :* ρ) → Rep τ) 
-              → (r : Rep (σ2 :* ρ) → Rep τ) 
-              → (v : Is-just (isInj₂ (fst a)))
-              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
-                    f = λ (xs , a') → [ (λ x → l (x , a'))
-                                      , (λ x → r (x , a'))
-                                     ] xs
-              in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
-              → (ctg : LinRepDense (D2τ' τ))
-              → Σ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (to-witness v , snd a))
-                  ( λ dr → to-witness df ctg ≡ (( zerovDense (D2τ' σ1), to-witness dr ctg .fst) , to-witness dr ctg .snd))
-
-    DSemᵀ-exists-case-inj₂ : {σ1 σ2 ρ τ : Typ Pr}
-              → (a : Rep ((σ1 :+ σ2) :* ρ))
-              → (l : Rep (σ1 :* ρ) → Rep τ) 
-              → (r : Rep (σ2 :* ρ) → Rep τ)
-              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
-                    f = λ (xs , a') → [ (λ x → l (x , a'))
-                                      , (λ x → r (x , a'))
-                                      ] xs
-              in (v : Is-just (isInj₂ (fst a)))
-              → (dr : Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (to-witness v , snd a))
-              → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
-
-    DSemᵀ-case-moeilijk : {σ1 σ2 ρ τ : Typ Pr}
+    DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}
               → (a : Rep ((σ1 :+ σ2) :* ρ))
               → (l : Rep (σ1 :* ρ) → Rep τ) 
               → (r : Rep (σ2 :* ρ) → Rep τ) 
@@ -155,6 +103,7 @@ postulate
                                      ] xs
               in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
               → (ctg : LinRepDense (D2τ' τ))
+              -- TODO: from Dependent pair to just a function (exists is proven by DSemᵀ exists)
               → [ (λ v → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a))
                            ( λ dl → to-witness df ctg 
                                     ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))) 
@@ -163,6 +112,20 @@ postulate
                                     ≡ ((zerovDense (D2τ' σ1) , to-witness dr ctg .fst) , to-witness dr ctg .snd))) 
                 ] (a .fst)
 
+    DSemᵀ-exists-case : {σ1 σ2 ρ τ : Typ Pr}
+              → (a : Rep ((σ1 :+ σ2) :* ρ))
+              → (l : Rep (σ1 :* ρ) → Rep τ) 
+              → (r : Rep (σ2 :* ρ) → Rep τ) 
+              → let f : (Rep ((σ1 :+ σ2) :* ρ) ) → Rep τ
+                    f = λ (xs , a') → [ (λ x → l (x , a'))
+                                      , (λ x → r (x , a'))
+                                     ] xs
+              in [ (λ v → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+                         ⇔ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a)))
+
+                , (λ v → (Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
+                         ⇔ (Is-just $ DSemᵀ {σ2 :* ρ} {τ} r (v , snd a)))
+                ] (a .fst)
                   
     DSemᵀ-extensionality : {σ τ : Typ Pr}
               → (f : Rep σ →  Rep τ) 

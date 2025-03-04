@@ -71,21 +71,21 @@ chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr}
 -- Cases where ctg is (semantically) zero
 chad-equiv-DSemᵀ {Γ} a evIn tt unit ~τ ~Γ (∃dsyn dsyn) 
   rewrite chad-ctg-zero (Etup-to-val a) evIn tt unit tt ~Γ refl
-  = DSemᵀ-ev-lemma-ctg-zero-evIn' (DSyn→DSem a unit tt)
+  = DSemᵀ-ev-lemma-ctg-zero-evIn' (∃DSyn→∃DSem a unit tt)
 chad-equiv-DSemᵀ {Γ} a evIn nothing (pair {σ = σ} {τ = τ} l r) ~τ ~Γ (∃dsyn dsyn)
   rewrite chad-ctg-zero (Etup-to-val a) evIn nothing (pair l r) tt ~Γ refl 
-  = DSemᵀ-ev-lemma-ctg-zero-evIn' (DSyn→DSem a (pair l r) dsyn)
+  = DSemᵀ-ev-lemma-ctg-zero-evIn' (∃DSyn→∃DSem a (pair l r) dsyn)
 chad-equiv-DSemᵀ {Γ} a evIn nothing (inl {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn)
   rewrite chad-ctg-zero (Etup-to-val a) evIn nothing (inl {σ = σ} {τ = τ} t) tt ~Γ refl 
-  = DSemᵀ-ev-lemma-ctg-zero-evIn' (DSyn→DSem a (inl t) dsyn)
+  = DSemᵀ-ev-lemma-ctg-zero-evIn' (∃DSyn→∃DSem a (inl t) dsyn)
 chad-equiv-DSemᵀ {Γ} a evIn nothing (inr {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn)
   rewrite chad-ctg-zero (Etup-to-val a) evIn nothing (inr {σ = σ} {τ = τ} t) tt ~Γ refl 
-  = DSemᵀ-ev-lemma-ctg-zero-evIn' (DSyn→DSem a (inr t) dsyn)
+  = DSemᵀ-ev-lemma-ctg-zero-evIn' (∃DSyn→∃DSem a (inr t) dsyn)
 -- Cases where ctg is NOT (semantically) zero
 chad-equiv-DSemᵀ {Γ} a evIn ctg (var idx) ~τ ~Γ (∃dsyn dsyn) 
   = let idx' = convIdx D2τ' idx
         (d-var , eq) = DSemᵀ-var a idx (sparse2dense ctg)
-        dt = DSyn→DSem a (var idx) dsyn
+        dt = ∃DSyn→∃DSem a (var idx) dsyn
   in begin
   LEtup2EV (LACMexec (interp (chad (var idx)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ gnoc (LACMexec-add idx' ctg evIn) LEtup2EV ⟩
@@ -102,9 +102,9 @@ chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) ~τ ~Γ
         m1 = interp (chad l) (Etup-to-val-primal a) .snd ctgL .fst
         m2 = interp (chad r) (Etup-to-val-primal a) .snd ctgR .fst
 
-        dt = DSyn→DSem a (pair l r) dsyn
-        dl = DSyn→DSem a l (dsyn .fst) 
-        dr = DSyn→DSem a r (dsyn .snd)
+        dt = ∃DSyn→∃DSem a (pair l r) dsyn
+        dl = ∃DSyn→∃DSem a l (dsyn .fst) 
+        dr = ∃DSyn→∃DSem a r (dsyn .snd)
         ihr = chad-equiv-DSemᵀ a (LACMexec m1 evIn) ctgR r (~τ .snd) (chad-preserves-≃Γ (Etup-to-val a) evIn ctgL l (~τ .fst) ~Γ) (∃dsyn (dsyn .snd))
         ihl = chad-equiv-DSemᵀ a evIn ctgL l (~τ .fst) ~Γ (∃dsyn (dsyn .fst))
   in begin
@@ -118,8 +118,8 @@ chad-equiv-DSemᵀ {Γ} a evIn (just ctg) (pair {σ = σ} {τ = τ} l r) ~τ ~Γ
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (fst' {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn)
   = let ctg' = (just (ctg , zerov (D2τ' τ) .fst))
-        d-fst = DSyn→DSem a (fst' t) dsyn
-        d-t = DSyn→DSem a t dsyn 
+        d-fst = ∃DSyn→∃DSem a (fst' t) dsyn
+        d-t = ∃DSyn→∃DSem a t dsyn 
         d-snd = DSemᵀ-exists-lemma-pair₁ _ _ a d-t .snd
   in begin
   LEtup2EV (LACMexec (interp (chad (fst' t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
@@ -132,8 +132,8 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (fst' {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (snd' {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn)
   = let ctg' = (just (zerov (D2τ' σ) .fst , ctg))
-        d-t = DSyn→DSem a t dsyn 
-        d-snd = DSyn→DSem a (snd' t) dsyn
+        d-t = ∃DSyn→∃DSem a t dsyn 
+        d-snd = ∃DSyn→∃DSem a (snd' t) dsyn
         d-fst = DSemᵀ-exists-lemma-pair₁ _ _ a d-t .fst
   in begin
   LEtup2EV (LACMexec (interp (chad (snd' t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
@@ -146,9 +146,9 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (snd' {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) ~τ ~Γ (∃dsyn dsyn) =
   let -- DSems of subterms are defined
-      dt = DSyn→DSem a (let' rhs body) dsyn
-      d-rhs = DSyn→DSem a rhs (dsyn .fst) 
-      d-body = DSyn→DSem (interp rhs (Etup-to-val a) , a) body (dsyn .snd)
+      dt = ∃DSyn→∃DSem a (let' rhs body) dsyn
+      d-rhs = ∃DSyn→∃DSem a rhs (dsyn .fst) 
+      d-body = ∃DSyn→∃DSem (interp rhs (Etup-to-val a) , a) body (dsyn .snd)
       -- Helpful shorthands
       a' = (interp rhs (Etup-to-val a)) , a
       ctg-body = to-witness d-body (sparse2dense ctg)
@@ -170,8 +170,8 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (let' {σ = σ} {τ = τ} rhs body) ~τ ~Γ (
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ (∃dsyn dsyn) =
   let d-chad-op = interp (dprim' op) (Etup-to-val (ctg , (primal σ (interp t (Etup-to-val a)), tt))) 
-      d-prim = DSyn→DSem a (prim op t) dsyn
-      d-t = DSyn→DSem a t (dsyn .snd) 
+      d-prim = ∃DSyn→∃DSem a (prim op t) dsyn
+      d-t = ∃DSyn→∃DSem a t (dsyn .snd) 
       d-op = dsyn .fst
   in begin
   LEtup2EV (LACMexec (interp (chad (prim op t)) (Etup-to-val-primal a) .snd ctg .fst) evIn)
@@ -186,8 +186,8 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (prim {σ = σ} {τ = τ} op t) ~τ ~Γ (∃d
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn (just (inj₁ ctg)) (inl {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn) =
   let ctg' = sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₁ ctg))
-      d-inl = DSyn→DSem a (inl t) dsyn
-      dt = DSyn→DSem a t dsyn
+      d-inl = ∃DSyn→∃DSem a (inl t) dsyn
+      dt = ∃DSyn→∃DSem a t dsyn
   in begin
   LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ chad-equiv-DSemᵀ a evIn ctg t ~τ ~Γ (∃dsyn dsyn) ⟩
@@ -197,8 +197,8 @@ chad-equiv-DSemᵀ {Γ} a evIn (just (inj₁ ctg)) (inl {σ = σ} {τ = τ} t) ~
   ∎
 chad-equiv-DSemᵀ {Γ} a evIn (just (inj₂ ctg)) (inr {σ = σ} {τ = τ} t) ~τ ~Γ (∃dsyn dsyn) =
   let ctg' = sparse2dense {D2τ' σ :+! D2τ' τ} (just (inj₂ ctg))
-      d-inr = DSyn→DSem a (inr t) dsyn
-      dt = DSyn→DSem a t dsyn
+      d-inr = ∃DSyn→∃DSem a (inr t) dsyn
+      dt = ∃DSyn→∃DSem a t dsyn
   in begin
   LEtup2EV (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst) evIn)
     ≡⟨ chad-equiv-DSemᵀ a evIn ctg t ~τ ~Γ (∃dsyn dsyn) ⟩
@@ -220,15 +220,15 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~
     ∎
     where -- DSemᵀ of subterms is defined
           d-case : Is-just (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
-          d-case = DSyn→DSem a (case' e l r) dsyn
+          d-case = ∃DSyn→∃DSem a (case' e l r) dsyn
           apply-eq-to-dsyn : [ (λ v' → DSyn-ExistsP (push v' (Etup-to-val a)) l) , (λ v' → DSyn-ExistsP (push v' (Etup-to-val a)) r) ] (interp e $ Etup-to-val a) ≡ DSyn-ExistsP (push x (Etup-to-val a)) l
           apply-eq-to-dsyn rewrite interp-e-val≡inj-x = refl
           dsyn' : DSyn-ExistsP (push x (Etup-to-val a)) l
           dsyn' rewrite (sym apply-eq-to-dsyn) = dsyn .snd
           dl : Is-just (DSemᵀ {σ :* Etup Pr Γ} {ρ} (interp l ∘ Etup-to-val) (x , a))
-          dl = DSyn→DSem (x , a) l dsyn'
+          dl = ∃DSyn→∃DSem (x , a) l dsyn'
           de : Is-just (DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a )
-          de = DSyn→DSem a e (dsyn .fst)
+          de = ∃DSyn→∃DSem a e (dsyn .fst)
           -- useful names
           ev'  = (zerov (D2τ' σ) .fst , evIn)
           body = LACMexec (interp (chad l) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
@@ -253,15 +253,15 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~
   ∎
   where -- DSemᵀ of subterms is defined
         d-case : Is-just (DSemᵀ {Etup Pr Γ} {ρ} (interp (case' e l r) ∘ Etup-to-val) a)
-        d-case = DSyn→DSem a (case' e l r) dsyn
+        d-case = ∃DSyn→∃DSem a (case' e l r) dsyn
         apply-eq-to-dsyn : [ (λ v' → DSyn-ExistsP (push v' (Etup-to-val a)) l) , (λ v' → DSyn-ExistsP (push v' (Etup-to-val a)) r) ] (interp e $ Etup-to-val a) ≡ DSyn-ExistsP (push x (Etup-to-val a)) r
         apply-eq-to-dsyn rewrite interp-e-val≡inj-x = refl
         dsyn' : DSyn-ExistsP (push x (Etup-to-val a)) r
         dsyn' rewrite (sym apply-eq-to-dsyn) = dsyn .snd
         dr : Is-just (DSemᵀ {τ :* Etup Pr Γ} {ρ} (interp r ∘ Etup-to-val) (x , a))
-        dr = DSyn→DSem (x , a) r dsyn'
+        dr = ∃DSyn→∃DSem (x , a) r dsyn'
         de : Is-just (DSemᵀ {Etup Pr Γ} {σ :+ τ} (interp e ∘ Etup-to-val) a )
-        de = DSyn→DSem a e (dsyn .fst)
+        de = ∃DSyn→∃DSem a e (dsyn .fst)
         -- useful names
         ev'  = (zerov (D2τ' τ) .fst , evIn)
         body = LACMexec (interp (chad r) (Etup-to-val-primal (x , a)) .snd ctg .fst) ev'
