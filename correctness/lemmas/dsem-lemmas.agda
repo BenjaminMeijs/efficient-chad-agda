@@ -27,8 +27,6 @@ open import correctness.spec
 open import correctness.dsem
 import spec.LACM as LACM
 
--- TODO: Clean up this file
-
 -- ======================
 -- internal helpers
 -- ======================
@@ -106,90 +104,18 @@ open Onehot public
 module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  Rep τ2) (a : Rep σ) where
     -- helper functions
     private
-      just-eq : {A : Set} {x y : A} → just x ≡ just y → x ≡ y
-      just-eq refl = refl
-
-      just-nothing-absurd : {A : Set} {x : A} → just x ≡ nothing → ⊥
-      just-nothing-absurd ()
-
       h : Rep σ → Rep (τ1 :* τ2)
       h e = (f e , g e)
-
-      helper : 
-            (ctg-f : LinRepDense (D2τ' τ1))
-          → (ctg-g : LinRepDense (D2τ' τ2))
-          → {v1 : Maybe (LinRepDense (D2τ' (τ1 :* τ2)) → LinRepDense (D2τ' σ)) }
-          → ( DSemᵀ h a ≡ v1  )
-          → {v2 : Maybe (LinRepDense (D2τ' τ1) → LinRepDense (D2τ' σ))}
-          → ( DSemᵀ f a ≡ v2  )
-          → {v3 : Maybe (LinRepDense (D2τ' τ2) → LinRepDense (D2τ' σ))}
-          → ( DSemᵀ g a ≡ v3  )
-          → (v1 ?? (ctg-f , ctg-g)) ≡
-            fmap₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
-      helper ctg-f ctg-g eq1 eq2 eq3 = trans₂ (DSemᵀ-pair {σ = σ} f g a ctg-f ctg-g)
-                      (cong (λ x → x ?? (ctg-f , ctg-g)) eq1)
-                      (cong₂ (λ x y → fmap₂ (plusvDense (D2τ' _)) (x ?? ctg-f) (y ?? ctg-g)) eq2 eq3)
-
-      helper2 : 
-        let ctg-f = zerovDense (D2τ' τ1)
-            ctg-g = zerovDense (D2τ' τ2)
-        in  {v1 : Maybe (LinRepDense (D2τ' (τ1 :* τ2)) → LinRepDense (D2τ' σ)) }
-        → ( DSemᵀ h a ≡ v1  )
-        → {v2 : Maybe (LinRepDense (D2τ' τ1) → LinRepDense (D2τ' σ))}
-        → ( DSemᵀ f a ≡ v2  )
-        → {v3 : Maybe (LinRepDense (D2τ' τ2) → LinRepDense (D2τ' σ))}
-        → ( DSemᵀ g a ≡ v3  )
-        → (v1 ?? (ctg-f , ctg-g)) ≡
-          fmap₂ (plusvDense (D2τ' σ)) (v2 ?? ctg-f) (v3 ?? ctg-g)
-      helper2 = helper (zerovDense (D2τ' τ1)) (zerovDense (D2τ' τ2))
 
     DSemᵀ-exists-lemma-pair₁ : 
         Is-just (DSemᵀ {σ} {τ1 :* τ2} h a) 
         → ( Is-just (DSemᵀ {σ} {τ1} f a) × Is-just (DSemᵀ {σ} {τ2} g a))
-    DSemᵀ-exists-lemma-pair₁ x
-      with DSemᵀ {σ} {τ1 :* τ2} (λ e → (f e , g e)) a in eq1
-        | DSemᵀ {σ} {τ1} f a in eq2
-        | DSemᵀ {σ} {τ2} g a in eq3
-    DSemᵀ-exists-lemma-pair₁ () | nothing | _ | _
-    ... | just _ | just _  | just _  = Any.just tt , Any.just tt
-    ... | just _ | nothing | nothing = ⊥-elim (just-nothing-absurd (helper2 eq1 eq2 eq3))
-    ... | just _ | just _  | nothing = ⊥-elim (just-nothing-absurd (helper2 eq1 eq2 eq3))
-    ... | just _ | nothing | just _  = ⊥-elim (just-nothing-absurd (helper2 eq1 eq2 eq3))
+    DSemᵀ-exists-lemma-pair₁ = Equivalence.to $ DSemᵀ-exists-pair f g a
 
     DSemᵀ-exists-lemma-pair₂ :
         ( Is-just (DSemᵀ {σ} {τ1} f a) × Is-just (DSemᵀ {σ} {τ2} g a))
         → Is-just (DSemᵀ {σ} {τ1 :* τ2} h a) 
-    DSemᵀ-exists-lemma-pair₂ x
-      with DSemᵀ {σ} {τ1 :* τ2} (λ e → (f e , g e)) a in eq1
-        | DSemᵀ {σ} {τ1} f a in eq2
-        | DSemᵀ {σ} {τ2} g a in eq3
-    DSemᵀ-exists-lemma-pair₂ () | _ | nothing | _
-    DSemᵀ-exists-lemma-pair₂ () | _ | _ | nothing
-    ... | just _  | just _ | just _ = Any.just tt
-    ... | nothing | just _ | just _ = ⊥-elim (just-nothing-absurd (sym (helper2 eq1 eq2 eq3)))
-
-    DSemᵀ-exists-lemma-pair :
-              Is-just (DSemᵀ {σ} {τ1 :* τ2} h a) 
-              ⇔ (( Is-just (DSemᵀ {σ} {τ1} f a) × Is-just (DSemᵀ {σ} {τ2} g a)))
-    DSemᵀ-exists-lemma-pair = mk⇔ DSemᵀ-exists-lemma-pair₁ DSemᵀ-exists-lemma-pair₂
-
-    DSemᵀ-lemma-pair : 
-              (dh : Is-just (DSemᵀ {σ} {τ1 :* τ2} h a))
-            → (df : Is-just (DSemᵀ {σ} {τ1} f a))
-            → (dg : Is-just (DSemᵀ {σ} {τ2} g a))
-            → (ctg-f : LinRepDense (D2τ' τ1))
-            → (ctg-g : LinRepDense (D2τ' τ2))
-            → (to-witness dh) (ctg-f , ctg-g)
-              ≡ plusvDense (D2τ' σ) (to-witness df ctg-f) (to-witness dg ctg-g)
-    DSemᵀ-lemma-pair Wdh Wdf Wdg ctg-f ctg-g
-      using h ← λ e → (f e , g e)
-      with DSemᵀ {σ} {τ1 :* τ2} h a in eq1
-        | DSemᵀ {σ} {τ1} f a in eq2
-        | DSemᵀ {σ} {τ2} g a in eq3
-    DSemᵀ-lemma-pair (Any.just _) (Any.just _) (Any.just _) ctg-f ctg-g
-      | just dh | just df | just dg 
-      rewrite just-eq (helper ctg-f ctg-g eq1 eq2 eq3)
-      = refl
+    DSemᵀ-exists-lemma-pair₂ = Equivalence.from $ DSemᵀ-exists-pair f g a
 
     DSemᵀ-lemma-pair-zeroR : 
               (dh : Is-just (DSemᵀ {σ} {τ1 :* τ2} h a))
@@ -203,7 +129,7 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
               in (to-witness dh ctg) ≡ (to-witness df ctg-f)
     DSemᵀ-lemma-pair-zeroR dh df dg ctg-f
       = let ctg-g = sparse2dense (zerov (D2τ' τ2) .fst)
-        in trans (DSemᵀ-lemma-pair dh df dg ctg-f ctg-g)
+        in trans ((DSemᵀ-pair f g a dh df dg ctg-f ctg-g))
                  (plusvDense-zeroR' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ2)}} dg}})
 
     DSemᵀ-lemma-pair-zeroL : 
@@ -218,7 +144,7 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
               in (to-witness dh ctg) ≡ (to-witness dg ctg-g)
     DSemᵀ-lemma-pair-zeroL dh df dg ctg-g
       = let ctg-f = sparse2dense (zerov (D2τ' τ1) .fst)
-        in trans (DSemᵀ-lemma-pair dh df dg ctg-f ctg-g)
+        in trans ((DSemᵀ-pair f g a dh df dg ctg-f ctg-g))
                  (plusvDense-zeroL' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ1)}} df}})
 open Pair public
 
@@ -235,7 +161,7 @@ module Ev-pair {Γ : Env Pr} {τ1 τ2 : Typ Pr } (f : Rep (Etup Pr Γ) →  Rep 
     DSemᵀ-ev-lemma-pair : (Etup2EV (to-witness df ctg-f) ev+ Etup2EV (to-witness dg ctg-g)) 
                            ≡ Etup2EV (to-witness dh (ctg-f , ctg-g))
     DSemᵀ-ev-lemma-pair 
-      = let rule = DSemᵀ-lemma-pair f g a dh df dg ctg-f ctg-g
+      = let rule = DSemᵀ-pair f g a dh df dg ctg-f ctg-g
         in sym (trans₂ (cong Etup2EV rule) refl (plusvDense-equiv-ev+ (to-witness df ctg-f) (to-witness dg ctg-g)))
 open Ev-pair public
 

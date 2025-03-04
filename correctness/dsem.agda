@@ -26,16 +26,6 @@ onehot {ρ ∷ Γ} {τ} Z       x = x , zerovDense _
 onehot {ρ ∷ Γ} {τ} (S idx) x = zerovDense _ , onehot idx x
 
 
--- Named after the operator from the haskell Control.Lens.Lens package
--- Applies an argument to a function inside a maybe.
-_??_ : {A B : Set} → Maybe (A → B) → A → Maybe B
-_??_ (just f) x = just (f x)
-_??_ nothing _  = nothing
-
-fmap₂ : {A B C : Set} → (A → B → C) → Maybe A → Maybe B → Maybe C
-fmap₂ f (just x) (just y) = just (f x y)
-fmap₂ _ _ _ = nothing
-
 postulate
     -- ======================
     -- Definition
@@ -72,18 +62,25 @@ postulate
     DSemᵀ-pair : {σ τ1 τ2 : Typ Pr}
             → (f : Rep σ →  Rep τ1) 
             → (g : Rep σ →  Rep τ2) 
+            → (a : Rep σ)
             → let h : Rep σ → Rep (τ1 :* τ2)
                   h e = (f e , g e)
-            in (a : Rep σ)
+            in (dh : Is-just (DSemᵀ {σ} {τ1 :* τ2} h a))
+            → (df : Is-just (DSemᵀ {σ} {τ1} f a))
+            → (dg : Is-just (DSemᵀ {σ} {τ2} g a))
             → (ctg-f : LinRepDense (D2τ' τ1))
             → (ctg-g : LinRepDense (D2τ' τ2))
-            → let ctg : LinRepDense (D2τ' (τ1 :* τ2))
-                  ctg = (ctg-f , ctg-g)
-                  dh = DSemᵀ {σ} {τ1 :* τ2} h a
-                  df = DSemᵀ {σ} {τ1} f a
-                  dg = DSemᵀ {σ} {τ2} g a
-              in ( (dh ?? ctg)
-                   ≡ fmap₂ (plusvDense (D2τ' σ)) (df ?? ctg-f) (dg ?? ctg-g))
+            → (to-witness dh) (ctg-f , ctg-g)
+              ≡ plusvDense (D2τ' σ) (to-witness df ctg-f) (to-witness dg ctg-g)
+
+    DSemᵀ-exists-pair : {σ τ1 τ2 : Typ Pr}
+            → (f : Rep σ →  Rep τ1) 
+            → (g : Rep σ →  Rep τ2) 
+            → (a : Rep σ)
+            → let h : Rep σ → Rep (τ1 :* τ2)
+                  h e = (f e , g e)
+           in Is-just (DSemᵀ {σ} {τ1 :* τ2} h a) 
+              ⇔ (( Is-just (DSemᵀ {σ} {τ1} f a) × Is-just (DSemᵀ {σ} {τ2} g a)))
 
     DSemᵀ-var : {Γ : Env Pr} {τ : Typ Pr}
               → let σ = Etup Pr Γ
@@ -103,7 +100,6 @@ postulate
                                      ] xs
               in (df : Is-just $ DSemᵀ {(σ1 :+ σ2) :* ρ} {τ} f a)
               → (ctg : LinRepDense (D2τ' τ))
-              -- TODO: from Dependent pair to just a function (exists is proven by DSemᵀ exists)
               → [ (λ v → Σ (Is-just $ DSemᵀ {σ1 :* ρ} {τ} l (v , snd a))
                            ( λ dl → to-witness df ctg 
                                     ≡ ((to-witness dl ctg .fst , zerovDense (D2τ' σ2)) , to-witness dl ctg .snd))) 
@@ -172,7 +168,6 @@ postulate
             → Σ (Is-just $ DSemᵀ {σ} {τ :+ σ} inj₂ a)
                 ( λ df → to-witness df ctg ≡ snd ctg)
 
-    -- TODO: Is dit echt nodig, wordt het gebruikt?
     DSemᵀ-fst : {σ τ : Typ Pr}
             → (a : Rep (σ :* τ))
             → (ctg : LinRepDense (D2τ' σ))
@@ -232,7 +227,7 @@ module dsyn-existence where
     --                                 false → ⊥ -- x is zero or NaN, thsu the derivative does not exists.
     -- DSyn-ExistsP-Prim op x = ⊤
 
-
+    -- A type-level predicate stating that the syntactic derivative exists for a valuation and term.
     DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
     DSyn-ExistsP val (unit) = ⊤ 
     DSyn-ExistsP val (var idx) = ⊤
@@ -248,7 +243,17 @@ module dsyn-existence where
                         , ( λ v' → DSyn-ExistsP (push v' val) r )
                         ])
 
-    -- TODO: Comment explaining why this is needed
+    -- QUESTION: is there a better way to do this?
+    -- =======================================
+    -- A datatype wrapper for DSyn-ExistsP.
+    -- =======================================
+    -- MOTIVATION:
+    -- For chad-equiv-dsem, when the term is (case' e l r), we wish to perform a with-abstraction on 'interp e (Etup-to-val a)'.
+    -- If chad-equiv-dsem has DSyn-ExistsP in its goal, then this with-abstraction also impacts this.
+    -- This leads to an ill-typed abstraction, as 'interp e (Etup-to-val a)' is part of the definition of DSyn-ExistsP.
+    -- Instead, we want to only apply this with-abstraction on the term.
+    -- By wrapping the predicate in a constructor, this with abstraction no longer effects it.
+    -- Then, after having done a with-abstraction on 'interp e (Etup-to-val a)', we can with-abstract on DSyn-Exists to obtain the underlying predicate.
     data DSyn-Exists : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set where
         ∃dsyn :  {Γ : Env Pr} {τ : Typ Pr} → { val : Val Pr Γ } → { t : Term Pr Γ τ } → (DSyn-ExistsP val t)  → DSyn-Exists val t
 
