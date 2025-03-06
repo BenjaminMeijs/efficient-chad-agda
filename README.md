@@ -1,5 +1,7 @@
 # Efficient CHAD: Agda formalisation
 
+<!-- TODO: Update readme -->
+
 CHAD [[1]][chad1] is an automatic differentiation (AD) algorithm in the form of a code transformation.
 That is to say, it takes a program (in a functional language) that computes some function from real numbers to real numbers, and produces a different program that not only computes the original result of the input program, but also its derivative.
 (The input program is allowed to have other arguments or results than just real numbers or structures/arrays of real numbers, but these will not be active for differentiation.)

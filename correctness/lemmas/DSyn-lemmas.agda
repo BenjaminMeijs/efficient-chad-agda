@@ -34,8 +34,6 @@ private module case-helper {Γ : Env Pr} {σ τ ρ : Typ Pr} (a : Rep (Etup Pr �
     ... | inj₁ _ = refl
     ... | inj₂ _ = refl
 
--- Question: How to handle ∃DSyn→∃DSem ?
--- Question: How to name this? 
 ∃DSyn→∃DSem : {Γ : Env Pr} {τ : Typ Pr}  ( a : Rep (Etup Pr Γ) ) → ( t : Term Pr Γ τ ) → DSyn-ExistsP (Etup-to-val a) t → (Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) a))
 ∃DSyn→∃DSem {Γ} {τ} a ( unit ) w = DSemᵀ-exists-unit a
 ∃DSyn→∃DSem {Γ} {τ} a ( var idx ) w = DSemᵀ-var a idx (zerovDense (D2τ' τ)) .fst

@@ -1,5 +1,7 @@
 .PHONY: check html-render
 
+# TODO: update makefile
+
 check:
 	agda --safe --without-K chad-cost.agda
 

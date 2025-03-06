@@ -56,9 +56,6 @@ postulate
                 → Σ (Is-just (DSemᵀ {τ1} {τ3} (f ∘ g) a)) 
                     ( λ df∘g → to-witness df∘g ctg ≡ to-witness dg (to-witness df ctg))
 
-    -- QUESTION: Welke stijl willen we voor de postualtions?
-    -- Voorstel: Equality van de LinRepDense met behulp van 'Is-just' en dependent products, eventueel ook een extra 'exists' postulation (e.g. alles behalve DSemᵀ-pair)  
-    -- Alternatief: Equality van de (Maybe LinRepDense) dus met fmap₂ en _??_ . (e.g. DSemᵀ-pair)
     DSemᵀ-pair : {σ τ1 τ2 : Typ Pr}
             → (f : Rep σ →  Rep τ1) 
             → (g : Rep σ →  Rep τ2) 
@@ -227,6 +224,7 @@ module dsyn-existence where
     --                                 false → ⊥ -- x is zero or NaN, thsu the derivative does not exists.
     -- DSyn-ExistsP-Prim op x = ⊤
 
+-- Question: Ik heb het 'evaluator' gedeelte gewoon in eval gelaten.
     -- A type-level predicate stating that the syntactic derivative exists for a valuation and term.
     DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
     DSyn-ExistsP val (unit) = ⊤ 

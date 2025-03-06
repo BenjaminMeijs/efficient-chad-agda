@@ -1,5 +1,6 @@
 module setup where
 
+-- todo: Move to cost folder
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Float
