@@ -64,15 +64,16 @@ dprim'-preserves-≃τ val ctg SIGN t w = tt
 -- CHAD preserves compatibility
 -- ===============================
 chad-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr} 
-                → (val : Val Pr Γ)
-                  (evIn : LEtup (map D2τ' Γ) )
-                  (ctg : LinRep (D2τ' τ))
-                  (t : Term Pr Γ τ)
-                → ctg ≃τ (interp t val)
-                → evIn ≃Γ val
+                → (val : Val Pr Γ) -- input of function
+                  (evIn : LEtup (map D2τ' Γ) ) -- incoming LEtup
+                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+                  (t : Term Pr Γ τ) -- primal function
+                → ctg ≃τ (interp t val) -- precondition incoming cotangent
+                → evIn ≃Γ val -- precondition incoming LEtup
                 → LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn ≃Γ val
 chad-preserves-≃Γ _ evIn _ unit _ w2
-  rewrite LACMexec-pure tt evIn = w2
+  rewrite LACMexec-pure tt evIn
+  = w2
 chad-preserves-≃Γ {Γ} val evIn ctg (var x) w1 w2
   using idx ← convIdx D2τ' x
   rewrite LACMexec-add idx ctg evIn

@@ -3,25 +3,37 @@ module correctness.chad-numerical-precision where
 open import Data.Nat
 open import Agda.Builtin.Unit using (⊤; tt)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
-open import Data.List using (_∷_; map)
+open import Data.List using (_∷_; map; [])
 open import Data.Product using (_×_)
 
 open import spec
 import spec.LACM as LACM
 open import correctness.spec
 
-Epsilon : ∀ {tag} ( τ : Typ tag ) → Set
-Epsilon Un = ⊤
-Epsilon Inte = ⊤
-Epsilon R = ℕ
-Epsilon (σ :* τ) = Epsilon σ × Epsilon τ
-Epsilon (σ :+ τ) = Epsilon σ × Epsilon τ
-Epsilon (σ :-> τ) = Epsilon σ → Epsilon τ
-Epsilon (EVM x τ) = Epsilon τ → {!    !}
-Epsilon (Lin LUn) = ⊤
-Epsilon (Lin LR) = ℕ
-Epsilon (Lin (σ :*! τ)) = Epsilon (Lin σ) × Epsilon (Lin τ)
-Epsilon (Lin (σ :+! τ)) = Epsilon (Lin σ) × Epsilon (Lin τ)
+relu : Term Pr (R ∷ []) R
+relu = case' (prim SIGN (var Z)) 
+        (case' (var Z) (prim (LIT 0.0) unit) -- negative, y = 0
+                       (var (S (S Z)))) -- positive , y = x
+        (prim (LIT 0.0) unit) -- Zero or NaN , y = 0
+
+relu' : Term Du (D1Γ (R ∷ [])) (D2Γ (R ∷ []))
+relu' = app (snd' (chad relu)) {! prim (LIT 1.0) unit  !}
+
+ill-conditioned-example : Term Pr (R ∷ []) R
+ill-conditioned-example = {! case'  !}
+
+-- Epsilon : ∀ {tag} ( τ : Typ tag ) → Set
+-- Epsilon Un = ⊤
+-- Epsilon Inte = ⊤
+-- Epsilon R = ℕ
+-- Epsilon (σ :* τ) = Epsilon σ × Epsilon τ
+-- Epsilon (σ :+ τ) = Epsilon σ × Epsilon τ
+-- Epsilon (σ :-> τ) = Epsilon σ → Epsilon τ
+-- Epsilon (EVM x τ) = Epsilon τ → {!    !}
+-- Epsilon (Lin LUn) = ⊤
+-- Epsilon (Lin LR) = ℕ
+-- Epsilon (Lin (σ :*! τ)) = Epsilon (Lin σ) × Epsilon (Lin τ)
+-- Epsilon (Lin (σ :+! τ)) = Epsilon (Lin σ) × Epsilon (Lin τ)
 
 -- ε-zero : ( τ : Typ Pr ) → Epsilon τ
 -- ε-zero Un = tt

@@ -5,9 +5,8 @@ open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
 open import Data.Empty using (⊥)
 open import Agda.Builtin.Maybe using (just; nothing)
-open import Relation.Nullary.Decidable using (Dec; _because_; does; proof)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
 open import Data.Bool.Base using (false; true)
-open import Relation.Nullary.Reflects using (ofʸ; ofⁿ)
 open import Data.List using ([]; _∷_; map)
 open import Data.Product using (_×_)
 open import Data.Sum using (inj₁; inj₂)
@@ -100,26 +99,26 @@ open import correctness.spec
 -- Proofs that ≃τ and ≃Γ are decidable
 -- ===============================
 Decidable-≃τ : {τ : Typ Pr} → (x : LinRep (D2τ' τ)) → (y : Rep τ) → Dec ( x ≃τ y)
-Decidable-≃τ {Un} _ _ = true because ofʸ tt
-Decidable-≃τ {Inte} _ _ = true because ofʸ tt
-Decidable-≃τ {R} _ _ = true because ofʸ tt
+Decidable-≃τ {Un} _ _ = yes tt
+Decidable-≃τ {Inte} _ _ = yes tt
+Decidable-≃τ {R} _ _ = yes tt
 Decidable-≃τ {σ :* τ} (just (x1 , x2)) (y1 , y2)
   with Decidable-≃τ {σ} x1 y1 | Decidable-≃τ {τ} x2 y2
-... | false because ofⁿ ¬a | _                    = false because ofⁿ (¬a ∘ fst)
-... | true because ofʸ a   | false because ofⁿ ¬b = false because ofⁿ (¬b ∘ snd)
-... | true because ofʸ a   | true because ofʸ b   = true because ofʸ (a , b)
-Decidable-≃τ {σ :* τ} nothing (_ , _) = true because ofʸ tt
+... | no ¬a | _     = no  (¬a ∘ fst)
+... | yes a | no ¬b = no  (¬b ∘ snd)
+... | yes a | yes b = yes (a , b)
+Decidable-≃τ {σ :* τ} nothing (_ , _) = yes tt
 Decidable-≃τ {σ :+ τ} (just (inj₁ x)) (inj₁ y) = Decidable-≃τ x y
-Decidable-≃τ {σ :+ τ} (just (inj₂ x)) (inj₁ y) = false because ofⁿ λ ()
-Decidable-≃τ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = false because ofⁿ λ ()
+Decidable-≃τ {σ :+ τ} (just (inj₂ x)) (inj₁ y) = no λ ()
+Decidable-≃τ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = no λ ()
 Decidable-≃τ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = Decidable-≃τ x y
-Decidable-≃τ {σ :+ τ} nothing (inj₁ x) = true because ofʸ tt
-Decidable-≃τ {σ :+ τ} nothing (inj₂ y) = true because ofʸ tt
+Decidable-≃τ {σ :+ τ} nothing (inj₁ x) = yes tt
+Decidable-≃τ {σ :+ τ} nothing (inj₂ y) = yes tt
 
 Decidable-≃Γ : {Γ : Env Pr} → (x : LEtup (map D2τ' Γ)) → (y : Val Pr Γ)  → Dec (x ≃Γ y)
-Decidable-≃Γ {[]} x y = true because ofʸ tt 
+Decidable-≃Γ {[]} x y = yes tt
 Decidable-≃Γ {τ ∷ Γ} (x , xs) (push y ys)
   with Decidable-≃τ {τ} x y | Decidable-≃Γ {Γ} xs ys
-... | false because ofⁿ ¬a | _                    = false because ofⁿ (¬a ∘ fst)
-... | true because ofʸ a   | false because ofⁿ ¬b = false because ofⁿ (¬b ∘ snd)
-... | true because ofʸ a   | true  because ofʸ  b = true because ofʸ (a , b)
+... | no ¬a | _     = no  (¬a ∘ fst)
+... | yes a | no ¬b = no  (¬b ∘ snd)
+... | yes a | yes b = yes (a , b)

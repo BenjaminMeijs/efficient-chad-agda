@@ -107,10 +107,8 @@ module environment-vector where
 open environment-vector public
 
 module value-compatibility where
-    -- Overall
     -- x ≃ y is a witness to the fact that x and y are compatible (of the same shape) in their constructors for sum types.
     -- i.e. whenever x is inj₁, y is also inj₁
-
     _≃τ_ : {τ : Typ Pr} → LinRep (D2τ' τ) → Rep τ  → Set
     _≃τ_ {Un} x y = ⊤
     _≃τ_ {Inte} x y = ⊤

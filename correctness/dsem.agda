@@ -204,27 +204,14 @@ postulate
 
 
 
+-- TODO: in een los document zetten
 module dsyn-existence where
     open import spec 
     open import correctness.spec
 
-    -- Question: Welke definitie is beter?
-    -- De uitgecommente definitie vereist dat er veel mer DSem postulations komen om de lemmas te bewijzen.
-    -- Bij de huidige definitie wordt deze bewijslast (en feitelijk de beslisbaarheid van IsJust DSem) weggelaten als precondition.
-
-    -- De huidige definitie is naar mijn mening iets beter, omdat het beter aansluit bij wat DSyn-exists betekent. 
-    -- De syntactische afgeleide van een primitieve operatie bestaat als de semantische afgeleide van de primitieve operatie bestaat.
     DSyn-ExistsP-Prim : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Set
     DSyn-ExistsP-Prim {σ} {τ} op x = Is-just (DSemᵀ {σ} {τ} (evalprim op) x)
-    -- DSyn-ExistsP-Prim SIGN x =
-    --     case primFloatLess x 0.0 of
-    --         λ where true → ⊤ -- x < 0 , thus the derivative exists
-    --                 false → case primFloatLess 0.0 x of
-    --                         λ where true → ⊤ -- x > 0 , thus the derivative exists
-    --                                 false → ⊥ -- x is zero or NaN, thsu the derivative does not exists.
-    -- DSyn-ExistsP-Prim op x = ⊤
 
--- Question: Ik heb het 'evaluator' gedeelte gewoon in eval gelaten.
     -- A type-level predicate stating that the syntactic derivative exists for a valuation and term.
     DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
     DSyn-ExistsP val (unit) = ⊤ 
@@ -241,7 +228,6 @@ module dsyn-existence where
                         , ( λ v' → DSyn-ExistsP (push v' val) r )
                         ])
 
-    -- QUESTION: is there a better way to do this?
     -- =======================================
     -- A datatype wrapper for DSyn-ExistsP.
     -- =======================================
