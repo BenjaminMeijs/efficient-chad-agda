@@ -2,7 +2,6 @@ module correctness.lemmas where
 
 open import correctness.lemmas.dsem-lemmas public
 open import correctness.lemmas.dsem-interp-lemmas public
-open import correctness.lemmas.DSyn-lemmas public
 open import correctness.lemmas.LinRepDense-is-comm-monoid public
 open import correctness.lemmas.interp-sink-commutes public
 open import correctness.lemmas.LACMexec-properties public

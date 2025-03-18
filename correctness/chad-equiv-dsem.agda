@@ -21,6 +21,7 @@ open import spec
 import spec.LACM as LACM
 open import correctness.spec
 open import correctness.dsem
+open import correctness.dsyn-defined
 open import correctness.lemmas
 open import correctness.chad-preserves-compatibility
 open import correctness.chad-ctg-zero

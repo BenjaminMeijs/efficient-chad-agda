@@ -18,12 +18,12 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import correctness.lemmas.dsem-lemmas
 open apply-cong[,]
-open import correctness.lemmas.DSyn-lemmas
 
 open import spec
 open import correctness.spec
 open import correctness.lemmas.value-compatibility-lemmas using (≃τ-and-≃Γ-implies-Compatible-idx-LEtup)
 open import correctness.dsem
+open import correctness.dsyn-defined
 import spec.LACM as LACM
 
 DSemᵀ-lemma-interp-let : {Γ : Env Pr} {σ τ : Typ Pr}

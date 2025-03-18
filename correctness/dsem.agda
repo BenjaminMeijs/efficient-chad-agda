@@ -4,7 +4,7 @@ open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Float using (primFloatPlus; primFloatTimes; primFloatNegate)
 open import Agda.Builtin.Unit using (⊤)
-open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_]; isInj₁; isInj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Empty using (⊥)
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing)
 open import Data.List using (_∷_)
@@ -201,44 +201,3 @@ postulate
             → (ctg : LinRepDense (D2τ' τ))
             → Σ (Is-just $ DSemᵀ {σ} {τ} primFloatNegate a)
                 ( λ df → to-witness df ctg ≡ primFloatNegate ctg)
-
-
-
--- TODO: in een los document zetten
-module dsyn-existence where
-    open import spec 
-    open import correctness.spec
-
-    DSyn-ExistsP-Prim : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Set
-    DSyn-ExistsP-Prim {σ} {τ} op x = Is-just (DSemᵀ {σ} {τ} (evalprim op) x)
-
-    -- A type-level predicate stating that the syntactic derivative exists for a valuation and term.
-    DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
-    DSyn-ExistsP val (unit) = ⊤ 
-    DSyn-ExistsP val (var idx) = ⊤
-    DSyn-ExistsP val (pair l r) = DSyn-ExistsP val l × DSyn-ExistsP val r
-    DSyn-ExistsP val (fst' t) = DSyn-ExistsP val t
-    DSyn-ExistsP val (snd' t) = DSyn-ExistsP val t
-    DSyn-ExistsP val (let' rhs body) = DSyn-ExistsP val rhs × DSyn-ExistsP (push (interp rhs val) val) body
-    DSyn-ExistsP val (prim op t) = DSyn-ExistsP-Prim op (interp t val) × DSyn-ExistsP val t
-    DSyn-ExistsP val (inl t) = DSyn-ExistsP val t
-    DSyn-ExistsP val (inr t) = DSyn-ExistsP val t
-    DSyn-ExistsP val (case' e l r) = DSyn-ExistsP val e × (case interp e val of
-                        [ ( λ v' → DSyn-ExistsP (push v' val) l )
-                        , ( λ v' → DSyn-ExistsP (push v' val) r )
-                        ])
-
-    -- =======================================
-    -- A datatype wrapper for DSyn-ExistsP.
-    -- =======================================
-    -- MOTIVATION:
-    -- For chad-equiv-dsem, when the term is (case' e l r), we wish to perform a with-abstraction on 'interp e (Etup-to-val a)'.
-    -- If chad-equiv-dsem has DSyn-ExistsP in its goal, then this with-abstraction also impacts this.
-    -- This leads to an ill-typed abstraction, as 'interp e (Etup-to-val a)' is part of the definition of DSyn-ExistsP.
-    -- Instead, we want to only apply this with-abstraction on the term.
-    -- By wrapping the predicate in a constructor, this with abstraction no longer effects it.
-    -- Then, after having done a with-abstraction on 'interp e (Etup-to-val a)', we can with-abstract on DSyn-Exists to obtain the underlying predicate.
-    data DSyn-Exists : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set where
-        ∃dsyn :  {Γ : Env Pr} {τ : Typ Pr} → { val : Val Pr Γ } → { t : Term Pr Γ τ } → (DSyn-ExistsP val t)  → DSyn-Exists val t
-
-open dsyn-existence public
