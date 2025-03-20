@@ -59,13 +59,13 @@ evalprim-equiv-DSem x  ctg INEG    d-op = refl
 chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr} 
                   → let σ  = Etup Pr Γ 
                         LΓ = map D2τ' Γ in
-                  (a : Rep σ)
-                  (evIn : LEtup LΓ )
-                  (ctg : LinRep (D2τ' τ))
-                  (t : Term Pr Γ τ)
-                → ctg  ≃τ (interp t (Etup-to-val a))
-                → evIn ≃Γ Etup-to-val a  
-                → (∃-dsyn : DSyn-Exists (Etup-to-val a) t)
+                  (a : Rep σ) -- input of function
+                  (evIn : LEtup LΓ ) -- incoming LEtup
+                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+                  (t : Term Pr Γ τ) -- primal function
+                → ctg  ≃τ (interp t (Etup-to-val a)) -- compatible incoming cotangent
+                → evIn ≃Γ Etup-to-val a -- compatible incoming LEtup
+                → (∃-dsyn : DSyn-Exists (Etup-to-val a) t) -- function is differentiable at input
                 → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
                 in (LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) evIn)
                   ≡ Etup2EV {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LEtup2EV {LΓ} evIn)

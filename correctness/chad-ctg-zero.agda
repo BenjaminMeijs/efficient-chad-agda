@@ -48,12 +48,12 @@ dprim'-ctg-zero x ctg w SIGN = refl
 
 chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
                   → let LΓ = map D2τ' Γ in
-                  (val : Val Pr Γ)
-                  (evIn : LEtup LΓ )
-                  (ctg : LinRep (D2τ' τ))
-                  (t : Term Pr Γ τ)
-                → ( ctg  ≃τ (interp t val))
-                → ( evIn ≃Γ val )
+                  (val : Val Pr Γ) -- input of function
+                  (evIn : LEtup LΓ ) -- incoming LEtup
+                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+                  (t : Term Pr Γ τ) -- primal function
+                → ( ctg  ≃τ (interp t val)) -- compatible incoming cotangent
+                → ( evIn ≃Γ val ) -- compatible incoming LEtup
                 → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) ) -- a witness to the fact that the cotangent is semantically a zero value
                 →   LEtup2EV {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
                   ≡ LEtup2EV {LΓ} evIn
