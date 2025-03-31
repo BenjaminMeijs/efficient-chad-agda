@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module spec where
 
 open import Agda.Builtin.Bool using (true; false)
@@ -11,7 +12,7 @@ open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Integer using (ℤ; _+_; _-_; _*_; -_; +_; _≤_)
-open import Data.Product using (_×_)
+open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Function.Base using (id; _$_; _∘_; case_of_)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst; cong)
@@ -48,8 +49,8 @@ data Typ : PDTag -> Set where
   Un Inte R : ∀ {tag} -> Typ tag
   _:*_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
   _:+_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
+  _:->_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
 
-  _:->_ : Typ Du -> Typ Du -> Typ Du
   -- Environment vector monad. This is the same EVM as in the paper; the
   -- implementation is LACM.
   EVM : LEnv -> Typ Du -> Typ Du
@@ -81,6 +82,7 @@ dut Inte = Inte
 dut R = R
 dut (σ :* τ) = dut σ :* dut τ
 dut (σ :+ τ) = dut σ :+ dut τ
+dut (σ :-> τ) = dut σ :-> dut τ
 
 -- The embedded counterpart of LEtup: a tuple of all the types in a linear
 -- environment. This is used to pass a linear environment as a _value_ into,
@@ -144,6 +146,47 @@ evalprim LADD (x , y) = primFloatPlus x y
 evalprim LSCALE (x , y) = primFloatTimes x y
 evalprim LNEG x = primFloatNegate x
 
+-- The dual type mapping, written D[τ]₂ in the paper. Dual types are linear
+-- (i.e. have a monoid structure).
+D2τ' : Typ Pr -> LTyp
+D2τ' Un = LUn
+D2τ' Inte = LUn
+D2τ' R = LR
+D2τ' (σ :* τ) = D2τ' σ :*! D2τ' τ
+D2τ' (σ :+ τ) = D2τ' σ :+! D2τ' τ
+D2τ' (σ :-> τ) = Dyn
+
+-- Dual type as a target language type.
+D2τ : Typ Pr -> Typ Du
+D2τ τ = Lin (D2τ' τ)
+
+-- The primal type mapping, written D[τ]₁ in the paper.
+D1τ : Typ Pr -> Typ Du
+D1τ Un = Un
+D1τ Inte = Inte
+D1τ R = R
+D1τ (σ :* τ) = D1τ σ :* D1τ τ
+D1τ (σ :+ τ) = D1τ σ :+ D1τ τ
+
+-- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Lin Dyn :* D2τ σ)))
+-- Correct EVM
+-- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Lin Dyn :* D2τ σ)))
+D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Dyn ∷ []) (Lin Dyn :* D2τ σ)))
+
+-- Primal environment mapping. This is D[Γ]₁ in the paper.
+D1Γ : Env Pr -> Env Du
+D1Γ = map D1τ
+
+-- Dual environment mapping. Recall LEτ from above. This is \overline{D[Γ]₂} in
+-- the paper.
+D2Γtup : Env Pr -> Typ Du
+D2Γtup Γ = LEτ (map D2τ' Γ)
+
+-- The codomain of the backpropagator of a differentiated program. 'EVM' is the
+-- environment vector monad, instantiated with the local accumulation monad
+-- LACM. 'D2Γ' is used in the type of 'chad' below.
+D2Γ : Env Pr -> Typ Du
+D2Γ Γ = EVM (map D2τ' Γ) Un
 
 -------------------- OBJECT LANGUAGE -------------------------------------------
 
@@ -178,15 +221,32 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> Term tag Γ (σ :+ τ)
         -> Term tag (σ ∷ Γ) ρ -> Term tag (τ ∷ Γ) ρ
         -> Term tag Γ ρ
+  
+  -- TODO: Gamma kan infered worden, dus implicit laten
+  lam : ∀ {tag} {σ τ : Typ tag}
+        -> (Γ : Env tag) -> Term tag (σ ∷ Γ) τ -> Term tag Γ (σ :-> τ)
+
+  app : ∀ {tag} {Γ : Env tag} {σ τ : Typ tag}
+        -> Term tag Γ (σ :-> τ) -> Term tag Γ σ  -> Term tag Γ τ
+  
+  -- TODO: Let fromDyn and toDyn 
+  toDyn : {Γ : Env Pr} {σ τ : Typ Pr} 
+        -> Term Du (LEτ (map D2τ' Γ) ∷ D1Γ Γ) (D2τ (σ :-> τ))
+
+  fromDyn : {Γ : Env Pr} {σ τ : Typ Pr} 
+        -> Term Du (D2τ (σ :-> τ) ∷ D1Γ Γ) (D2Γ Γ)
+
+  dynZero : {Γ : Env Du} 
+            -> Term Du Γ (Lin Dyn)
 
   -- The Γ' is the closure of the lambda. We model this explicitly because the
   -- cost of evaluating 'lam' is linear in the size of its closure, so it is
   -- worth keeping it small.
-  lam   : {Γ : Env Du} {τ : Typ Du}
+  dual-lam   : {Γ : Env Du} {τ : Typ Du}
         -> {σ : Typ Du}
         -> (Γ' : Env Du) -> ({ρ : Typ Du} -> Idx Γ' ρ -> Idx Γ ρ)  -- Γ' is a subset of Γ
         -> Term Du (σ ∷ Γ') τ -> Term Du Γ (σ :-> τ)
-  app   : {Γ : Env Du} {σ τ : Typ Du}
+  dual-app   : {Γ : Env Du} {σ τ : Typ Du}
         -> Term Du Γ (σ :-> τ) -> Term Du Γ σ -> Term Du Γ τ
 
   pureevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
@@ -279,8 +339,8 @@ sink : ∀ {tag} {Γ Γ' : Env tag}
     -> Term tag Γ' τ
 sink w (var i) = var (weaken-var w i)
 sink w (let' e1 e2) = let' (sink w e1) (sink (WCopy w) e2)
-sink w (lam Γ' inj e) = lam Γ' (weaken-var w ∘ inj) e
-sink w (app e1 e2) = app (sink w e1) (sink w e2)
+sink w (dual-lam Γ' inj e) = dual-lam Γ' (weaken-var w ∘ inj) e
+sink w (dual-app e1 e2) = dual-app (sink w e1) (sink w e2)
 sink w (prim op e) = prim op (sink w e)
 sink w unit = unit
 sink w (pair e1 e2) = pair (sink w e1) (sink w e2)
@@ -304,6 +364,7 @@ sink w (linr e) = linr (sink w e)
 sink w (lcastl e) = lcastl (sink w e)
 sink w (lcastr e) = lcastr (sink w e)
 sink w lsumzero = lsumzero
+sink w _ = {!   !}
 
 -- Add one additional free variable to the bottom of the term's free variable
 -- list (here of type σ). This, for example, allows one to put a term under one
@@ -311,19 +372,19 @@ sink w lsumzero = lsumzero
 sink1 : ∀ {tag} {Γ : Env tag} {σ τ : Typ tag} -> Term tag Γ τ -> Term tag (σ ∷ Γ) τ
 sink1 = sink (WSkip WEnd)
 
--- Build a closure. The 'lam' constructor in Term represents the inclusion of
+-- Build a closure. The 'dual-lam' constructor in Term represents the inclusion of
 -- the (smaller) closure environment into the larger containing environment
 -- with an index remapping function, but writing those inline is cumbersome.
 -- It's easier to simply give a list of indices into the containing environment
--- that you want to include in the closure. This 'lamwith' function allows you
+-- that you want to include in the closure. This 'dual-lamwith' function allows you
 -- to do that; said list is the list 'vars'. 'α' is the argument type of the
--- lambda.
-lamwith : {α : Typ Du} {Γ : Env Du} {τ : Typ Du}
+-- dual-lambda.
+dual-lamwith : {α : Typ Du} {Γ : Env Du} {τ : Typ Du}
        -> (vars : List (Fin (length Γ)))
        -> Term Du (α ∷ map (\i -> Γ !! i) vars) τ
        -> Term Du Γ (α :-> τ)
-lamwith {_} {Γ} vars body =
-  lam (map (Γ !!_) vars)
+dual-lamwith {_} {Γ} vars body =
+  dual-lam (map (Γ !!_) vars)
       (buildinj vars)
       body
   where
@@ -340,12 +401,12 @@ lamwith {_} {Γ} vars body =
 
 -- 'bindevm' from Term is '>>=' of the environment vector monad EVM; this is
 -- '>>'. 'a >> b' is expanded to 'let x = b in a >>= \_ -> x'. Note the
--- creation of a closure using 'lamwith' containing one entry, namely x.
+-- creation of a closure using 'dual-lamwith' containing one entry, namely x.
 thenevm : {Γ : LEnv} {Γ' : Env Du}
        -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un)
 thenevm a b =
   let' b $
-    bindevm (sink1 a) (lamwith (zero ∷ []) (var (S Z)))
+    bindevm (sink1 a) (dual-lamwith (zero ∷ []) (var (S Z)))
 
 -- Generic index retyping utility. An index of type τ into an environment Γ can
 -- be retyped as an index of modified type into a modified environment.
@@ -359,41 +420,6 @@ convIdx f (S i) = S (convIdx f i)
 -------------------- DIFFERENTIATION -------------------------------------------
 -- Derivative type mappings and derivatives of primitive operations.
 
--- The primal type mapping, written D[τ]₁ in the paper.
-D1τ : Typ Pr -> Typ Du
-D1τ Un = Un
-D1τ Inte = Inte
-D1τ R = R
-D1τ (σ :* τ) = D1τ σ :* D1τ τ
-D1τ (σ :+ τ) = D1τ σ :+ D1τ τ
-
--- The dual type mapping, written D[τ]₂ in the paper. Dual types are linear
--- (i.e. have a monoid structure).
-D2τ' : Typ Pr -> LTyp
-D2τ' Un = LUn
-D2τ' Inte = LUn
-D2τ' R = LR
-D2τ' (σ :* τ) = D2τ' σ :*! D2τ' τ
-D2τ' (σ :+ τ) = D2τ' σ :+! D2τ' τ
-
--- Dual type as a target language type.
-D2τ : Typ Pr -> Typ Du
-D2τ τ = Lin (D2τ' τ)
-
--- Primal environment mapping. This is D[Γ]₁ in the paper.
-D1Γ : Env Pr -> Env Du
-D1Γ = map D1τ
-
--- Dual environment mapping. Recall LEτ from above. This is \overline{D[Γ]₂} in
--- the paper.
-D2Γtup : Env Pr -> Typ Du
-D2Γtup Γ = LEτ (map D2τ' Γ)
-
--- The codomain of the backpropagator of a differentiated program. 'EVM' is the
--- environment vector monad, instantiated with the local accumulation monad
--- LACM. 'D2Γ' is used in the type of 'chad' below.
-D2Γ : Env Pr -> Typ Du
-D2Γ Γ = EVM (map D2τ' Γ) Un
 
 -- Convert a _value_ of source-language type to a primal value in the
 -- differentiated world. Because D1τ is the identity for non-function types,
@@ -405,6 +431,7 @@ primal R x = x
 primal (σ :* τ) (x , y) = primal σ x , primal τ y
 primal (σ :+ τ) (inj₁ x) = inj₁ (primal σ x)
 primal (σ :+ τ) (inj₂ y) = inj₂ (primal τ y)
+primal (σ :-> τ) f = {!   !}
 
 -- Our primitive operations work on types of which the primal is the same as
 -- the original type. This is of course true for _all_ our types in this Agda
@@ -502,9 +529,9 @@ eval env (let' rhs e) =
   let rhs' , crhs = eval env rhs
       e' , ce = eval (push rhs' env) e
   in e' , one + crhs + ce
-eval env (lam Γ' inj e) =
+eval env (dual-lam Γ' inj e) =
   (\x -> eval (push x (buildValFromInj inj env)) e) , one + + (length Γ')
-eval env (app e1 e2) =
+eval env (dual-app e1 e2) =
   let f , cf = eval env e1
       x , cx = eval env e2
       y , cy = f x
@@ -601,6 +628,27 @@ eval env (lcastr {τ = τ} e) =
                   in z , one + ce + cz
                (just (inj₂ y)) -> y , one + ce
 eval env lsumzero = nothing , one
+-- TODO: Calculate the actual cost
+eval env (lam G t) = {!   !} , one
+eval env (app s t) = {!   !} , one
+eval env (fromDyn {Γ = G}) =
+  case env of 
+      λ where (push nothing  _) -> LACM.pure tt , one
+              (push (just q) y) -> {!   !}
+              -- (push (just (G2 , x)) _) -> let foo : map D2τ' G ≡ G2
+                                              -- foo = {!   !}
+                                              -- ans : (LACM (map D2τ' G) ⊤) × ℤ
+                                              -- ans = bar foo (LACM.add-LEtup x) , one
+                                          -- in ans
+  -- where bar : {gam : LEnv} -> map D2τ' G ≡ gam -> LACM gam ⊤ -> LACM (map D2τ' G) ⊤
+  --       bar w x rewrite (sym w) = x
+-- -- TODO: Calculate the actual cost
+eval (push x env) (toDyn {G} {σ} {τ}) = {!   !}
+    -- just ((map D2τ' G) , LEtup-to-LEτ (map D2τ' G) x) , one
+eval env (dynZero) = nothing , one
+
+
+
 
 -- Project out the number of evaluation steps from 'eval'.
 cost : ∀ {tag} {Γ : Env tag} {τ : Typ tag} -> Val tag Γ -> Term tag Γ τ -> ℤ
@@ -616,6 +664,15 @@ zerot Inte = lunit
 zerot R = prim LZERO lunit
 zerot (σ :* τ) = lpairzero
 zerot (σ :+ τ) = lsumzero
+zerot (σ :-> τ) = dynZero
+
+
+-- In th2 we initialise the environment derivative accumulator to zero, because
+-- that is how CHAD will be used in practice. This term creates a zero
+-- environment derivative.
+zero-env-term : {Γ' : Env Du} -> (Γ : Env Pr) -> Term Du Γ' (D2Γtup Γ)
+zero-env-term [] = unit
+zero-env-term (τ ∷ Γ) = pair (zerot τ) (zero-env-term Γ)
 
 -- The CHAD code transformation.
 chad : {Γ : Env Pr} {τ : Typ Pr}
@@ -623,72 +680,118 @@ chad : {Γ : Env Pr} {τ : Typ Pr}
     -> Term Du (D1Γ Γ) (D1τ τ :* (D2τ τ :-> D2Γ Γ))
 chad (var idx) =
   pair (var (convIdx D1τ idx))
-       (lamwith [] (addevm (convIdx D2τ' idx) (var Z)))
+       (dual-lamwith [] (addevm (convIdx D2τ' idx) (var Z)))
 chad (let' {σ = σ} e1 e2) =
   let' (chad e1) $
   let' (fst' (var Z)) $
   let' (sink (WCopy (WSkip WEnd)) (chad e2)) $
     pair (fst' (var Z))
-         (lamwith (zero ∷ suc (suc zero) ∷ []) $
+         (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
             bindevm
-              (scopeevm (zerot σ) (app (snd' (var (S Z))) (var Z)))
-              (lamwith (suc (suc zero) ∷ []) $
-                 app (snd' (var (S Z))) (fst' (var Z))))
+              (scopeevm (zerot σ) (dual-app (snd' (var (S Z))) (var Z)))
+              (dual-lamwith (suc (suc zero) ∷ []) $
+                 dual-app (snd' (var (S Z))) (fst' (var Z))))
 chad (prim op e) =
   let' (chad e) $
     pair (prim (d1Prim op) (fst' (var Z)))
-         (lamwith (zero ∷ []) $
-            app (snd' (var (S Z)))
+         (dual-lamwith (zero ∷ []) $
+            dual-app (snd' (var (S Z)))
                 (dprim op (fst' (var (S Z))) (var Z)))
-chad unit = pair unit (lamwith [] (pureevm unit))
+chad unit = pair unit (dual-lamwith [] (pureevm unit))
 chad (pair e1 e2) =
   let' (pair (chad e1) (chad e2)) $
     pair (pair (fst' (fst' (var Z)))
                (fst' (snd' (var Z))))
-         (lamwith (zero ∷ []) $
-            thenevm (app (snd' (fst' (var (S Z)))) (lfst' (var Z)))
-                    (app (snd' (snd' (var (S Z)))) (lsnd' (var Z))))
+         (dual-lamwith (zero ∷ []) $
+            thenevm (dual-app (snd' (fst' (var (S Z)))) (lfst' (var Z)))
+                    (dual-app (snd' (snd' (var (S Z)))) (lsnd' (var Z))))
 chad (fst' {τ = τ} e) =
   let' (chad e) $
     pair (fst' (fst' (var Z)))
-         (lamwith (zero ∷ []) $
-            app (snd' (var (S Z)))
+         (dual-lamwith (zero ∷ []) $
+            dual-app (snd' (var (S Z)))
                 (lpair (var Z) (zerot τ)))
 chad (snd' {σ = σ} e) =
   let' (chad e) $
     pair (snd' (fst' (var Z)))
-         (lamwith (zero ∷ []) $
-            app (snd' (var (S Z)))
+         (dual-lamwith (zero ∷ []) $
+            dual-app (snd' (var (S Z)))
                 (lpair (zerot σ) (var Z)))
 chad (inl e) =
   let' (chad e) $
     pair (inl (fst' (var Z)))
-         (lamwith (zero ∷ []) $
-            app (snd' (var (S Z)))
+         (dual-lamwith (zero ∷ []) $
+            dual-app (snd' (var (S Z)))
                 (lcastl (var Z)))
 chad (inr e) =
   let' (chad e) $
     pair (inr (fst' (var Z)))
-         (lamwith (zero ∷ []) $
-            app (snd' (var (S Z)))
+         (dual-lamwith (zero ∷ []) $
+            dual-app (snd' (var (S Z)))
                 (lcastr (var Z)))
 chad (case' {σ = σ} {τ = τ} e1 e2 e3) =
   let' (chad e1) $
     case' (fst' (var Z))
       (let' (sink (WCopy (WSkip WEnd)) (chad e2)) $
          pair (fst' (var Z))
-              (lamwith (zero ∷ suc (suc zero) ∷ []) $
+              (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
                  bindevm
-                   (scopeevm (zerot σ) (app (snd' (var (S Z))) (var Z)))
-                   (lamwith (suc (suc zero) ∷ []) $
-                      app (snd' (var (S Z))) (linl (fst' (var Z))))))
+                   (scopeevm (zerot σ) (dual-app (snd' (var (S Z))) (var Z)))
+                   (dual-lamwith (suc (suc zero) ∷ []) $
+                      dual-app (snd' (var (S Z))) (linl (fst' (var Z))))))
       (let' (sink (WCopy (WSkip WEnd)) (chad e3)) $
          pair (fst' (var Z))
-              (lamwith (zero ∷ suc (suc zero) ∷ []) $
+              (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
                  bindevm
-                   (scopeevm (zerot τ) (app (snd' (var (S Z))) (var Z)))
-                   (lamwith (suc (suc zero) ∷ []) $
-                      app (snd' (var (S Z))) (linr (fst' (var Z))))))
+                   (scopeevm (zerot τ) (dual-app (snd' (var (S Z))) (var Z)))
+                   (dual-lamwith (suc (suc zero) ∷ []) $
+                      dual-app (snd' (var (S Z))) (linr (fst' (var Z))))))
+chad {Γ = Γ} (lam {σ = σ} {τ = τ} G t) = {!   !}
+  -- pair (lam (D1Γ G) 
+  --       (let' (chad t) 
+  --         (pair (fst' (var Z)) 
+  --               (lam ((D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))) ∷ D1τ σ ∷ D1Γ Γ)
+  --                 (let' (dual-app (snd' (var (S Z))) (var Z))
+  --                 -- TODO: instead of let' and runevm, use LACM.bind
+  --                 -- This means that the D1τ also has to change
+  --                   (let'  {!   !}
+  --                           (pair (let' (snd' (snd' (var Z)))
+  --                                       (sink (WCopy (WSkip (WSkip (WSkip (WSkip (WSkip WEnd)))))) 
+  --                                           (toDyn {Γ} {σ} {τ}))) 
+  --                                 (fst' (snd' (var Z)))))))))) 
+  --      (lam (D1Γ Γ) (fromDyn {Γ} {σ} {τ}))
+chad (app {σ = σ} {τ = τ} s t) = 
+  let' (chad t)
+    (let' (sink1 (chad s)) 
+      (let' (dual-app (fst' (var Z)) (fst' (var (S Z)))) 
+        (pair 
+          (fst' (var Z))
+          (dual-lamwith (zero ∷ (suc zero) ∷ suc (suc zero) ∷ []) 
+              -- 0 - v  :  D2τ τ
+              -- 1 - (b,b`)  : (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))
+              -- 2 - (f,f`)  : ((D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))) :* (D2τ (σ :-> τ) :-> D2Γ Γ))
+              -- 3 - (a,a`)  : (D1τ σ :* (D2τ σ :-> D2Γ Γ))
+              (bindevm
+                {! dual-app (snd' (var (S Z))) (var Z)  !} 
+                {!   !}))
+        )
+      )
+    )
+  -- let' (chad t)
+  --   (let' (sink1 (chad s)) 
+  --     (let' (dual-app (fst' (var Z)) (fst' (var (S Z)))) 
+  --       (pair
+  --         (fst' (var Z))
+  --         (dual-lamwith (zero ∷ (suc zero) ∷ suc (suc zero) ∷ [])  -- 0-v, 1-b, 2-f, 3-a
+  --     -- 0 - v  :  D2τ τ
+  --     -- 1 - (b,b`)  : (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))
+  --     -- 2 - (f,f`)  : ((D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))) :* (D2τ (σ :-> τ) :-> D2Γ Γ))
+  --     -- 3 - (a,a`)  : (D1τ σ :* (D2τ σ :-> D2Γ Γ))
+  --     -- 
+  --           (let' (dual-app (snd' (var (S Z))) (var Z))
+  --             (thenevm 
+  --               (dual-app (snd' (var (S (S (S (S Z)))))) (snd' (var Z)))
+  --               (dual-app (snd' (var (S (S (S Z))))) (fst' (var Z)))))))))
 
 
 -------------------- THE COMPLEXITY THEOREMS -----------------------------------
@@ -703,6 +806,7 @@ chad (case' {σ = σ} {τ = τ} e1 e2 e3) =
 φ (σ :+! τ) nothing = one
 φ (σ :+! τ) (just (inj₁ x)) = one + φ σ x
 φ (σ :+! τ) (just (inj₂ y)) = one + φ τ y
+φ Dyn x = {!   !}
 
 -- The potential function mapped over a list of linear types.
 φ' : (Γ : LEnv) -> LEtup Γ -> ℤ
@@ -741,13 +845,7 @@ size (σ :*! τ) (just (x , y)) = 1 +ℕ size σ x +ℕ size τ y
 size (σ :+! τ) nothing = 1
 size (σ :+! τ) (just (inj₁ x)) = 1 +ℕ size σ x
 size (σ :+! τ) (just (inj₂ y)) = 1 +ℕ size τ y
-
--- In th2 we initialise the environment derivative accumulator to zero, because
--- that is how CHAD will be used in practice. This term creates a zero
--- environment derivative.
-zero-env-term : {Γ' : Env Du} -> (Γ : Env Pr) -> Term Du Γ' (D2Γtup Γ)
-zero-env-term [] = unit
-zero-env-term (τ ∷ Γ) = pair (zerot τ) (zero-env-term Γ)
+size Dyn x = {!   !}
 
 -- The statement of the corollary that bounds φ to not mention potential any
 -- more. A value of this type (i.e. a proof of the theorem) is given in
@@ -759,7 +857,7 @@ TH2-STATEMENT =
   -> (ctg : Rep (D2τ τ))
   -> (t : Term Pr Γ τ)
   -> cost (push ctg (primalVal env))
-          (runevm (app (snd' (sink (WSkip WEnd) (chad t)))
+          (runevm (dual-app (snd' (sink (WSkip WEnd) (chad t)))
                        (var Z))
                   (zero-env-term Γ))
       ≤ + 5

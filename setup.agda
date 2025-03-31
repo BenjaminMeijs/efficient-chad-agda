@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module setup where
 
 -- todo: Move to cost folder
@@ -67,6 +68,7 @@ weakenTrans f (S i) = sink1 (f i)
 φ-positive (σ :+! τ) nothing = +≤+ z≤n
 φ-positive (σ :+! τ) (just (inj₁ x)) = +-mono-≤ (+≤+ z≤n) (φ-positive σ x)
 φ-positive (σ :+! τ) (just (inj₂ y)) = +-mono-≤ (+≤+ z≤n) (φ-positive τ y)
+φ-positive Dyn _ = {!   !}
 
 size-positive : (τ : LTyp) -> (x : LinRep τ) -> + 0 ≤ + size τ x
 size-positive LUn _ = +≤+ z≤n
@@ -76,6 +78,7 @@ size-positive (σ :*! τ) (just (x , y)) = +-mono-≤ (+-mono-≤ (+≤+ z≤n) 
 size-positive (σ :+! τ) nothing = +≤+ z≤n
 size-positive (σ :+! τ) (just (inj₁ x)) = +-mono-≤ (+≤+ z≤n) (size-positive σ x)
 size-positive (σ :+! τ) (just (inj₂ y)) = +-mono-≤ (+≤+ z≤n) (size-positive τ y)
+size-positive Dyn _ = {!   !}
 
 dprim-cheap : {σ τ : Typ Pr}
            -> (op : Primop Pr σ τ) -> (x : Rep (D1τ σ)) -> (dy : LinRep (D2τ' τ))
@@ -118,6 +121,7 @@ zerov' τ@Inte       env = eval env (zerot τ) , +≤+ (s≤s z≤n)
 zerov' τ@R          env = eval env (zerot τ) , +≤+ (s≤s (s≤s z≤n))
 zerov' τ@(σ₁ :* σ₂) env = eval env (zerot τ) , +≤+ (s≤s z≤n)
 zerov' τ@(σ₁ :+ σ₂) env = eval env (zerot τ) , +≤+ (s≤s z≤n)
+zerov' τ@(σ₁ :-> σ₂) env = {!   !}
 
 zero-small-φ : {Γ : Env Du} -> (env : Val Du Γ) -> (τ : Typ Pr) -> φ (D2τ' τ) (fst (eval env (zerot τ))) ≡ + 1
 zero-small-φ env Un = refl
@@ -125,6 +129,7 @@ zero-small-φ env Inte = refl
 zero-small-φ env R = refl
 zero-small-φ env (σ :* τ) = refl
 zero-small-φ env (σ :+ τ) = refl
+zero-small-φ env (σ :-> τ) = {!   !}
 
 zero-small-cost : {Γ : Env Du} -> (env : Val Du Γ) -> (τ : Typ Pr) -> snd (eval env (zerot τ)) ≤ + 2
 zero-small-cost env Un = ≤ᵇ⇒≤ tt
@@ -132,6 +137,7 @@ zero-small-cost env Inte = ≤ᵇ⇒≤ tt
 zero-small-cost env R = ≤ᵇ⇒≤ tt
 zero-small-cost env (σ :* τ) = ≤ᵇ⇒≤ tt
 zero-small-cost env (σ :+ τ) = ≤ᵇ⇒≤ tt
+zero-small-cost env (σ :-> τ) = {!   !}
 
 zero-small-φ-v : (τ : Typ Pr) -> φ (D2τ' τ) (fst (zerov (D2τ' τ))) ≡ + 1
 zero-small-φ-v Un = refl
@@ -139,6 +145,7 @@ zero-small-φ-v Inte = refl
 zero-small-φ-v R = refl
 zero-small-φ-v (σ :* τ) = refl
 zero-small-φ-v (σ :+ τ) = refl
+zero-small-φ-v (σ :-> τ) = {!   !}
 
 zero-small-cost-v : (τ : Typ Pr) -> snd (zerov (D2τ' τ)) ≤ + 2
 zero-small-cost-v Un = ≤ᵇ⇒≤ tt
@@ -146,6 +153,7 @@ zero-small-cost-v Inte = ≤ᵇ⇒≤ tt
 zero-small-cost-v R = ≤ᵇ⇒≤ tt
 zero-small-cost-v (σ :* τ) = ≤ᵇ⇒≤ tt
 zero-small-cost-v (σ :+ τ) = ≤ᵇ⇒≤ tt
+zero-small-cost-v (σ :-> τ) = {!   !}
 
 run-bind2 : ∀ {Γ : Env Pr} {a b : Set} -> (m1 : LACM (map D2τ' Γ) a) -> (k : a -> LACM (map D2τ' Γ) b × ℤ)
          -> (env : LEtup (map D2τ' Γ))
@@ -237,6 +245,7 @@ plusv-amortises {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) =
     (solve 2 (\φx φy -> :- (φx #+ φy) := con (+ 1) :- (con (+ 1) #+ φx) :- (con (+ 1) #+ φy) #+ con (+ 1)) refl
        (φ τ x) (φ σ y))
     (neg-mono-≤ (+-mono-≤ (φ-positive τ x) (φ-positive σ y)))
+plusv-amortises {Dyn} _ _ = {!   !}
 
 lemma-addLEτ-plusv : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) (val : LinRep τ) (env : LEtup Γ)
                   -> addLEτ idx val env Eτ!! idx ≡ fst (plusv τ val (env Eτ!! idx))

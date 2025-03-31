@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module spec.LACM where
 
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -29,6 +30,9 @@ abstract
 
   pure : ∀ {Γ : LEnv} {a : Set} -> a -> LACM Γ a
   pure x e = x , e , one
+
+  add-LEtup : ∀ {Γ : LEnv} -> LEtup Γ -> LACM Γ ⊤
+  add-LEtup xs e = tt , {!   !} , {!   !}
 
   -- Note that the continuation should also return the cost of evaluating the
   -- continuation; this cost will be included in the cost returned by 'run'
@@ -106,35 +110,40 @@ abstract
 
   -- Proofs for the above properties -- these are elided in the paper appendix.
 
-  run-pure x env = refl , refl
+  run-pure = {!   !}
+  run-add = {!   !}
+  run-bind = {!   !}
+  run-scope = {!   !}
 
-  run-bind {Γ} m1 k env =
-    refl ,
-    let r1 , env1 , c1 = m1 env
-        m2 , ccall = k r1
-        _ , _ , c2 = m2 env1
-    in solve 4 (\lΓ c1 ccall c2 ->
-                   con (+ 1) :+ lΓ :+ ((con (+ 1) :+ c1 :+ ccall) :+ c2)
-                   := (con (+ 1) :+ lΓ :+ c1) :+ ccall :+ (con (+ 1) :+ lΓ :+ c2) :- lΓ)
-         refl
-         (+ length Γ) c1 ccall c2
+  -- run-pure x env = refl , refl
 
-  run-add {Γ} {τ} Z val env =
-    refl
-    , solve 2 (\lΓ cp -> con (+ 1) :+ lΓ :+ (con (+ 1) :+ cp) := con (+ 2) :+ cp :+ lΓ) refl
-        (+ length Γ) (snd (plusv τ val (env Eτ!! Z)))
-  run-add {σ ∷ Γ} {τ} (S i) val (x , env) =
-    let p1 , p2 = run-add i val env
-    in cong (x ,_) p1
-       , trans
-           (solve 2 (\lΓ ca -> con (+ 2) :+ lΓ :+ ca := con (+ 1) :+ lΓ :+ ca :+ con (+ 1)) refl
-              (+ length Γ) (snd (snd (add i val env))))
-           (trans
-             (cong (_+ + 1) p2)
-             (solve 2 (\a b -> con (+ 2) :+ a :+ b :+ con (+ 1) := con (+ 2) :+ a :+ (con (+ 1) :+ b)) refl (snd (plusv τ val (env Eτ!! i))) (+ length Γ)))
+  -- run-bind {Γ} m1 k env =
+  --   refl ,
+  --   let r1 , env1 , c1 = m1 env
+  --       m2 , ccall = k r1
+  --       _ , _ , c2 = m2 env1
+  --   in solve 4 (\lΓ c1 ccall c2 ->
+  --                  con (+ 1) :+ lΓ :+ ((con (+ 1) :+ c1 :+ ccall) :+ c2)
+  --                  := (con (+ 1) :+ lΓ :+ c1) :+ ccall :+ (con (+ 1) :+ lΓ :+ c2) :- lΓ)
+  --        refl
+  --        (+ length Γ) c1 ccall c2
 
-  run-scope {Γ} m val env =
-    let p = solve 2 (\lΓ c -> con (+ 1) :+ lΓ :+ (con (+ 1) :+ c) := con (+ 2) :+ lΓ :+ c) refl
-              (+ length Γ)
-              (snd (snd (m (val , env))))
-    in refl , refl , refl , p
+  -- run-add {Γ} {τ} Z val env =
+  --   refl
+  --   , solve 2 (\lΓ cp -> con (+ 1) :+ lΓ :+ (con (+ 1) :+ cp) := con (+ 2) :+ cp :+ lΓ) refl
+  --       (+ length Γ) (snd (plusv τ val (env Eτ!! Z)))
+  -- run-add {σ ∷ Γ} {τ} (S i) val (x , env) =
+  --   let p1 , p2 = run-add i val env
+  --   in cong (x ,_) p1
+  --      , trans
+  --          (solve 2 (\lΓ ca -> con (+ 2) :+ lΓ :+ ca := con (+ 1) :+ lΓ :+ ca :+ con (+ 1)) refl
+  --             (+ length Γ) (snd (snd (add i val env))))
+  --          (trans
+  --            (cong (_+ + 1) p2)
+  --            (solve 2 (\a b -> con (+ 2) :+ a :+ b :+ con (+ 1) := con (+ 2) :+ a :+ (con (+ 1) :+ b)) refl (snd (plusv τ val (env Eτ!! i))) (+ length Γ)))
+
+  -- run-scope {Γ} m val env =
+  --   let p = solve 2 (\lΓ c -> con (+ 1) :+ lΓ :+ (con (+ 1) :+ c) := con (+ 2) :+ lΓ :+ c) refl
+  --             (+ length Γ)
+  --             (snd (snd (m (val , env))))
+  --   in refl , refl , refl , p

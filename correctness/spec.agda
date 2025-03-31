@@ -1,15 +1,16 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.spec where
 
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primNatToFloat; primFloatLess)
-open import Agda.Builtin.Maybe using (just; nothing)
+open import Agda.Builtin.Maybe using (Maybe; just; nothing)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Unit using (⊤; tt)
 
 open import Data.Empty using (⊥)
 open import Data.List using (List; []; _∷_; map)
-open import Data.Product using (_×_)
+open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Maybe using (Is-just)
 open import Function.Base using (case_of_)
@@ -54,17 +55,20 @@ module environment-value-tuple where
 open environment-value-tuple public
 
 module dense-linear-representation where
+    {-# TERMINATING #-}
     LinRepDense : LTyp → Set
     LinRepDense LUn = ⊤
     LinRepDense LR = Float
     LinRepDense (σ :*! τ) = LinRepDense σ × LinRepDense τ
     LinRepDense (σ :+! τ) = LinRepDense σ × LinRepDense τ
+    LinRepDense Dyn = Maybe (Σ LTyp LinRep)
 
     zerovDense : (τ : LTyp) → LinRepDense τ 
     zerovDense LUn = tt
     zerovDense LR = 0.0
     zerovDense (σ :*! τ) = zerovDense σ , zerovDense τ
     zerovDense (σ :+! τ) = zerovDense σ , zerovDense τ
+    zerovDense Dyn = nothing
 
     sparse2dense : { τ : LTyp } → LinRep τ → LinRepDense τ
     sparse2dense {LUn} tt = tt
@@ -74,12 +78,15 @@ module dense-linear-representation where
     sparse2dense {σ :+! τ} (just (inj₁ x)) = sparse2dense {σ} x , zerovDense τ
     sparse2dense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , sparse2dense {τ} y 
     sparse2dense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
+    sparse2dense {Dyn} x = x
 
     plusvDense : (τ : LTyp) → LinRepDense τ → LinRepDense τ → LinRepDense τ
     plusvDense LUn tt tt = tt
     plusvDense LR x y = primFloatPlus x y
     plusvDense (σ :*! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
     plusvDense (σ :+! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
+    -- TODO: Figure out the correct definition
+    plusvDense Dyn x y = nothing
 
 open dense-linear-representation public
 
@@ -120,6 +127,9 @@ module value-compatibility where
     _≃τ_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
     _≃τ_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃τ y
     _≃τ_ {σ :+ τ} nothing _ = ⊤
+    -- TODO: Figure out what compatible functions with Dyn should be
+    _≃τ_ {σ :-> τ} x f = ⊤
+
 
     _≃Γ_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
     _≃Γ_ {[]} x y = ⊤
@@ -141,6 +151,8 @@ module value-compatibility where
     Compatible-LinReps {σ :+! τ} (just x) nothing = ⊤
     Compatible-LinReps {σ :+! τ} nothing (just x) = ⊤
     Compatible-LinReps {σ :+! τ} nothing nothing = ⊤
+    -- TODO: figure out what Compatible-LinReps means for Dyn
+    Compatible-LinReps {Dyn} _ _ = ⊤
 
     Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
     Compatible-idx-LEtup {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y

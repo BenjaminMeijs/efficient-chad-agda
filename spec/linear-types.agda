@@ -1,22 +1,31 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module spec.linear-types where
 
 open import Agda.Builtin.Float using (Float; primFloatPlus)
 open import Agda.Builtin.Maybe using (Maybe; nothing; just)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
+-- TODO: Remove
+open import Agda.Builtin.Bool
 
 open import Data.List using (List; []; _∷_)
 open import Data.Integer using (ℤ; _+_; +_)
-open import Data.Product using (_×_)
+open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
+open import Function.Base using (id; _$_; _∘_; case_of_)
 
 
 -- The linear (i.e. monoidal) types. These types have a monoid structure, and
 -- have a potential function (φ) defined on them.
-data LTyp : Set where
-  LUn LR : LTyp
-  _:*!_ : LTyp -> LTyp -> LTyp
-  _:+!_ : LTyp -> LTyp -> LTyp
+data LTyp' : ℕ -> Set where
+  LUn LR : ∀ {n} -> LTyp' n
+  _:*!_ : ∀ {n} -> LTyp' n -> LTyp' n -> LTyp' n
+  _:+!_ : ∀ {n} -> LTyp' n -> LTyp' n -> LTyp' n
+  Dyn : ∀ {n} -> LTyp' n
+
+LTyp : Set
+LTyp = LTyp' 0
 
 -- A linear typing environment is a list of linear types.
 LEnv : Set
@@ -24,6 +33,8 @@ LEnv = List LTyp
 
 -- The representation (semantics) of the linear types; the representation of
 -- normal types follows in `spec.agda`.
+-- TODO: Verder nadenken over deze Terminating
+{-# TERMINATING #-}
 LinRep : LTyp -> Set
 LinRep LUn = ⊤
 LinRep LR = Float
@@ -34,6 +45,12 @@ LinRep (σ :*! τ) = Maybe (LinRep σ × LinRep τ)
 -- Or perhaps:
 -- Maybe ( (LinRep σ ⊎ LinRep τ)  ⊎  (LinRep σ × LinRep τ))
 LinRep (σ :+! τ) = Maybe (LinRep σ ⊎ LinRep τ)
+-- Dyn kan gewoon over elk LTyp gaan, niet specifiek LEtup.
+LinRep Dyn = Maybe (Σ LTyp LinRep)
+-- LinRep (Dyn) = Maybe (LinRep (f true) ⊎ LinRep (f false))  -- Σ Bool ( LinRep ∘ f ))
+--   where f : Bool → LTyp
+--         f true = LR
+--         f false = LUn
 
 -- Linear environment tuple: a tuple of all the types in a linear environment.
 -- This is used to pass a linear environment as a _value_ into, and out of,
@@ -41,6 +58,11 @@ LinRep (σ :+! τ) = Maybe (LinRep σ ⊎ LinRep τ)
 LEtup : LEnv -> Set
 LEtup [] = ⊤
 LEtup (τ ∷ Γ) = LinRep τ × LEtup Γ
+
+-- =====================
+-- END Of MUTUAL RECURSION
+-- =====================
+
 
 -- An index into a typing environment
 data Idx {n} {typ : Set n} : List typ -> typ -> Set n where
@@ -62,6 +84,7 @@ zerov LUn = tt , one
 zerov LR = 0.0 , one
 zerov (σ :*! τ) = nothing , one
 zerov (σ :+! τ) = nothing , one
+zerov (Dyn) = nothing , one
 
 -- The addition part of the monoid structure of the linear types. Similarly,
 -- the number of evaluation steps is returned.
@@ -100,6 +123,7 @@ plusv (σ :+! τ) (just (inj₂ x)) (just (inj₂ y)) =
   let z , cz = plusv τ x y
   in just (inj₂ z) , one + cz
 plusv (σ :+! τ) _ _ = nothing , one  -- NOTE: a proper implementation would error here.
+plusv (Dyn) = {!   !}
 
 -- Add the value 'val' into the position 'idx' in the environment tuple.
 addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> LEtup Γ -> LEtup Γ

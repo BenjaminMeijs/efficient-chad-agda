@@ -86,7 +86,7 @@ eval-sink-commute env env2 w p (let' e1 e2)
   rewrite let x , _ = eval env2 (sink w e1)
           in eval-sink-commute (push x env) (push x env2) (WCopy w) (refl , p) e2 =
     refl
-eval-sink-commute env env2 w p (lam Γclo inj e)
+eval-sink-commute env env2 w p (dual-lam Γclo inj e)
   rewrite inj-weaken-commute inj w env env2 p =
     refl
 eval-sink-commute env env2 w p (app e1 e2)
