@@ -4,28 +4,26 @@ module spec.linear-types where
 open import Agda.Builtin.Float using (Float; primFloatPlus)
 open import Agda.Builtin.Maybe using (Maybe; nothing; just)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
+open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Unit using (⊤; tt)
--- TODO: Remove
-open import Agda.Builtin.Bool
 
 open import Data.List using (List; []; _∷_)
 open import Data.Integer using (ℤ; _+_; +_)
 open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
+open import Relation.Binary.PropositionalEquality using (cong; cong₂)
 open import Function.Base using (id; _$_; _∘_; case_of_)
 
 
 -- The linear (i.e. monoidal) types. These types have a monoid structure, and
 -- have a potential function (φ) defined on them.
-data LTyp' : ℕ -> Set where
-  LUn LR : ∀ {n} -> LTyp' n
-  _:*!_ : ∀ {n} -> LTyp' n -> LTyp' n -> LTyp' n
-  _:+!_ : ∀ {n} -> LTyp' n -> LTyp' n -> LTyp' n
-  Dyn : ∀ {n} -> LTyp' n
-
-LTyp : Set
-LTyp = LTyp' 0
+data LTyp : Set where
+  LUn LR : LTyp
+  _:*!_ : LTyp -> LTyp -> LTyp
+  _:+!_ : LTyp -> LTyp -> LTyp
+  Dyn : LTyp
 
 -- A linear typing environment is a list of linear types.
 LEnv : Set
@@ -134,3 +132,66 @@ addLEτ (S i) val (x , env) = x , addLEτ i val env
 _Eτ!!_ : {Γ : LEnv} {τ : LTyp} -> LEtup Γ -> Idx Γ τ -> LinRep τ
 (x , env) Eτ!! Z = x
 (x , env) Eτ!! (S i) = env Eτ!! i
+
+-- =====================================
+-- Decidable equality for LType and LEnv
+-- =====================================
+_LTyp≟_ : ( x y : LTyp ) → Dec ( x ≡ y)
+_LTyp≟_ LUn LUn = yes refl
+_LTyp≟_ LUn LR = no (λ ())
+_LTyp≟_ LUn (_ :*! _) = no (λ ())
+_LTyp≟_ LUn (_ :+! _) = no (λ ())
+_LTyp≟_ LUn Dyn = no (λ ())
+_LTyp≟_ LR LUn = no λ ()
+_LTyp≟_ LR LR = yes refl
+_LTyp≟_ LR (_ :*! _) = no λ ()
+_LTyp≟_ LR (_ :+! _) = no λ ()
+_LTyp≟_ LR Dyn = no λ ()
+_LTyp≟_ (_ :*! _) LUn = no (λ ())
+_LTyp≟_ (_ :*! _) LR = no (λ ())
+_LTyp≟_ (x₁ :*! x₂) (y₁ :*! y₂)
+  with x₁ LTyp≟ y₁
+  with x₂ LTyp≟ y₂
+... | yes a | yes b = yes (cong₂ _:*!_ a b)
+... | no a  | _     = no (a ∘ uncong-fst)
+  where uncong-fst : (x₁ :*! x₂) ≡ (y₁ :*! y₂) → x₁ ≡ y₁
+        uncong-fst refl = refl
+... | _     | no  b = no (b ∘ uncong-snd)
+  where uncong-snd : (x₁ :*! x₂) ≡ (y₁ :*! y₂) → x₂ ≡ y₂
+        uncong-snd refl = refl
+_LTyp≟_ (_ :*! _) (_ :+! _) = no λ ()
+_LTyp≟_ (_ :*! _) Dyn = no λ ()
+_LTyp≟_ (_ :+! _) LUn = no λ ()
+_LTyp≟_ (_ :+! _) LR = no λ ()
+_LTyp≟_ (_ :+! _) (_ :*! _) = no λ ()
+_LTyp≟_ (x₁ :+! x₂) (y₁ :+! y₂)
+  with x₁ LTyp≟ y₁
+  with x₂ LTyp≟ y₂
+... | yes a | yes b = yes (cong₂ _:+!_ a b)
+... | no a  | _     = no (a ∘ uncong-inj)
+  where uncong-inj : (x₁ :+! x₂) ≡ (y₁ :+! y₂) → x₁ ≡ y₁
+        uncong-inj refl = refl
+... | _     | no b  = no (b ∘ uncong-inj)
+  where uncong-inj : (x₁ :+! x₂) ≡ (y₁ :+! y₂) → x₂ ≡ y₂
+        uncong-inj refl = refl
+_LTyp≟_ (_ :+! _) Dyn = no λ ()
+_LTyp≟_ Dyn LUn = no λ ()
+_LTyp≟_ Dyn LR = no (λ ())
+_LTyp≟_ Dyn (_ :*! _) = no (λ ())
+_LTyp≟_ Dyn (_ :+! _) = no (λ ())
+_LTyp≟_ Dyn Dyn = yes refl
+
+_LEnv≟_ : ( x y : List LTyp ) → Dec ( x ≡ y)
+[] LEnv≟ [] = yes refl 
+[] LEnv≟ (_ ∷ _) = no λ ()
+(_ ∷ _) LEnv≟ [] = no λ ()
+(x ∷ xs) LEnv≟ (y ∷ ys)
+  with x LTyp≟ y
+  with xs LEnv≟ ys
+... | yes a | yes b = yes (cong₂ _∷_ a b) 
+... | no  a | _     = no (a ∘ uncong-head) 
+  where uncong-head : (x ∷ xs ≡ y ∷ ys) → x ≡ y
+        uncong-head refl = refl
+... | _     | no  b = no (b ∘ uncong-tail) 
+  where uncong-tail : (x ∷ xs ≡ y ∷ ys) → xs ≡ ys
+        uncong-tail refl = refl

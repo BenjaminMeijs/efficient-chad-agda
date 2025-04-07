@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.interp-sink-commutes where
 
 open import Agda.Builtin.Equality using (_≡_; refl)

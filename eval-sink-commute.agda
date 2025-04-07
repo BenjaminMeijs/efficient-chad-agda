@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module eval-sink-commute where
 
 open import Agda.Builtin.Sigma
@@ -177,3 +178,4 @@ eval-sink-commute env env2 w p (lcastr e)
 ... | just (inj₁ x) rewrite eval-sink-commute env env2 w p e = refl
 ... | just (inj₂ y) rewrite eval-sink-commute env env2 w p e = refl
 eval-sink-commute env env2 w p lsumzero = refl
+eval-sink-commute env env2 w p _ = {!   !}

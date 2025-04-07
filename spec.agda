@@ -160,6 +160,12 @@ D2τ' (σ :-> τ) = Dyn
 D2τ : Typ Pr -> Typ Du
 D2τ τ = Lin (D2τ' τ)
 
+-- The codomain of the backpropagator of a differentiated program. 'EVM' is the
+-- environment vector monad, instantiated with the local accumulation monad
+-- LACM. 'D2Γ' is used in the type of 'chad' below.
+D2Γ : Env Pr -> Typ Du
+D2Γ Γ = EVM (map D2τ' Γ) Un
+
 -- The primal type mapping, written D[τ]₁ in the paper.
 D1τ : Typ Pr -> Typ Du
 D1τ Un = Un
@@ -169,9 +175,10 @@ D1τ (σ :* τ) = D1τ σ :* D1τ τ
 D1τ (σ :+ τ) = D1τ σ :+ D1τ τ
 
 -- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Lin Dyn :* D2τ σ)))
--- Correct EVM
 -- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Lin Dyn :* D2τ σ)))
-D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Dyn ∷ []) (Lin Dyn :* D2τ σ)))
+-- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Dyn ∷ []) (Lin Dyn :* Lin (D2τ' σ))))
+-- Correct EVM
+D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> D2Γ ((σ :-> τ) ∷ σ ∷ [])))
 
 -- Primal environment mapping. This is D[Γ]₁ in the paper.
 D1Γ : Env Pr -> Env Du
@@ -181,12 +188,6 @@ D1Γ = map D1τ
 -- the paper.
 D2Γtup : Env Pr -> Typ Du
 D2Γtup Γ = LEτ (map D2τ' Γ)
-
--- The codomain of the backpropagator of a differentiated program. 'EVM' is the
--- environment vector monad, instantiated with the local accumulation monad
--- LACM. 'D2Γ' is used in the type of 'chad' below.
-D2Γ : Env Pr -> Typ Du
-D2Γ Γ = EVM (map D2τ' Γ) Un
 
 -------------------- OBJECT LANGUAGE -------------------------------------------
 
@@ -221,23 +222,32 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> Term tag Γ (σ :+ τ)
         -> Term tag (σ ∷ Γ) ρ -> Term tag (τ ∷ Γ) ρ
         -> Term tag Γ ρ
-  
-  -- TODO: Gamma kan infered worden, dus implicit laten
-  lam : ∀ {tag} {σ τ : Typ tag}
-        -> (Γ : Env tag) -> Term tag (σ ∷ Γ) τ -> Term tag Γ (σ :-> τ)
 
-  app : ∀ {tag} {Γ : Env tag} {σ τ : Typ tag}
-        -> Term tag Γ (σ :-> τ) -> Term tag Γ σ  -> Term tag Γ τ
-  
-  -- TODO: Let fromDyn and toDyn 
-  toDyn : {Γ : Env Pr} {σ τ : Typ Pr} 
-        -> Term Du (LEτ (map D2τ' Γ) ∷ D1Γ Γ) (D2τ (σ :-> τ))
+  fromDyn : {Γ : Env Du} {τ : Typ Du} 
+        -> Term Du Γ (Lin Dyn)
+        -> Term Du Γ τ
 
-  fromDyn : {Γ : Env Pr} {σ τ : Typ Pr} 
-        -> Term Du (D2τ (σ :-> τ) ∷ D1Γ Γ) (D2Γ Γ)
+  toDyn : {Γ : Env Du} { τ : Typ Du } 
+         -> Term Du Γ τ
+         -> Term Du Γ (Lin Dyn)
+
+  fromDynEvm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
+        -> Term Du Γ (EVM (Dyn ∷ []) τ)
+        -> Term Du Γ (EVM Γ' τ)
+
+  toDynEvm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
+        -> Term Du Γ (EVM Γ' τ)
+        -> Term Du Γ (EVM (Dyn ∷ []) τ)
 
   dynZero : {Γ : Env Du} 
             -> Term Du Γ (Lin Dyn)
+  
+  -- TODO: Gamma kan infered worden, dus implicit laten
+  lam : ∀ {tag} {σ τ : Typ tag}
+        -> { Γ : Env tag } -> Term tag (σ ∷ Γ) τ -> Term tag Γ (σ :-> τ)
+
+  app : ∀ {tag} {Γ : Env tag} {σ τ : Typ tag}
+        -> Term tag Γ (σ :-> τ) -> Term tag Γ σ  -> Term tag Γ τ
 
   -- The Γ' is the closure of the lambda. We model this explicitly because the
   -- cost of evaluating 'lam' is linear in the size of its closure, so it is
@@ -246,8 +256,6 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> {σ : Typ Du}
         -> (Γ' : Env Du) -> ({ρ : Typ Du} -> Idx Γ' ρ -> Idx Γ ρ)  -- Γ' is a subset of Γ
         -> Term Du (σ ∷ Γ') τ -> Term Du Γ (σ :-> τ)
-  dual-app   : {Γ : Env Du} {σ τ : Typ Du}
-        -> Term Du Γ (σ :-> τ) -> Term Du Γ σ -> Term Du Γ τ
 
   pureevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
          -> Term Du Γ τ -> Term Du Γ (EVM Γ' τ)
@@ -340,7 +348,7 @@ sink : ∀ {tag} {Γ Γ' : Env tag}
 sink w (var i) = var (weaken-var w i)
 sink w (let' e1 e2) = let' (sink w e1) (sink (WCopy w) e2)
 sink w (dual-lam Γ' inj e) = dual-lam Γ' (weaken-var w ∘ inj) e
-sink w (dual-app e1 e2) = dual-app (sink w e1) (sink w e2)
+sink w (app e1 e2) = app (sink w e1) (sink w e2)
 sink w (prim op e) = prim op (sink w e)
 sink w unit = unit
 sink w (pair e1 e2) = pair (sink w e1) (sink w e2)
@@ -364,7 +372,11 @@ sink w (linr e) = linr (sink w e)
 sink w (lcastl e) = lcastl (sink w e)
 sink w (lcastr e) = lcastr (sink w e)
 sink w lsumzero = lsumzero
-sink w _ = {!   !}
+sink w (toDyn t) = toDyn (sink w t)
+sink w (fromDyn t) = fromDyn (sink w t)
+sink w dynZero = dynZero
+sink w (lam t) = lam (sink (WCopy w) t)
+sink w t = ?
 
 -- Add one additional free variable to the bottom of the term's free variable
 -- list (here of type σ). This, for example, allows one to put a term under one
@@ -376,14 +388,14 @@ sink1 = sink (WSkip WEnd)
 -- the (smaller) closure environment into the larger containing environment
 -- with an index remapping function, but writing those inline is cumbersome.
 -- It's easier to simply give a list of indices into the containing environment
--- that you want to include in the closure. This 'dual-lamwith' function allows you
+-- that you want to include in the closure. This 'lamwith' function allows you
 -- to do that; said list is the list 'vars'. 'α' is the argument type of the
 -- dual-lambda.
-dual-lamwith : {α : Typ Du} {Γ : Env Du} {τ : Typ Du}
+lamwith : {α : Typ Du} {Γ : Env Du} {τ : Typ Du}
        -> (vars : List (Fin (length Γ)))
        -> Term Du (α ∷ map (\i -> Γ !! i) vars) τ
        -> Term Du Γ (α :-> τ)
-dual-lamwith {_} {Γ} vars body =
+lamwith {_} {Γ} vars body =
   dual-lam (map (Γ !!_) vars)
       (buildinj vars)
       body
@@ -401,12 +413,12 @@ dual-lamwith {_} {Γ} vars body =
 
 -- 'bindevm' from Term is '>>=' of the environment vector monad EVM; this is
 -- '>>'. 'a >> b' is expanded to 'let x = b in a >>= \_ -> x'. Note the
--- creation of a closure using 'dual-lamwith' containing one entry, namely x.
+-- creation of a closure using 'lamwith' containing one entry, namely x.
 thenevm : {Γ : LEnv} {Γ' : Env Du}
        -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un)
 thenevm a b =
   let' b $
-    bindevm (sink1 a) (dual-lamwith (zero ∷ []) (var (S Z)))
+    bindevm (sink1 a) (lamwith (zero ∷ []) (var (S Z)))
 
 -- Generic index retyping utility. An index of type τ into an environment Γ can
 -- be retyped as an index of modified type into a modified environment.
@@ -531,7 +543,7 @@ eval env (let' rhs e) =
   in e' , one + crhs + ce
 eval env (dual-lam Γ' inj e) =
   (\x -> eval (push x (buildValFromInj inj env)) e) , one + + (length Γ')
-eval env (dual-app e1 e2) =
+eval env (app e1 e2) =
   let f , cf = eval env e1
       x , cx = eval env e2
       y , cy = f x
@@ -628,13 +640,17 @@ eval env (lcastr {τ = τ} e) =
                   in z , one + ce + cz
                (just (inj₂ y)) -> y , one + ce
 eval env lsumzero = nothing , one
+eval {Γ = Γ} env (lam t) = (λ x → eval (push x env) t) , one + + (length Γ)
 -- TODO: Calculate the actual cost
-eval env (lam G t) = {!   !} , one
-eval env (app s t) = {!   !} , one
-eval env (fromDyn {Γ = G}) =
-  case env of 
-      λ where (push nothing  _) -> LACM.pure tt , one
-              (push (just q) y) -> {!   !}
+eval env (fromDyn {Γ = G} t) = 
+  case eval env t of
+    λ where (nothing , cost) → {!    !} , cost
+            (just x , cost) → {!   !}
+  -- let (d , cost) = eval env t
+  -- in ( {!   !} , cost)
+  -- case env of 
+  --     λ where (push nothing  _) -> LACM.pure tt , one
+  --             (push (just q) y) -> {!   !}
               -- (push (just (G2 , x)) _) -> let foo : map D2τ' G ≡ G2
                                               -- foo = {!   !}
                                               -- ans : (LACM (map D2τ' G) ⊤) × ℤ
@@ -643,9 +659,10 @@ eval env (fromDyn {Γ = G}) =
   -- where bar : {gam : LEnv} -> map D2τ' G ≡ gam -> LACM gam ⊤ -> LACM (map D2τ' G) ⊤
   --       bar w x rewrite (sym w) = x
 -- -- TODO: Calculate the actual cost
-eval (push x env) (toDyn {G} {σ} {τ}) = {!   !}
+eval env (toDyn {G} {τ} t) = {!   !}
     -- just ((map D2τ' G) , LEtup-to-LEτ (map D2τ' G) x) , one
 eval env (dynZero) = nothing , one
+eval env t = ?
 
 
 
@@ -680,118 +697,96 @@ chad : {Γ : Env Pr} {τ : Typ Pr}
     -> Term Du (D1Γ Γ) (D1τ τ :* (D2τ τ :-> D2Γ Γ))
 chad (var idx) =
   pair (var (convIdx D1τ idx))
-       (dual-lamwith [] (addevm (convIdx D2τ' idx) (var Z)))
+       (lamwith [] (addevm (convIdx D2τ' idx) (var Z)))
 chad (let' {σ = σ} e1 e2) =
   let' (chad e1) $
   let' (fst' (var Z)) $
   let' (sink (WCopy (WSkip WEnd)) (chad e2)) $
     pair (fst' (var Z))
-         (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
+         (lamwith (zero ∷ suc (suc zero) ∷ []) $
             bindevm
-              (scopeevm (zerot σ) (dual-app (snd' (var (S Z))) (var Z)))
-              (dual-lamwith (suc (suc zero) ∷ []) $
-                 dual-app (snd' (var (S Z))) (fst' (var Z))))
+              (scopeevm (zerot σ) (app (snd' (var (S Z))) (var Z)))
+              (lamwith (suc (suc zero) ∷ []) $
+                 app (snd' (var (S Z))) (fst' (var Z))))
 chad (prim op e) =
   let' (chad e) $
     pair (prim (d1Prim op) (fst' (var Z)))
-         (dual-lamwith (zero ∷ []) $
-            dual-app (snd' (var (S Z)))
+         (lamwith (zero ∷ []) $
+            app (snd' (var (S Z)))
                 (dprim op (fst' (var (S Z))) (var Z)))
-chad unit = pair unit (dual-lamwith [] (pureevm unit))
+chad unit = pair unit (lamwith [] (pureevm unit))
 chad (pair e1 e2) =
   let' (pair (chad e1) (chad e2)) $
     pair (pair (fst' (fst' (var Z)))
                (fst' (snd' (var Z))))
-         (dual-lamwith (zero ∷ []) $
-            thenevm (dual-app (snd' (fst' (var (S Z)))) (lfst' (var Z)))
-                    (dual-app (snd' (snd' (var (S Z)))) (lsnd' (var Z))))
+         (lamwith (zero ∷ []) $
+            thenevm (app (snd' (fst' (var (S Z)))) (lfst' (var Z)))
+                    (app (snd' (snd' (var (S Z)))) (lsnd' (var Z))))
 chad (fst' {τ = τ} e) =
   let' (chad e) $
     pair (fst' (fst' (var Z)))
-         (dual-lamwith (zero ∷ []) $
-            dual-app (snd' (var (S Z)))
+         (lamwith (zero ∷ []) $
+            app (snd' (var (S Z)))
                 (lpair (var Z) (zerot τ)))
 chad (snd' {σ = σ} e) =
   let' (chad e) $
     pair (snd' (fst' (var Z)))
-         (dual-lamwith (zero ∷ []) $
-            dual-app (snd' (var (S Z)))
+         (lamwith (zero ∷ []) $
+            app (snd' (var (S Z)))
                 (lpair (zerot σ) (var Z)))
 chad (inl e) =
   let' (chad e) $
     pair (inl (fst' (var Z)))
-         (dual-lamwith (zero ∷ []) $
-            dual-app (snd' (var (S Z)))
+         (lamwith (zero ∷ []) $
+            app (snd' (var (S Z)))
                 (lcastl (var Z)))
 chad (inr e) =
   let' (chad e) $
     pair (inr (fst' (var Z)))
-         (dual-lamwith (zero ∷ []) $
-            dual-app (snd' (var (S Z)))
+         (lamwith (zero ∷ []) $
+            app (snd' (var (S Z)))
                 (lcastr (var Z)))
 chad (case' {σ = σ} {τ = τ} e1 e2 e3) =
   let' (chad e1) $
     case' (fst' (var Z))
       (let' (sink (WCopy (WSkip WEnd)) (chad e2)) $
          pair (fst' (var Z))
-              (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
+              (lamwith (zero ∷ suc (suc zero) ∷ []) $
                  bindevm
-                   (scopeevm (zerot σ) (dual-app (snd' (var (S Z))) (var Z)))
-                   (dual-lamwith (suc (suc zero) ∷ []) $
-                      dual-app (snd' (var (S Z))) (linl (fst' (var Z))))))
+                   (scopeevm (zerot σ) (app (snd' (var (S Z))) (var Z)))
+                   (lamwith (suc (suc zero) ∷ []) $
+                      app (snd' (var (S Z))) (linl (fst' (var Z))))))
       (let' (sink (WCopy (WSkip WEnd)) (chad e3)) $
          pair (fst' (var Z))
-              (dual-lamwith (zero ∷ suc (suc zero) ∷ []) $
+              (lamwith (zero ∷ suc (suc zero) ∷ []) $
                  bindevm
-                   (scopeevm (zerot τ) (dual-app (snd' (var (S Z))) (var Z)))
-                   (dual-lamwith (suc (suc zero) ∷ []) $
-                      dual-app (snd' (var (S Z))) (linr (fst' (var Z))))))
-chad {Γ = Γ} (lam {σ = σ} {τ = τ} G t) = {!   !}
-  -- pair (lam (D1Γ G) 
-  --       (let' (chad t) 
-  --         (pair (fst' (var Z)) 
-  --               (lam ((D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ Γ))) ∷ D1τ σ ∷ D1Γ Γ)
-  --                 (let' (dual-app (snd' (var (S Z))) (var Z))
-  --                 -- TODO: instead of let' and runevm, use LACM.bind
-  --                 -- This means that the D1τ also has to change
-  --                   (let'  {!   !}
-  --                           (pair (let' (snd' (snd' (var Z)))
-  --                                       (sink (WCopy (WSkip (WSkip (WSkip (WSkip (WSkip WEnd)))))) 
-  --                                           (toDyn {Γ} {σ} {τ}))) 
-  --                                 (fst' (snd' (var Z)))))))))) 
-  --      (lam (D1Γ Γ) (fromDyn {Γ} {σ} {τ}))
+                   (scopeevm (zerot τ) (app (snd' (var (S Z))) (var Z)))
+                   (lamwith (suc (suc zero) ∷ []) $
+                      app (snd' (var (S Z))) (linr (fst' (var Z))))))
+chad {Γ = Γ} (lam {σ = σ} {τ = τ} {Γ = G} t) = 
+  pair 
+    (lam (let' (chad t) -- (y,y')₀ ∷ x₁ ∷ Γ
+            (pair (fst' (var Z)) 
+              (lam {!   !}))))
+    (lamwith [] (fromDyn (var Z)))
 chad (app {σ = σ} {τ = τ} s t) = 
   let' (chad t)
     (let' (sink1 (chad s)) 
-      (let' (dual-app (fst' (var Z)) (fst' (var (S Z)))) 
+      (let' (app (fst' (var Z)) (fst' (var (S Z)))) 
         (pair 
           (fst' (var Z))
-          (dual-lamwith (zero ∷ (suc zero) ∷ suc (suc zero) ∷ []) 
-              -- 0 - v  :  D2τ τ
-              -- 1 - (b,b`)  : (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))
-              -- 2 - (f,f`)  : ((D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))) :* (D2τ (σ :-> τ) :-> D2Γ Γ))
-              -- 3 - (a,a`)  : (D1τ σ :* (D2τ σ :-> D2Γ Γ))
-              (bindevm
-                {! dual-app (snd' (var (S Z))) (var Z)  !} 
-                {!   !}))
+          (lamwith (zero ∷ (suc zero) ∷ (suc ∘ suc $ zero) ∷ []) 
+              -- v₀ ∷ (b,b')₁ ∷ (f,f')₂ ∷ (a,a')₃ ∷ []
+              {!   !})
+                -- (fromDynEvm (app (snd' (var (S Z))) (var Z))) 
+                -- (lamwith ((suc ∘ suc $ zero) ∷ (suc ∘ suc ∘ suc $ zero) ∷ [])
+                -- -- (d,x)₀ ∷ (f,f')₁ ∷ (a,a')₃
+                --    (thenevm 
+                --       (app (snd' (var ∘ S ∘ S $ Z)) (snd' (var Z))) 
+                --       (app (snd' (var ∘ S $ Z)) (fst' (var Z)))))))
         )
       )
     )
-  -- let' (chad t)
-  --   (let' (sink1 (chad s)) 
-  --     (let' (dual-app (fst' (var Z)) (fst' (var (S Z)))) 
-  --       (pair
-  --         (fst' (var Z))
-  --         (dual-lamwith (zero ∷ (suc zero) ∷ suc (suc zero) ∷ [])  -- 0-v, 1-b, 2-f, 3-a
-  --     -- 0 - v  :  D2τ τ
-  --     -- 1 - (b,b`)  : (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))
-  --     -- 2 - (f,f`)  : ((D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Dyn :* D2τ σ)))) :* (D2τ (σ :-> τ) :-> D2Γ Γ))
-  --     -- 3 - (a,a`)  : (D1τ σ :* (D2τ σ :-> D2Γ Γ))
-  --     -- 
-  --           (let' (dual-app (snd' (var (S Z))) (var Z))
-  --             (thenevm 
-  --               (dual-app (snd' (var (S (S (S (S Z)))))) (snd' (var Z)))
-  --               (dual-app (snd' (var (S (S (S Z))))) (fst' (var Z)))))))))
 
 
 -------------------- THE COMPLEXITY THEOREMS -----------------------------------
@@ -857,7 +852,7 @@ TH2-STATEMENT =
   -> (ctg : Rep (D2τ τ))
   -> (t : Term Pr Γ τ)
   -> cost (push ctg (primalVal env))
-          (runevm (dual-app (snd' (sink (WSkip WEnd) (chad t)))
+          (runevm (app (snd' (sink (WSkip WEnd) (chad t)))
                        (var Z))
                   (zero-env-term Γ))
       ≤ + 5

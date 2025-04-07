@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module chad-preserves-primal where
 
 open import Agda.Builtin.Sigma
@@ -71,3 +72,5 @@ chad-preserves-primal env (case' {σ = σ} {τ = τ} e1 e2 e3)
                                             (refl , forall-fin-trivial (\i -> refl))
                                             (chad e3))
         in trans (cong (fst ∘ fst) answer) rec
+chad-preserves-primal env (lam t) = {!   !}
+chad-preserves-primal env (app s t) = {!   !}

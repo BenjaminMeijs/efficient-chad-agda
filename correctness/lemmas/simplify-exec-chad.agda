@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.simplify-exec-chad where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -24,6 +25,7 @@ interp-zerot-equiv-zerov Inte = refl
 interp-zerot-equiv-zerov R = refl
 interp-zerot-equiv-zerov (σ :* τ) = refl
 interp-zerot-equiv-zerov (σ :+ τ) = refl 
+interp-zerot-equiv-zerov (σ :-> τ) = {!   !}
 
 simplify-exec-chad-fst : {Γ : Env Pr} {σ τ : Typ Pr} 
     → (val : Val Pr Γ)
@@ -85,7 +87,7 @@ simplify-exec-chad-let {_} {Γ} {τ} {σ} v toVal evIn ctg rhs body
   using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' σ) .fst)) evIn
   rewrite elim-scope-fst
   rewrite elim-scope-snd
-  = refl
+  = {!   !}
 
 simplify-exec-chad-primop : {Γ : Env Pr} {σ τ : Typ Pr} 
   → (val : Val Pr Γ)
@@ -158,4 +160,4 @@ simplify-exec-chad-case {Γ} {σ} {τ} {ρ} {π} val evIn ctg e t x f
   using (_ , elim-scope-snd , elim-scope-fst) ← LACMexec-scope m2 ((zerov (D2τ' π) .fst)) evIn
   rewrite elim-scope-fst
   rewrite elim-scope-snd
-  = refl
+  = {!   !}

@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.dsyn-defined where
 
 open import Agda.Builtin.Unit using (⊤)
@@ -28,6 +29,7 @@ DSyn-ExistsP val (case' e l r) = DSyn-ExistsP val e × (case interp e val of
                     [ ( λ v' → DSyn-ExistsP (push v' val) l )
                     , ( λ v' → DSyn-ExistsP (push v' val) r )
                     ])
+DSyn-ExistsP val _ = {!   !}
 
 -- =======================================
 -- A datatype wrapper for DSyn-ExistsP.
@@ -110,6 +112,7 @@ module DSyn-defined-implies-DSem-defined where
             df = Equivalence.from (DSemᵀ-exists-lemma-case-inj₂ (g a) (interp l ∘ Etup-to-val) (interp r ∘ Etup-to-val) x eq1) dr
             df∘g = DSemᵀ-exists-lemma-chain {τ2 = (σ :+ τ) :* Etup Pr Γ} f g a df dg
       in DSemᵀ-exists-extensionality (f ∘ g) _ ext a df∘g
+    ∃DSyn→∃DSem {Γ} {τ} a _ w = {!   !}
 
     DSyn-Exists→DSem-Exists : {Γ : Env Pr} {τ : Typ Pr}  ( a : Rep (Etup Pr Γ) ) → ( t : Term Pr Γ τ ) 
         → DSyn-Exists (Etup-to-val a) t → (Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) a))

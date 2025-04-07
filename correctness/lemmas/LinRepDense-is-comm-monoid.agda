@@ -1,3 +1,4 @@
+{-# OPTIONS --allow-unsolved-metas #-}
 module correctness.lemmas.LinRepDense-is-comm-monoid where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -56,6 +57,7 @@ module plusv-lemmas where
     plusvSparse-zeroR (σ :*! τ) (just x) = refl
     plusvSparse-zeroR (σ :*! τ) nothing = refl
     plusvSparse-zeroR (σ :+! τ) v = refl
+    plusvSparse-zeroR Dyn _ = {!   !}
 
     plusvSparse-zeroL LUn v = refl
     plusvSparse-zeroL LR v = primFloatPlus-zeroL v
@@ -63,6 +65,7 @@ module plusv-lemmas where
     plusvSparse-zeroL (σ :*! τ) nothing = refl
     plusvSparse-zeroL (σ :+! τ) (just x) = refl
     plusvSparse-zeroL (σ :+! τ) nothing = refl
+    plusvSparse-zeroL Dyn _ = {!   !}
 
     plusvSparse-comm LUn a b = refl
     plusvSparse-comm LR a b = primFloatPlus-comm a b
@@ -77,6 +80,7 @@ module plusv-lemmas where
     plusvSparse-comm (σ :+! τ) (just x) nothing = refl
     plusvSparse-comm (σ :+! τ) nothing (just y) = refl
     plusvSparse-comm (σ :+! τ) nothing nothing = refl
+    plusvSparse-comm Dyn _ _ = {!   !}
 
     -- ==================
     -- Proofs for: dense plus
@@ -85,6 +89,7 @@ module plusv-lemmas where
     plusvDense-zeroR LR v = primFloatPlus-zeroR v
     plusvDense-zeroR (σ :*! τ) (x , y) = cong₂ (_,_) (plusvDense-zeroR σ x) (plusvDense-zeroR τ y)
     plusvDense-zeroR (σ :+! τ) (x , y) = cong₂ (_,_) (plusvDense-zeroR σ x) (plusvDense-zeroR τ y) 
+    plusvDense-zeroR Dyn _ = {!   !}
 
     plusvDense-zeroL τ v = trans (plusvDense-comm τ (zerovDense τ) v) (plusvDense-zeroR τ v) 
     plusvDense-zeroR' {τ} {a} {b} {{w}} = trans (cong (λ e → plusvDense τ a e) w) (plusvDense-zeroR τ a) 
@@ -94,11 +99,13 @@ module plusv-lemmas where
     plusvDense-comm LR a b = primFloatPlus-comm a b
     plusvDense-comm (σ :*! τ) (x , y) (a , b) = cong₂ (_,_) (plusvDense-comm σ x a) (plusvDense-comm τ y b) 
     plusvDense-comm (σ :+! τ) (x , y) (a , b) = cong₂ (_,_) (plusvDense-comm σ x a) (plusvDense-comm τ y b)
+    plusvDense-comm Dyn _ _ = {!   !}
     
     plusvDense-assoc LUn a b c = refl
     plusvDense-assoc LR a b c = primFloatPlus-assoc a b c
     plusvDense-assoc (σ :*! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2) 
     plusvDense-assoc (σ :+! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2)
+    plusvDense-assoc Dyn _ _ _ = {!   !}
 
     plusvDense-congR refl = refl
     plusvDense-congL refl = refl
@@ -110,6 +117,7 @@ module plusv-lemmas where
     zerov-equiv-zerovDense LR = refl
     zerov-equiv-zerovDense (σ :*! τ) = refl
     zerov-equiv-zerovDense (σ :+! τ) = refl
+    zerov-equiv-zerovDense Dyn = {!   !}
 
     plusv-equiv-plusvDense {LUn} x y _ = refl
     plusv-equiv-plusvDense {LR} x y _ = refl
@@ -124,6 +132,7 @@ module plusv-lemmas where
     plusv-equiv-plusvDense {σ :+! τ} (just x) nothing _ = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroR')
     plusv-equiv-plusvDense {σ :+! τ} nothing (just y) _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
     plusv-equiv-plusvDense {σ :+! τ} nothing nothing _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
+    plusv-equiv-plusvDense {Dyn} _ _ _ = {!   !}
 open plusv-lemmas public
 
 
