@@ -33,6 +33,16 @@ lemma-primal₂ {R} isRd x = refl
 lemma-primal₂ {τ :* τ₁} isRd x = cong₂ _,_ (lemma-primal₂ (isRd .fst) (x .fst))
                                            (lemma-primal₂ (isRd .snd) (x .snd))
 
+cong-to-primal : { τ : Typ Pr }
+  → { isRd1 : Is-ℝᵈ τ } → { isRd2 : Is-ℝᵈ τ }
+  → { x : Rep τ } {y : Rep τ}
+  → x ≡ y
+  → to-primal isRd1 x ≡ to-primal isRd2 y
+cong-to-primal {Un} {q1} {q2} {x} {y} w = w
+cong-to-primal {R} {q1} {q2} {x} {y} w = w
+cong-to-primal {τ1 :* τ2} {q1} {q2} {x} {y} refl
+  = cong₂ _,_ (cong-to-primal {τ1} {q1 .fst} {q2 .fst} {x .fst} {x .fst} refl) 
+              (cong-to-primal {τ2} {q1 .snd} {q2 .snd} {x .snd} {x .snd} refl)
 
 dense2sparse : {τ : Typ Pr} → (Is-ℝᵈ τ) → LinRepDense (D2τ' τ) → LinRep (D2τ' τ)
 dense2sparse {Un} isRd x = tt

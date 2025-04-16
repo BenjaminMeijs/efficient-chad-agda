@@ -19,24 +19,6 @@ open import correctness.chad-ctg-zero
 open import correctness.lemmas
 open import correctness.dsem
 
-identityInP7 : (σ : Typ Pr) → (isRd : Is-ℝᵈ σ)
-            → P7 σ isRd σ id (λ x → (primal σ x , λ ctg → sparse2dense ctg))
-identityInP7 Un isRd = (λ _ → refl) , (λ _ → refl , λ _ → refl)
-identityInP7 R isRd = λ x → refl , ans x
-  where ans : (x : Float) → (dsem : Is-just (DSemᵀ id x)) → (ctg : Float) → _
-        ans x dsem ctg = let (d-id , rule) = DSemᵀ-identity x ctg
-                     in sym (trans (DSemᵀ-extensionality id id (λ _ → refl) x dsem d-id ctg) rule)
-identityInP7 (σ :* τ) isRd = (l , r , (l' , r')) , (Pσ , Pτ) , (λ _ → refl) 
-  ,  λ x → refl , ans
-  where l  = project (ProjectFst σ τ σ isRd (ProjectDone σ (fst isRd)))
-        r  = project (ProjectSnd σ τ τ isRd (ProjectDone τ (snd isRd)))
-        l' = project'P7 (ProjectFst σ τ σ isRd (ProjectDone σ (fst isRd)))
-        r' = project'P7 (ProjectSnd σ τ τ isRd (ProjectDone τ (snd isRd)))
-        Pσ = projectInP7 (σ :* τ) σ isRd (ProjectFst σ τ σ isRd (ProjectDone σ (fst isRd)))
-        Pτ = projectInP7 (σ :* τ) τ isRd (ProjectSnd σ τ τ isRd (ProjectDone τ (snd isRd)))
-        ans : (ctg : Maybe (LinRep (D2τ' σ) × LinRep (D2τ' τ))) → _
-        ans (just ctg) = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroL')
-        ans nothing    = refl
 
 -- Nested composition
 P7∘ : { τ1 τ2 τ3 : Typ Pr } → { isRd : Is-ℝᵈ (τ1 :* τ2)  }
