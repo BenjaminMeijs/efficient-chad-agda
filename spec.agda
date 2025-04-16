@@ -376,7 +376,7 @@ sink w (toDyn t) = toDyn (sink w t)
 sink w (fromDyn t) = fromDyn (sink w t)
 sink w dynZero = dynZero
 sink w (lam t) = lam (sink (WCopy w) t)
-sink w t = ?
+sink w t = {!   !}
 
 -- Add one additional free variable to the bottom of the term's free variable
 -- list (here of type σ). This, for example, allows one to put a term under one
@@ -443,7 +443,7 @@ primal R x = x
 primal (σ :* τ) (x , y) = primal σ x , primal τ y
 primal (σ :+ τ) (inj₁ x) = inj₁ (primal σ x)
 primal (σ :+ τ) (inj₂ y) = inj₂ (primal τ y)
-primal (σ :-> τ) f = {!   !}
+primal (σ :-> τ) f = ?
 
 -- Our primitive operations work on types of which the primal is the same as
 -- the original type. This is of course true for _all_ our types in this Agda
@@ -662,7 +662,7 @@ eval env (fromDyn {Γ = G} t) =
 eval env (toDyn {G} {τ} t) = {!   !}
     -- just ((map D2τ' G) , LEtup-to-LEτ (map D2τ' G) x) , one
 eval env (dynZero) = nothing , one
-eval env t = ?
+eval env t = {!   !}
 
 
 
