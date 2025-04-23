@@ -150,6 +150,7 @@ ev+assoc : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → (c : EV Γ)
 
 -- Relation of EV to other constructs
 Etup-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ EV (map D2τ' Γ)
+EV-to-Etup : {Γ : Env Pr} → EV (map D2τ' Γ) → LinRepDense (D2τ' (Etup Pr Γ))
 Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → Etup2EV (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
 plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
                     → Etup2EV (plusvDense (D2τ' (Etup Pr Γ)) x y)
@@ -172,6 +173,10 @@ ev+assoc {τ ∷ Γ} a b c = cong₂ (_,_) (plusvDense-assoc τ (a .fst) (b .fst
 
 Etup-equiv-EV {[]} = refl
 Etup-equiv-EV {x ∷ Γ} = cong₂ _×_ refl Etup-equiv-EV
+
+EV-to-Etup {Γ} x 
+    rewrite Etup-equiv-EV {Γ}
+    = x
 
 Etup-zerovDense-equiv-zero-EV {[]} = refl
 Etup-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl Etup-zerovDense-equiv-zero-EV

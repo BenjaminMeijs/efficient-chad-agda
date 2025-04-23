@@ -20,35 +20,6 @@ open import correctness.lemmas
 open import correctness.dsem
 
 
--- Nested composition
-P7∘ : { τ1 τ2 τ3 : Typ Pr } → { isRd : Is-ℝᵈ (τ1 :* τ2)  }
-    → (f' : Rep τ2 → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ2))))
-    → (g' : Rep τ1 → ( Rep (D1τ τ2) × (LinRep (D2τ' τ2) → LinRepDense (D2τ' τ1))))
-    → (Rep τ1 → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ1))))
-P7∘ {τ1} {τ2} {τ3} {isRd} f' g' 
-  = λ x → let a = f' (unprimal (snd isRd) (g' x .fst))
-          in (fst a) , (λ ctg → let b = (undense (snd isRd) (snd a ctg)) 
-                                in g' x .snd b)
-
-P7-chain-rule : { τ1 τ2 τ3 : Typ Pr } → { isRd : Is-ℝᵈ (τ1 :* τ2) }
-    → (f : Rep τ2 → Rep τ3)
-    → (g : Rep τ1 → Rep τ2)
-    → (f' : Rep τ2 → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ2))))
-    → (g' : Rep τ1 → ( Rep (D1τ τ2) × (LinRep (D2τ' τ2) → LinRepDense (D2τ' τ1))))
-    → P7 τ2 (snd isRd) τ3 f f'
-    → P7 τ1 (fst isRd) τ2 g g'
-    → P7 τ1 (fst isRd) τ3 (f ∘ g) (P7∘ {isRd = isRd} f' g')
-P7-chain-rule {τ1} {τ2} {Un} {isRd} f g f' g' pf pg
-  = (λ _ → refl) , (λ x → refl , λ ctg → {!   !})
-P7-chain-rule {τ1} {τ2} {Inte} {isRd} f g f' g' pf pg
-  = (λ x → pf .fst (g x)) , (λ x → {!   !} , (λ ctg → {!   !}))
-P7-chain-rule {τ1} {τ2} {R} {isRd} f g f' g' pf pg
-  = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :* τ4} {isRd} f g f' g' pf pg
-  = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :+ τ4} {isRd} f g f' g' pf pg = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :-> τ4} {isRd} f g f' g' pf pg
-  = {!   !}
 
 P7equivImpliesInP7 : ( σ τ : Typ Pr ) ( isRd : Is-ℝᵈ (σ :* τ) )
     → (f : Rep σ → Rep τ)
