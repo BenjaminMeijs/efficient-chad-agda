@@ -5,7 +5,7 @@ open import Agda.Builtin.Unit using (⊤; tt)
 open import Agda.Builtin.Float using (Float)
 
 -- open import Data.Empty using (⊥)
--- open import Data.List using (_∷_; map; [])
+open import Data.List using (_∷_; map; [])
 -- open import Data.Sum using (inj₁; inj₂; _⊎_; [_,_]; isInj₁; isInj₂)
 open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe; maybe′)
 open import Function.Base using (id; _$_; const; _∘_; case_of_)
@@ -58,4 +58,16 @@ lemma-dense {R} isRd x = refl
 lemma-dense {τ1 :* τ2} isRd x = cong₂ _,_ (lemma-dense (isRd .fst) (x .fst))
                                           (lemma-dense (isRd .snd) (x .snd))
 
+Etup-D1τ-distr≡ : ( Γ : Env Pr ) → (D1τ (Etup Pr Γ)) ≡ (Etup Du (map D1τ Γ))
+Etup-D1τ-distr≡ ( [] ) = refl
+Etup-D1τ-distr≡ ( τ ∷ Γ ) = cong₂ _:*_ refl (Etup-D1τ-distr≡ Γ)
 
+Etup-D1τ-distr₁ : ( Γ : Env Pr ) → Rep (D1τ (Etup Pr Γ)) → Rep (Etup Du (map D1τ Γ))
+Etup-D1τ-distr₁ Γ x
+  rewrite Etup-D1τ-distr≡ Γ
+  = x
+
+Etup-D1τ-distr₂ : ( Γ : Env Pr ) → Rep (Etup Du (map D1τ Γ)) → Rep (D1τ (Etup Pr Γ))
+Etup-D1τ-distr₂ Γ x
+  rewrite Etup-D1τ-distr≡ Γ
+  = x
