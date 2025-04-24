@@ -19,10 +19,34 @@ open import HO-correctness.lemmas
 open import HO-correctness.projection
 open import HO-correctness.basics-in-relation
 
+-- ==============================
+-- Heterogeneous lists
+-- ==============================
 
 HL : {A : Set} → (L : List A) → (A → Set) → Set
 HL [] f = ⊤
 HL (x ∷ Γ) f = f x × HL Γ f
+
+HL-chain : {A B : Set} → { L : List A } → { f : B → Set }
+    → { g : A → B }
+    → HL L (f ∘ g) ≡ HL (map g L) f
+HL-chain {L = []} = refl
+HL-chain {L = (x ∷ L)} = cong₂ _×_ refl HL-chain
+
+HL-map : {A : Set} → { α β : A → Set } → {L : List A}
+    → (f : (a : A) → (α a) → (β a)) → HL L α → HL L β
+HL-map {A} {α} {β} {[]} f x = tt
+HL-map {A} {α} {β} {a ∷ L} f (x , xs) = f a x , HL-map f xs
+
+HL-foldr : {A B : Set} → { α : A → Set} → {L : List A}
+    → (f : (a : A) → (α a) → B → B) → B → HL L α → B
+HL-foldr {L = []} c n xs = n
+HL-foldr {L = a ∷ L} c n (x , xs) = c a x (HL-foldr c n xs)
+
+HL-foldl : {A B : Set} → { α : A → Set} → {L : List A}
+    → (f : (a : A) → (α a) → B → B) → B → HL L α → B
+HL-foldl {L = []} c n xs = n
+HL-foldl {L = a ∷ L} c n (x , xs) = HL-foldl c (c a x n) xs
 
 HL-zipWith : {A : Set} → {α β ɣ : A → Set }
     → { L : List A }
@@ -31,32 +55,6 @@ HL-zipWith : {A : Set} → {α β ɣ : A → Set }
 HL-zipWith {L = []} f x y = tt
 HL-zipWith {L = a ∷ L} f (x , xs) (y , ys) 
     = f a x y , HL-zipWith f xs ys
-
-HL-map : {A : Set} → { α β : A → Set } → {L : List A}
-    → (f : (a : A) → (α a) → (β a)) → HL L α → HL L β
-HL-map {A} {α} {β} {[]} f x = tt
-HL-map {A} {α} {β} {a ∷ L} f (x , xs) = f a x , HL-map f xs
-
-lemma-zipWith-snd-[] : {A B C : Set}
-    → ( f : A → B → C ) 
-    → ( L : List A )
-    → (zipWith f L []) ≡ []
-lemma-zipWith-snd-[] f [] = refl
-lemma-zipWith-snd-[] f (x ∷ L) = refl
-
-HL-zipWithG : {A B C : Set} → {α : A → Set } 
-    {β : B → Set}
-    → { L1 : List A } {L2 : List B}
-    → (f : A → B → C)
-    → (g : C → Set)
-    → (h : ( a : A ) → (b : B) → (α a) → (β b) → (g (f a b)))
-    → HL L1 α → HL L2 β → HL (zipWith f L1 L2) g
-HL-zipWithG {L1 = []} f g h x y = tt
-HL-zipWithG {L1 = L1} {L2 = []} f g h x y
-    rewrite lemma-zipWith-snd-[] f L1
-    = tt
-HL-zipWithG {L1 = a ∷ L1} {L2 = b ∷ L2} f g h (x , xs) (y , ys) = 
-    h a b x y , (HL-zipWithG f g h xs ys)
 
 Etup-≡-HL : ∀ {tag} → (Γ : Env tag) → Rep (Etup tag Γ) ≡ HL Γ Rep
 Etup-≡-HL [] = refl
@@ -119,12 +117,15 @@ getCtgPropagators {Γ} q p x =
 
 sumCtgPropagators : {Γ : Env Pr}
     → (q : Is-ℝᵈ (Etup Pr Γ))
-    → HL Γ (propagator (Etup Pr Γ)) → HL Γ (LinRep ∘ D2τ')
-    → HL Γ (LinRepDense ∘ D2τ')
-sumCtgPropagators {Γ} q l1 l2 = 
-    let applied = HL-zipWith (λ _ x y → x y) l1 l2
-        sum = {!   !}
-    in {!   !}
+    → HL Γ (propagator (Etup Pr Γ)) → LEtup (map D2τ' Γ)
+    → LinRepDense (D2τ' (Etup Pr Γ))
+sumCtgPropagators {Γ} q l1 w = 
+    let l2 = subst id (sym HL-chain) (LEtup-to-HL w)
+        applied = HL-zipWith (λ _ x y → x y) l1 l2
+        plus _ x y = plusvDense (D2τ' (Etup Pr Γ)) x y 
+        zero = zerovDense (D2τ' (Etup Pr Γ)) 
+        sum = HL-foldr plus zero applied
+    in sum
 
 lemma-D1Γ≡ : {Γ : Env Pr} → (q : Is-ℝᵈ (Etup Pr Γ)) 
     → HL Γ (Rep ∘ D1τ) ≡ HL (D1Γ Γ) Rep
@@ -157,25 +158,19 @@ FL-f' : {Γ : Env Pr} {τ : Typ Pr}
     → (Rep (D1τ (Etup Pr Γ))
     → Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' (Etup Pr Γ))))
 FL-f' {Γ} {τ} isRd w t x =
-    let -- env = Fundament-apply-f' {Γ} {Γ} isRd w x
-        -- propagators = getCtgPropagators {Γ} {Γ} isRd w x
-        propagators = getCtgPropagators {Γ} isRd w x
+    let propagators = getCtgPropagators {Γ} isRd w x
         (g , g') = interp (chad t) (FL-f'-val isRd w x)
     in g , λ ctg → let w = (LACMexec (g' ctg .fst) (zero-LEtup Γ))
-                   in {!  LEtup-to-HL w  !}
-        -- (g , g') = interp (chad t) (Etup-to-val (Etup-D1τ-distr₁ Γ env))
-    -- in g , λ ctg → let w = LEtup2EV {map D2τ' Γ} (LACMexec (g' ctg .fst) (zero-LEtup Γ))
-                --    in EV-to-Etup (sumCtgPropagators isRd isRd propagators w)
+                   in sumCtgPropagators isRd propagators w
 
-fundamental-lemma : {Γ : Env Pr} {τ : Typ Pr}
+fundamental-lemma : ( Γ : Env Pr ) ( τ : Typ Pr )
     → let σ = Etup Pr Γ
           LΓ = map D2τ' Γ
       in (isRd : Is-ℝᵈ σ)
     → (p : HL Γ (precond isRd)) 
     → (t : Term Pr Γ τ)
-    → P7 σ isRd τ (FL-f isRd p t) {!   !}
-    -- → P7 σ isRd τ (FL-f isRd fun t) (FL-f' isRd fun t)
-fundamental-lemma isRd a t = {!   !}
+    → P7 σ isRd τ (FL-f isRd p t) (FL-f' isRd p t)
+fundamental-lemma Γ τ isRd a t = {!   !}
 
 P7-chad : {Γ : Env Pr} {τ : Typ Pr}
     → let σ = Etup Pr Γ 
@@ -195,9 +190,9 @@ chad-in-P7 : {Γ : Env Pr} {τ : Typ Pr}
       in (isRd : Is-ℝᵈ σ)
     → (t : Term Pr Γ τ)
     → P7 σ isRd τ (interp t ∘ Etup-to-val) (P7-chad isRd t (zero-LEtup Γ))
-chad-in-P7 isRd t =
+chad-in-P7 {τ = τ} isRd t =
     let fun = {!   !}
-        lemma = fundamental-lemma isRd fun t
+        lemma = {!   !}
         a = {!   !}
         b = {!   !}
     in {!   !}

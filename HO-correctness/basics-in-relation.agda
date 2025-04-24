@@ -91,39 +91,27 @@ P7-ctg-zero σ (τ1 :-> τ2) isRd F F' ((f , f') , p) x nothing w
 P7-ctg-zero σ (τ1 :-> τ2) isRd F F' ((f , f') , p) x (just ctg) w
   = {! ctg  !}
 
-
-
--- Nested composition
-P7∘ : { τ1 τ2 τ3 : Typ Pr } → { isRd : Is-ℝᵈ (τ1 :* τ2)  }
-    → (f' : Rep (D1τ τ2) → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ2))))
-    → (g' : Rep (D1τ τ1) → ( Rep (D1τ τ2) × (LinRep (D2τ' τ2) → LinRepDense (D2τ' τ1))))
-    → (Rep (D1τ τ1) → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ1))))
-P7∘ {τ1} {τ2} {τ3} {isRd} f' g' 
-  = λ x → let a = f' (g' x .fst) 
-          in (fst a) , (λ ctg → let b = dense2sparse (snd isRd) (a .snd ctg) 
-                                in g' x .snd b)
-
-P7-chain-rule : { τ1 τ2 τ3 : Typ Pr } → { isRd : Is-ℝᵈ (τ1 :* τ2) }
-    → (f : Rep τ2 → Rep τ3)
-    → (g : Rep τ1 → Rep τ2)
-    → (f' : Rep (D1τ τ2) → ( Rep (D1τ τ3) × (LinRep (D2τ' τ3) → LinRepDense (D2τ' τ2))))
-    → (g' : Rep (D1τ τ1) → ( Rep (D1τ τ2) × (LinRep (D2τ' τ2) → LinRepDense (D2τ' τ1))))
-    → P7 τ2 (snd isRd) τ3 f f'
-    → P7 τ1 (fst isRd) τ2 g g'
-    → P7 τ1 (fst isRd) τ3 (f ∘ g) (P7∘ {isRd = isRd} f' g')
-P7-chain-rule {τ1} {τ2} {Un} {isRd} f g f' g' pf pg
-  = (λ _ → refl) , (λ x → refl , λ _ → ans x  )
-  where ans : (x : Rep (D1τ τ1)) → _
-  -- g' x .snd (dense2sparse (snd isRd) (f' (g' x .fst) .snd tt)) ≡ zerovDense (D2τ' τ1)
-        ans x
-          rewrite pf .snd (g' x .fst) .snd tt
-          = {! pg  !}
-P7-chain-rule {τ1} {τ2} {Inte} {isRd} f g f' g' pf pg
-  = (λ x → pf .fst (g x)) , (λ x → {!   !} , (λ ctg → {!   !}))
-P7-chain-rule {τ1} {τ2} {R} {isRd} f g f' g' pf pg
-  = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :* τ4} {isRd} f g f' g' pf pg
-  = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :+ τ4} {isRd} f g f' g' pf pg = {!   !}
-P7-chain-rule {τ1} {τ2} {τ3 :-> τ4} {isRd} f g f' g' pf pg
-  = {!   !}
+inP7-implies-equiv-DSem : { σ τ : Typ Pr } 
+    → (q1 : Is-ℝᵈ σ) (q2 : Is-ℝᵈ τ)
+    → (f : Rep σ → Rep τ)
+    → (f' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
+    → P7 σ q1 τ f f'
+    → (x : Rep σ)
+    → (ctg : LinRep (D2τ' τ))
+    → (df : Is-just (DSemᵀ {σ} {τ} f x))
+    → to-witness df (sparse2dense ctg) 
+      ≡ f' (to-primal q1 x) .snd ctg
+inP7-implies-equiv-DSem {σ} {Un} q1 q2 f f' p x ctg df
+  = trans (DSemᵀ-ctg-zero f x df) 
+          (sym (p .snd (to-primal q1 x) .snd ctg))
+inP7-implies-equiv-DSem {σ} {R} q1 q2 f f' p x ctg df
+  = sym (p x .snd df ctg)
+inP7-implies-equiv-DSem {σ} {τ1 :* τ2} q1 q2 f f' p x (just ctg) df
+  = let a = DSemᵀ-pair (fst ∘ f) (snd ∘ f) x df {!   !} {!   !} (sparse2dense (fst ctg)) (sparse2dense (snd ctg))
+        b = p .snd .snd .snd (to-primal q1 x) .snd (just ctg)
+        c = {! a  !}
+    in trans a {!  b !}
+inP7-implies-equiv-DSem {σ} {τ1 :* τ2} q1 q2 f f' p x nothing df
+  =  let a = DSemᵀ-ctg-zero f x df
+         b = p .snd .snd .snd (to-primal q1 x) .snd nothing
+     in trans a (sym b)  
