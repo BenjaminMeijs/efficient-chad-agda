@@ -436,6 +436,16 @@ convIdx f (S i) = S (convIdx f i)
 -- Convert a _value_ of source-language type to a primal value in the
 -- differentiated world. Because D1τ is the identity for non-function types,
 -- this function is also the identity on values.
+
+zeroRep : (τ : Typ Pr) → Rep τ
+zeroRep Un = tt
+zeroRep Inte = ℤ.pos 0
+zeroRep R = 0.0
+zeroRep (τ :* τ₁) = (zeroRep τ) , (zeroRep τ₁)
+zeroRep (τ :+ τ₁) = inj₁ (zeroRep τ)
+zeroRep (τ :-> τ₁) = λ z →
+    zeroRep τ₁ , ℤ.pos 0
+
 primal : (τ : Typ Pr) -> Rep τ -> Rep (D1τ τ)
 primal Un tt = tt
 primal Inte x = x
@@ -443,7 +453,9 @@ primal R x = x
 primal (σ :* τ) (x , y) = primal σ x , primal τ y
 primal (σ :+ τ) (inj₁ x) = inj₁ (primal σ x)
 primal (σ :+ τ) (inj₂ y) = inj₂ (primal τ y)
-primal (σ :-> τ) f = ?
+primal (σ :-> τ) f = 
+  -- QUESTION: there is no sensible primal for a function
+  λ x → (primal τ (zeroRep τ) , (λ ctg → (LACM.pure tt) , (+ ℕ.zero))) , (+ ℕ.zero)
 
 -- Our primitive operations work on types of which the primal is the same as
 -- the original type. This is of course true for _all_ our types in this Agda

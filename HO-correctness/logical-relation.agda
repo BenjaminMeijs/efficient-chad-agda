@@ -30,6 +30,20 @@ Is-ℝᵈ (σ :* τ) = Is-ℝᵈ σ × Is-ℝᵈ τ
 Is-ℝᵈ (σ :+ τ) = ⊥
 Is-ℝᵈ (σ :-> τ) = ⊥
 
+Is-Linear : {τ σ : LTyp} → (LinRep τ → Maybe (Σ LTyp LinRep) × LinRep σ) → Set
+Is-Linear {τ} {σ} f =
+  -- f 0 is zero
+  ((ctg0 : LinRep τ) → (w : sparse2dense ctg0 ≡ zerovDense τ) 
+    → let (a , b) = f ctg0
+      in (a ≡ nothing) × sparse2dense b ≡ zerovDense σ)
+  -- f (x + y) is f x + f y
+  × ((ctg1 ctg2 : LinRep τ) → Compatible-LinReps ctg1 ctg2
+      → let (a0 , b0) = f (plusv _ ctg1 ctg2 .fst)
+            (a1 , b1) = f ctg1
+            (a2 , b2) = f ctg2
+        in a0 ≡ plusv Dyn a1 a2 .fst × b0 ≡ plusv _ b1 b2 .fst)
+
+
 to-primal : { τ : Typ Pr } → Is-ℝᵈ τ → Rep τ → Rep (D1τ τ)
 to-primal {Un} isRd x = tt
 to-primal {R} isRd x = x
@@ -110,9 +124,9 @@ P7 ρ isRd (σ :-> τ) F F' =
          h' = λ x → let (f1 , f2) = f' x
                         (g1 , g2) = g' x
                         (h1 , h2) = f1 g1
-                     in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f2 d) (g2 z))
+                     in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f' x .snd d) (g2 z))
      in P7 ρ isRd τ h h')
--- ... and f f' is equivalent to F F' .
+-- ... and f f' is equivalent to F F' ...
 -- [Note, this is not just extentional equality, but semantic equality of executing an EVM]
   × ((x : Rep ρ) (y : Rep σ) → f x y ≡ F x y .fst) 
   × ((x : Rep (D1τ ρ)) (y : Rep (D1τ σ)) → 
@@ -122,4 +136,6 @@ P7 ρ isRd (σ :-> τ) F F' =
             ((F3 , F4) , _) = F1 y
             F4' = λ ctg → let (a , b , _) = LACMexec (F4 ctg .fst) (nothing , ((zerov (D2τ' σ) .fst) , tt))
                           in a , b
-        in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4')
+        in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4'
+  -- and f' is linear.
+           × Is-Linear (f' x .fst y .snd))

@@ -121,7 +121,10 @@ plusv (σ :+! τ) (just (inj₂ x)) (just (inj₂ y)) =
   let z , cz = plusv τ x y
   in just (inj₂ z) , one + cz
 plusv (σ :+! τ) _ _ = nothing , one  -- NOTE: a proper implementation would error here.
-plusv (Dyn) = {!   !}
+plusv Dyn (just (σ , x)) (just (τ , y)) = {!   !}
+plusv Dyn nothing nothing = nothing , {!   !}
+plusv Dyn (just x) nothing = just x , {!   !}
+plusv Dyn nothing (just y) = just y , {!   !}
 
 -- Add the value 'val' into the position 'idx' in the environment tuple.
 addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> LEtup Γ -> LEtup Γ

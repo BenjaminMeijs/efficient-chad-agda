@@ -17,7 +17,7 @@ open import correctness.lemmas
 open import HO-correctness.logical-relation
 open import HO-correctness.lemmas
 open import HO-correctness.projection
-open import HO-correctness.basics-in-relation
+open import HO-correctness.basics-about-relation
 
 -- ==============================
 -- Heterogeneous lists
@@ -82,8 +82,6 @@ precond {σ} q τ =
                                 × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ)))) 
         (λ (f , f') → P7 σ q τ f f'))
 
-
-
 zero-LEtup : ( Γ : Env Pr ) → LEtup (map D2τ' Γ)
 zero-LEtup [] = tt
 zero-LEtup (τ ∷ Γ) = (zerov (D2τ' τ) .fst) , (zero-LEtup Γ)
@@ -113,7 +111,6 @@ getCtgPropagators : {Γ : Env Pr}
 getCtgPropagators {Γ} q p x = 
     let f τ y = y .fst .snd x .snd
     in HL-map f p
-
 
 sumCtgPropagators : {Γ : Env Pr}
     → (q : Is-ℝᵈ (Etup Pr Γ))
@@ -148,6 +145,7 @@ FL-f'-val {Γ} q p x =
     let f a y = (y .fst .snd x .fst)
         env = HL-map f p
     -- Note that this is just a bijeciton between two equivalent sets
+    -- todo: Use HL-chain
     in Etup-to-val (HL-to-Etup (D1Γ Γ) (lemma-D1Γ₁ q env))
 
 
