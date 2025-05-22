@@ -58,9 +58,6 @@ open environment-value-tuple public
 
 module dense-linear-representation where
 
-    data LRD-DynFun : (τ : LTyp) → Set where
-        LRD-Eq : {τ : LTyp} → LRD-DynFun τ
-
     {-# TERMINATING #-}
     LinRepDense : LTyp → Set
     LinRepDense LUn = ⊤
