@@ -4,18 +4,23 @@ module spec where
 open import Agda.Builtin.Bool using (true; false)
 open import Agda.Builtin.Float
   using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primFloatLess)
-open import Agda.Builtin.Maybe using (nothing; just)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
 
 open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
 open import Data.Fin using (Fin; zero; suc)
+open import Data.Maybe using (nothing; just; maybe′)
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Integer using (ℤ; _+_; _-_; _*_; -_; +_; _≤_)
 open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
+open import Data.Bool using (if_then_else_)
+open import Data.Empty using (⊥)
 open import Function.Base using (id; _$_; _∘_; case_of_)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst; cong)
+open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; subst; cong; cong₂)
+
+open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
+open import Relation.Nullary.Negation using (¬_)
 
 open import spec.linear-types public
 import spec.LACM as LACM
@@ -58,6 +63,9 @@ data Typ : PDTag -> Set where
   -- The linear types (with embedded potential)
   Lin : LTyp -> Typ Du
 
+_Typ≟_ : ∀ {tag} → ( x y : Typ tag ) → Dec ( x ≡ y)
+-- Implementation of decidable equality is given at the bottom of the file
+
 -- A normal typing environment is a list of types.
 Env : PDTag -> Set
 Env tag = List (Typ tag)
@@ -97,12 +105,16 @@ LEtup-eq-LEτ [] = refl
 LEtup-eq-LEτ (τ ∷ Γ) rewrite LEtup-eq-LEτ Γ = refl
 
 LEtup-to-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) -> LEtup Γ
-LEtup-to-LEτ [] x = x
-LEtup-to-LEτ (τ ∷ Γ) (x , env) = x , LEtup-to-LEτ Γ env
+LEtup-to-LEτ Γ x = subst (λ x → x) (LEtup-eq-LEτ Γ) x
 
 LEτ-to-LEtup : (Γ : LEnv) -> LEtup Γ -> Rep (LEτ Γ)
-LEτ-to-LEtup [] x = x
-LEτ-to-LEtup (τ ∷ Γ) (x , env) = x , LEτ-to-LEtup Γ env
+LEτ-to-LEtup Γ x = subst id (sym $ LEtup-eq-LEτ Γ) x
+
+LEτ-to-LEτLtyp : {Γ : LEnv} → Rep (LEτ Γ) → ( LinRep (LEτLtyp Γ) × ℤ)
+LEτ-to-LEτLtyp  {[]} x = (tt , one)
+LEτ-to-LEτLtyp  {τ ∷ Γ} (x , xs) = 
+  let (ys , c) = LEτ-to-LEτLtyp xs
+  in just (x , ys) , one + c
 
 
 -------------------- PRIMITIVE OPERATIONS --------------------------------------
@@ -173,12 +185,10 @@ D1τ Inte = Inte
 D1τ R = R
 D1τ (σ :* τ) = D1τ σ :* D1τ τ
 D1τ (σ :+ τ) = D1τ σ :+ D1τ τ
-
--- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> (Lin Dyn :* D2τ σ)))
--- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Lin Dyn :* D2τ σ)))
--- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> EVM (Dyn ∷ []) (Lin Dyn :* Lin (D2τ' σ))))
--- Correct EVM
-D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> D2Γ ((σ :-> τ) ∷ σ ∷ [])))
+-- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ (σ :-> τ) ∷ [])))
+-- TODO kijken naar:
+D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> Lin ((D2τ' σ) :*! Dyn) ))
+-- Dan komt de exec bij de lam te staan.
 
 -- Primal environment mapping. This is D[Γ]₁ in the paper.
 D1Γ : Env Pr -> Env Du
@@ -223,21 +233,21 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> Term tag (σ ∷ Γ) ρ -> Term tag (τ ∷ Γ) ρ
         -> Term tag Γ ρ
 
-  fromDyn : {Γ : Env Du} {τ : Typ Du} 
+  fromDyn : {Γ : Env Du} {τ : LTyp} 
         -> Term Du Γ (Lin Dyn)
-        -> Term Du Γ τ
+        -> Term Du Γ (Lin τ)
 
-  toDyn : {Γ : Env Du} { τ : Typ Du } 
-         -> Term Du Γ τ
+  toDyn : {Γ : Env Du} { τ : LTyp } 
+         -> Term Du Γ (Lin τ)
          -> Term Du Γ (Lin Dyn)
 
-  fromDynEvm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-        -> Term Du Γ (EVM (Dyn ∷ []) τ)
-        -> Term Du Γ (EVM Γ' τ)
+  addFromDynEvm : {Γ : Env Du} {Γ' : LEnv}
+        -> Term Du Γ (Lin Dyn)
+        -> Term Du Γ (EVM Γ' Un)
 
-  toDynEvm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-        -> Term Du Γ (EVM Γ' τ)
-        -> Term Du Γ (EVM (Dyn ∷ []) τ)
+  toDynEvm : {Γ : Env Du} {Γ' : LEnv}
+        -> Term Du Γ (LEτ Γ')
+        -> Term Du Γ (Lin Dyn)
 
   dynZero : {Γ : Env Du} 
             -> Term Du Γ (Lin Dyn)
@@ -372,11 +382,12 @@ sink w (linr e) = linr (sink w e)
 sink w (lcastl e) = lcastl (sink w e)
 sink w (lcastr e) = lcastr (sink w e)
 sink w lsumzero = lsumzero
+sink w (lam t) = lam (sink (WCopy w) t)
+sink w dynZero = dynZero
 sink w (toDyn t) = toDyn (sink w t)
 sink w (fromDyn t) = fromDyn (sink w t)
-sink w dynZero = dynZero
-sink w (lam t) = lam (sink (WCopy w) t)
-sink w t = {!   !}
+sink w (addFromDynEvm t) = addFromDynEvm (sink w t)
+sink w (toDynEvm t) = toDynEvm (sink w t)
 
 -- Add one additional free variable to the bottom of the term's free variable
 -- list (here of type σ). This, for example, allows one to put a term under one
@@ -453,9 +464,9 @@ primal R x = x
 primal (σ :* τ) (x , y) = primal σ x , primal τ y
 primal (σ :+ τ) (inj₁ x) = inj₁ (primal σ x)
 primal (σ :+ τ) (inj₂ y) = inj₂ (primal τ y)
-primal (σ :-> τ) f = 
+primal (σ :-> τ) f = {!   !}
   -- QUESTION: there is no sensible primal for a function
-  λ x → (primal τ (zeroRep τ) , (λ ctg → (LACM.pure tt) , (+ ℕ.zero))) , (+ ℕ.zero)
+  -- λ x → (primal τ (zeroRep τ) , (λ ctg → (LACM.pure tt) , (+ ℕ.zero))) , (+ ℕ.zero)
 
 -- Our primitive operations work on types of which the primal is the same as
 -- the original type. This is of course true for _all_ our types in this Agda
@@ -653,28 +664,36 @@ eval env (lcastr {τ = τ} e) =
                (just (inj₂ y)) -> y , one + ce
 eval env lsumzero = nothing , one
 eval {Γ = Γ} env (lam t) = (λ x → eval (push x env) t) , one + + (length Γ)
--- TODO: Calculate the actual cost
-eval env (fromDyn {Γ = G} t) = 
-  case eval env t of
-    λ where (nothing , cost) → {!    !} , cost
-            (just x , cost) → {!   !}
-  -- let (d , cost) = eval env t
-  -- in ( {!   !} , cost)
-  -- case env of 
-  --     λ where (push nothing  _) -> LACM.pure tt , one
-  --             (push (just q) y) -> {!   !}
-              -- (push (just (G2 , x)) _) -> let foo : map D2τ' G ≡ G2
-                                              -- foo = {!   !}
-                                              -- ans : (LACM (map D2τ' G) ⊤) × ℤ
-                                              -- ans = bar foo (LACM.add-LEtup x) , one
-                                          -- in ans
-  -- where bar : {gam : LEnv} -> map D2τ' G ≡ gam -> LACM gam ⊤ -> LACM (map D2τ' G) ⊤
-  --       bar w x rewrite (sym w) = x
--- -- TODO: Calculate the actual cost
-eval env (toDyn {G} {τ} t) = {!   !}
-    -- just ((map D2τ' G) , LEtup-to-LEτ (map D2τ' G) x) , one
-eval env (dynZero) = nothing , one
-eval env t = {!   !}
+eval env (fromDyn {Γ = G} {τ = τ} t) = 
+  let (x , c1) = eval env t
+      zero = (let (v , c2) = zerov τ in v , (one + (c1 + c2)))
+  in case x of
+      maybe′ (λ (τ2 , x2) → case (dec⇒maybe (τ LTyp≟ τ2)) of
+                maybe′ (λ w → (subst LinRep (sym w) x2) , (one + c1)) 
+                      -- Error, ergo we decide to return a zero value, whereas a proper implementation would error here.
+                      zero)
+             -- Nothing, ergo we must to return a zero value
+             zero
+eval env (toDyn {G} {τ} t) =
+  let (x , c1) = eval env t 
+  in (just (τ , x)) , (one + c1)
+eval env (dynZero) = 
+  nothing , one
+eval env (addFromDynEvm {G} {G1} t) = 
+  let (x1 , c1) = eval env t 
+      zero = (LACM.pure tt) , one
+  in case x1 of 
+        maybe′ (λ (G2 , x2) → 
+            case dec⇒maybe (LEτLtyp G1 LTyp≟ G2) of 
+              maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one + {!   !}) -- TODO: Decide cost
+              -- Error, ergo we decide to return a zero value, whereas a proper implementation would error here.
+              zero)
+        -- Nothing, ergo we must to return a zero value
+        zero
+eval env (toDynEvm {Γ} {G} t) = 
+  let (x , c1) = eval env t 
+      (v , c2) = LEτ-to-LEτLtyp {G} x
+  in just (LEτLtyp G , v) , one + c1 + c2
 
 
 
@@ -695,6 +714,16 @@ zerot (σ :* τ) = lpairzero
 zerot (σ :+ τ) = lsumzero
 zerot (σ :-> τ) = dynZero
 
+zerot-Lin : {Γ : Env Du} → (τ : LTyp) → Term Du Γ (Lin τ)
+zerot-Lin LUn = lunit
+zerot-Lin LR = prim LZERO lunit
+zerot-Lin (σ :*! τ) = lpairzero
+zerot-Lin (σ :+! τ) = lsumzero
+zerot-Lin Dyn = dynZero
+
+zero-LEτ : {Γ : Env Du} → (G : LEnv) → Term Du Γ (LEτ G)
+zero-LEτ [] = unit
+zero-LEτ (x ∷ xs) = pair (zerot-Lin x) (zero-LEτ xs)
 
 -- In th2 we initialise the environment derivative accumulator to zero, because
 -- that is how CHAD will be used in practice. This term creates a zero
@@ -779,8 +808,9 @@ chad {Γ = Γ} (lam {σ = σ} {τ = τ} {Γ = G} t) =
   pair 
     (lam (let' (chad t) -- (y,y')₀ ∷ x₁ ∷ Γ
             (pair (fst' (var Z)) 
-              (lam {!   !}))))
-    (lamwith [] (fromDyn (var Z)))
+              (lam (let' (runevm (app (snd' (var (S Z))) (var Z)) (pair (zerot σ) (zero-LEτ (map D2τ' Γ)))) 
+                   (lpair (fst' (snd' (var Z))) (toDynEvm (snd' (snd' (var Z)) ))))))))
+    (lamwith [] (addFromDynEvm (var Z)))
 chad (app {σ = σ} {τ = τ} s t) = 
   let' (chad t)
     (let' (sink1 (chad s)) 
@@ -788,17 +818,11 @@ chad (app {σ = σ} {τ = τ} s t) =
         (pair 
           (fst' (var Z))
           (lamwith (zero ∷ (suc zero) ∷ (suc ∘ suc $ zero) ∷ []) 
-              -- v₀ ∷ (b,b')₁ ∷ (f,f')₂ ∷ (a,a')₃ ∷ []
-              {!   !})
-                -- (fromDynEvm (app (snd' (var (S Z))) (var Z))) 
-                -- (lamwith ((suc ∘ suc $ zero) ∷ (suc ∘ suc ∘ suc $ zero) ∷ [])
-                -- -- (d,x)₀ ∷ (f,f')₁ ∷ (a,a')₃
-                --    (thenevm 
-                --       (app (snd' (var ∘ S ∘ S $ Z)) (snd' (var Z))) 
-                --       (app (snd' (var ∘ S $ Z)) (fst' (var Z)))))))
-        )
-      )
-    )
+            (let' 
+              (app (snd' (var (S Z))) (var Z)) 
+            -- (d,x)₀ ∷ v₁ ∷ (b,b')₂ ∷ (f,f')₃ ∷ (a,a')₄ ∷ []
+              (thenevm (app (snd' (var ( S ( S ( S ( S  Z)))))) (lfst' (var Z))) 
+                       (app (snd' (var ( S ( S ( S (    Z)))))) (lsnd' (var Z)))))))))
 
 
 -------------------- THE COMPLEXITY THEOREMS -----------------------------------
@@ -852,7 +876,8 @@ size (σ :*! τ) (just (x , y)) = 1 +ℕ size σ x +ℕ size τ y
 size (σ :+! τ) nothing = 1
 size (σ :+! τ) (just (inj₁ x)) = 1 +ℕ size σ x
 size (σ :+! τ) (just (inj₂ y)) = 1 +ℕ size τ y
-size Dyn x = {!   !}
+size Dyn nothing = 1
+size Dyn (just (τ , x)) = 1 +ℕ size τ x
 
 -- The statement of the corollary that bounds φ to not mention potential any
 -- more. A value of this type (i.e. a proof of the theorem) is given in
@@ -871,3 +896,104 @@ TH2-STATEMENT =
          + + 34 * cost env t
          + + size (D2τ' τ) ctg
          + + 4 * + length Γ
+
+-- -------------------------
+-- The implementation of decidable equality for types
+-- We put this at the bottom of the file, because it is large (due to quadratic size-up) but not interesting.
+-- -------------------------
+:*-injective : ∀ {tag} → { σ1 σ2 τ1 τ2 : Typ tag } → (σ1 :* σ2) ≡ (τ1 :* τ2) → σ1 ≡ τ1 × σ2 ≡ τ2
+:*-injective {tag} {σ1} {σ2} {τ1} {τ2} refl = refl , refl
+:+-injective : ∀ {tag} → { σ1 σ2 τ1 τ2 : Typ tag } → (σ1 :+ σ2) ≡ (τ1 :+ τ2) → σ1 ≡ τ1 × σ2 ≡ τ2
+:+-injective {tag} {σ1} {σ2} {τ1} {τ2} refl = refl , refl
+:->-injective : ∀ {tag} → { σ1 σ2 τ1 τ2 : Typ tag } → (σ1 :-> σ2) ≡ (τ1 :-> τ2) → σ1 ≡ τ1 × σ2 ≡ τ2
+:->-injective {tag} {σ1} {σ2} {τ1} {τ2} refl = refl , refl
+EVM-injective : { σ τ : Typ Du } → {env1 env2 : LEnv} → EVM env1 σ ≡ EVM env2 τ → env1 ≡ env2 × σ ≡ τ
+EVM-injective {σ} {τ} {evn1} {env2} refl = refl , refl
+Lin-injective : { σ τ : LTyp } → Lin σ ≡ Lin τ → σ ≡ τ
+Lin-injective {σ} {τ} refl = refl
+
+
+Un Typ≟ Un = yes refl
+Inte Typ≟ Inte = yes refl
+R Typ≟ R = yes refl
+(x1 :* x2) Typ≟ (y1 :* y2)
+  with x1 Typ≟ y1 | x2 Typ≟ y2 
+... | yes w1 | yes w2 = yes (cong₂ _:*_ w1 w2)
+... | no w1  | _      = no λ x → w1 (:*-injective x .fst)
+... | _      | no w2  = no λ x → w2 (:*-injective x .snd)
+(x1 :+ x2) Typ≟ (y1 :+ y2)
+  with x1 Typ≟ y1 | x2 Typ≟ y2 
+... | yes w1 | yes w2 = yes (cong₂ _:+_ w1 w2)
+... | no w1  | _      = no λ x → w1 (:+-injective x .fst)
+... | _      | no w2  = no λ x → w2 (:+-injective x .snd)
+(EVM x1 x2) Typ≟ (EVM y1 y2)
+  with x1 LEnv≟ y1 | x2 Typ≟ y2
+... | yes w1 | yes w2 = yes (cong₂ EVM w1 w2)
+... | no w1  | _      = no λ x → w1 (EVM-injective x .fst)
+... | _      | no w2  = no λ x → w2 (EVM-injective x .snd)
+(x1 :-> x2) Typ≟ (y1 :-> y2)
+  with x1 Typ≟ y1 | x2 Typ≟ y2 
+... | yes w1 | yes w2 = yes (cong₂ _:->_ w1 w2)
+... | no w1  | _      = no λ x → w1 (:->-injective x .fst)
+... | _      | no w2  = no λ x → w2 (:->-injective x .snd)
+Lin x Typ≟ Lin y
+  with x LTyp≟ y
+... | yes w = yes (cong Lin w)
+... | no w = no λ v → w (Lin-injective v)
+Un Typ≟ Inte = no λ ()
+Un Typ≟ R = no λ ()
+Un Typ≟ (y :* y₁) = no λ ()
+Un Typ≟ (y :+ y₁) = no λ ()
+Un Typ≟ (y :-> y₁) = no λ ()
+Un Typ≟ EVM x y = no λ ()
+Un Typ≟ Lin x = no λ ()
+Inte Typ≟ Un = no λ ()
+Inte Typ≟ R = no λ ()
+Inte Typ≟ (y :* y₁) = no λ ()
+Inte Typ≟ (y :+ y₁) = no λ ()
+Inte Typ≟ (y :-> y₁) = no λ ()
+Inte Typ≟ EVM x y = no λ ()
+Inte Typ≟ Lin x = no λ ()
+R Typ≟ Un = no λ ()
+R Typ≟ Inte = no λ ()
+R Typ≟ (y :* y₁) = no λ ()
+R Typ≟ (y :+ y₁) = no λ ()
+R Typ≟ (y :-> y₁) = no λ ()
+R Typ≟ EVM x y = no λ ()
+R Typ≟ Lin x = no λ ()
+(x :* x₁) Typ≟ Un = no λ ()
+(x :* x₁) Typ≟ Inte = no λ ()
+(x :* x₁) Typ≟ R = no λ ()
+(x :* x₁) Typ≟ (y :+ y₁) = no λ ()
+(x :* x₁) Typ≟ (y :-> y₁) = no λ ()
+(x :* x₁) Typ≟ EVM x₂ y = no λ ()
+(x :* x₁) Typ≟ Lin x₂ = no λ ()
+(x :+ x₁) Typ≟ Un = no λ ()
+(x :+ x₁) Typ≟ Inte = no λ ()
+(x :+ x₁) Typ≟ R = no λ ()
+(x :+ x₁) Typ≟ (y :* y₁) = no λ ()
+(x :+ x₁) Typ≟ (y :-> y₁) = no λ ()
+(x :+ x₁) Typ≟ EVM x₂ y = no λ ()
+(x :+ x₁) Typ≟ Lin x₂ = no λ ()
+(x :-> x₁) Typ≟ Un = no λ ()
+(x :-> x₁) Typ≟ Inte = no λ ()
+(x :-> x₁) Typ≟ R = no λ ()
+(x :-> x₁) Typ≟ (y :* y₁) = no λ ()
+(x :-> x₁) Typ≟ (y :+ y₁) = no λ ()
+(x :-> x₁) Typ≟ EVM x₂ y = no λ ()
+(x :-> x₁) Typ≟ Lin x₂ = no λ ()
+EVM x x₁ Typ≟ Un = no λ ()
+EVM x x₁ Typ≟ Inte = no λ ()
+EVM x x₁ Typ≟ R = no λ ()
+EVM x x₁ Typ≟ (y :* y₁) = no λ ()
+EVM x x₁ Typ≟ (y :+ y₁) = no λ ()
+EVM x x₁ Typ≟ (y :-> y₁) = no λ ()
+EVM x x₁ Typ≟ Lin x₂ = no λ ()
+Lin x Typ≟ Un = no λ ()
+Lin x Typ≟ Inte = no λ ()
+Lin x Typ≟ R = no λ ()
+Lin x Typ≟ (y :* y₁) = no λ ()
+Lin x Typ≟ (y :+ y₁) = no λ ()
+Lin x Typ≟ (y :-> y₁) = no λ ()
+Lin x Typ≟ EVM x₁ y = no λ ()
+    

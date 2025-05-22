@@ -2,7 +2,7 @@
 module correctness.spec where
 
 open import Agda.Builtin.Equality using (_≡_)
-open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primNatToFloat; primFloatLess)
+open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primFloatLess)
 open import Agda.Builtin.Maybe using (Maybe; just; nothing)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Bool using (true; false)
@@ -12,8 +12,10 @@ open import Data.Empty using (⊥)
 open import Data.List using (List; []; _∷_; map)
 open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
-open import Data.Maybe using (Is-just)
+open import Data.Maybe using (Is-just; maybe′)
 open import Function.Base using (case_of_)
+open import Relation.Binary.PropositionalEquality using (subst)
+open import Relation.Nullary.Decidable using (dec⇒maybe; yes; no)
 
 open import spec
 import spec.LACM as LACM
@@ -33,7 +35,7 @@ LACMexec {Γ} f e = LACM.run f e .snd .fst
 -- Postulations about Floats
 postulate
     primFloatPlus-comm : (x : Float) → (y : Float) → primFloatPlus x y ≡ primFloatPlus y x
-    primFloatPlus-zeroR : (x : Float) → primFloatPlus x (primNatToFloat 0) ≡ x
+    primFloatPlus-zeroR : (x : Float) → primFloatPlus x 0.0 ≡ x
     primFloatPlus-assoc : (x : Float) → (y : Float) → (z : Float)
                             → primFloatPlus (primFloatPlus x y) z ≡ primFloatPlus x (primFloatPlus y z)
     primFloatTimes-identityL : (x : Float) → primFloatTimes 0.0 x ≡ 0.0
@@ -55,20 +57,25 @@ module environment-value-tuple where
 open environment-value-tuple public
 
 module dense-linear-representation where
+
+    data LRD-DynFun : (τ : LTyp) → Set where
+        LRD-Eq : {τ : LTyp} → LRD-DynFun τ
+
     {-# TERMINATING #-}
     LinRepDense : LTyp → Set
     LinRepDense LUn = ⊤
     LinRepDense LR = Float
     LinRepDense (σ :*! τ) = LinRepDense σ × LinRepDense τ
     LinRepDense (σ :+! τ) = LinRepDense σ × LinRepDense τ
-    LinRepDense Dyn = Maybe (Σ LTyp LinRep)
+    LinRepDense Dyn = ((t : LTyp) -> LinRepDense t)
 
+    {-# TERMINATING #-}
     zerovDense : (τ : LTyp) → LinRepDense τ 
     zerovDense LUn = tt
     zerovDense LR = 0.0
     zerovDense (σ :*! τ) = zerovDense σ , zerovDense τ
     zerovDense (σ :+! τ) = zerovDense σ , zerovDense τ
-    zerovDense Dyn = nothing
+    zerovDense Dyn t = zerovDense t
 
     sparse2dense : { τ : LTyp } → LinRep τ → LinRepDense τ
     sparse2dense {LUn} tt = tt
@@ -78,15 +85,19 @@ module dense-linear-representation where
     sparse2dense {σ :+! τ} (just (inj₁ x)) = sparse2dense {σ} x , zerovDense τ
     sparse2dense {σ :+! τ} (just (inj₂ y)) = zerovDense σ , sparse2dense {τ} y 
     sparse2dense {σ :+! τ} nothing = zerovDense (σ :*! τ) 
-    sparse2dense {Dyn} x = x
+    sparse2dense {Dyn} (just (τ , x)) = 
+        λ t → case dec⇒maybe (τ LTyp≟ t) of 
+            maybe′ (λ w → subst LinRepDense w (sparse2dense x)) 
+                (zerovDense t) -- error, we decide to give a zero value
+    sparse2dense {Dyn} nothing = zerovDense
 
+    {-# TERMINATING #-}
     plusvDense : (τ : LTyp) → LinRepDense τ → LinRepDense τ → LinRepDense τ
     plusvDense LUn tt tt = tt
     plusvDense LR x y = primFloatPlus x y
     plusvDense (σ :*! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
     plusvDense (σ :+! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
-    -- TODO: Figure out the correct definition
-    plusvDense Dyn x y = nothing
+    plusvDense Dyn x y = λ τ → plusvDense τ (x τ) (y τ)
 
 open dense-linear-representation public
 

@@ -11,8 +11,9 @@ open import Data.List using (_∷_; map; [])
 open import Data.Sum using (inj₁; inj₂; _⊎_; [_,_]; isInj₁; isInj₂)
 open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe; maybe′)
 open import Function.Base using (id; _$_; const; _∘_; case_of_)
-open import Data.Product using (_×_; Σ)
+open import Data.Product using (_×_; Σ; swap)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
+open import Relation.Nullary.Decidable using (Dec; yes; no)
 
 open import spec
 open import correctness.spec
@@ -22,20 +23,41 @@ open import correctness.lemmas
 open import correctness.dsem
 
 -- τ is a nested tuple of Rs
-Is-ℝᵈ : ( τ : Typ Pr ) → Set
+Is-ℝᵈ : ∀ {tag} ( τ : Typ tag ) → Set
 Is-ℝᵈ Un = ⊤
 Is-ℝᵈ Inte = ⊥
 Is-ℝᵈ R = ⊤
 Is-ℝᵈ (σ :* τ) = Is-ℝᵈ σ × Is-ℝᵈ τ
 Is-ℝᵈ (σ :+ τ) = ⊥
 Is-ℝᵈ (σ :-> τ) = ⊥
+Is-ℝᵈ _ = ⊥
+
+Is-ℝᵈ? : ∀ {tag} ( τ : Typ tag ) → Dec (Is-ℝᵈ τ)
+Is-ℝᵈ? Un = yes tt
+Is-ℝᵈ? Inte = no λ ()
+Is-ℝᵈ? R = yes tt
+Is-ℝᵈ? (τ1 :* τ2) 
+  with Is-ℝᵈ? τ1 | Is-ℝᵈ? τ2
+... | yes a | yes b = yes (a , b)
+... | a | no b = no λ z → b (z .snd)
+... | no a | b = no λ z → a (z .fst)
+Is-ℝᵈ? (τ1 :+ τ2) = no λ ()
+Is-ℝᵈ? (τ1 :-> τ2) = no λ ()
+Is-ℝᵈ? (EVM x τ) = no λ ()
+Is-ℝᵈ? (Lin x) = no λ ()
+
+primal-Is-ℝᵈ : {τ : Typ Pr} → Is-ℝᵈ τ → Is-ℝᵈ (D1τ τ)
+primal-Is-ℝᵈ {Un} x = tt
+primal-Is-ℝᵈ {R} x = tt
+primal-Is-ℝᵈ {τ :* τ₁} x = primal-Is-ℝᵈ (x .fst) , primal-Is-ℝᵈ (x .snd)
 
 Is-Linear : {τ σ : LTyp} → (LinRep τ → Maybe (Σ LTyp LinRep) × LinRep σ) → Set
 Is-Linear {τ} {σ} f =
   -- f 0 is zero
   ((ctg0 : LinRep τ) → (w : sparse2dense ctg0 ≡ zerovDense τ) 
     → let (a , b) = f ctg0
-      in (a ≡ nothing) × sparse2dense b ≡ zerovDense σ)
+      in ((τ2 : LTyp) → sparse2dense {Dyn} a τ2 ≡ zerovDense τ2) 
+          × sparse2dense b ≡ zerovDense σ)
   -- f (x + y) is f x + f y
   × ((ctg1 ctg2 : LinRep τ) → Compatible-LinReps ctg1 ctg2
       → let (a0 , b0) = f (plusv _ ctg1 ctg2 .fst)
@@ -85,11 +107,11 @@ P7 ρ isRd R f f' =
   -- is equivalent to f ...
   -- (f x ≡ f' x .fst) 
   (f x ≡ f' (to-primal isRd x) .fst) 
+  -- ... and the function is differentiable at x ...
+  × (Σ (Is-just (DSemᵀ {ρ} {R} f x))
 --   -- ... and the second element of the tuple produced by f'
 --   -- is equivalent to the transposed derivative of f.
-  × ((dsem : Is-just (DSemᵀ {ρ} {R} f x))
-    --  → f' x .snd ≗ (to-witness dsem))
-     → f' (to-primal isRd x) .snd ≗ (to-witness dsem))
+       (λ dsem → f' (to-primal isRd x) .snd ≗ (to-witness dsem)))
 P7 ρ isRd (σ :* τ) f f' =
   -- There exists some l l' and r r' ...
   Σ ((Rep ρ → Rep σ) × (Rep ρ → Rep τ)
@@ -134,8 +156,10 @@ P7 ρ isRd (σ :-> τ) F F' =
             (f3 , f4) = f1 y
             (F1 , F2) = F' x
             ((F3 , F4) , _) = F1 y
-            F4' = λ ctg → let (a , b , _) = LACMexec (F4 ctg .fst) (nothing , ((zerov (D2τ' σ) .fst) , tt))
-                          in a , b
+            F4' = λ ctg → case F4 ctg .fst of 
+                            maybe′ swap
+                                   (nothing , zerov (D2τ' σ) .fst)
         in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4'
   -- and f' is linear.
            × Is-Linear (f' x .fst y .snd))
+          --  × Is-Linear {! f' x .snd  !})

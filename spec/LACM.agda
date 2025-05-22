@@ -5,8 +5,9 @@ open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
 
 open import Data.Integer using (ℤ; _+_; +_; _-_)
-open import Data.List using (_∷_; length)
+open import Data.List using (_∷_; length; [])
 open import Data.Product using (_×_)
+open import Data.Maybe using (just; nothing)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong; trans)
 
 open import Data.Integer.Solver using (module +-*-Solver)
@@ -31,8 +32,13 @@ abstract
   pure : ∀ {Γ : LEnv} {a : Set} -> a -> LACM Γ a
   pure x e = x , e , one
 
-  add-LEtup : ∀ {Γ : LEnv} -> LEtup Γ -> LACM Γ ⊤
-  add-LEtup xs e = tt , {!   !} , {!   !}
+  add-LEτLtyp : ∀ {Γ : LEnv} → ( LinRep (LEτLtyp Γ) ) → LACM Γ ⊤
+  add-LEτLtyp {[]} xs tt = tt , tt , one
+  add-LEτLtyp {τ ∷ Γ} nothing e = tt , e , one
+  add-LEτLtyp {τ ∷ Γ} (just (x , xs)) (e , es) = 
+    let (_ , ys , c1) = add-LEτLtyp {Γ} xs es
+        (v , c2) = plusv τ x e 
+    in tt , (v , ys) , one + c1 + c2
 
   -- Note that the continuation should also return the cost of evaluating the
   -- continuation; this cost will be included in the cost returned by 'run'

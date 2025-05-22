@@ -29,26 +29,18 @@ data LTyp : Set where
 LEnv : Set
 LEnv = List LTyp
 
+_LTyp≟_ : ( x y : LTyp ) → Dec ( x ≡ y)
+-- Definition given at end of file
+
 -- The representation (semantics) of the linear types; the representation of
 -- normal types follows in `spec.agda`.
--- TODO: Verder nadenken over deze Terminating
 {-# TERMINATING #-}
 LinRep : LTyp -> Set
 LinRep LUn = ⊤
 LinRep LR = Float
 LinRep (σ :*! τ) = Maybe (LinRep σ × LinRep τ)
-
--- Note: Perhaps we need to change this representation to
--- Maybe (LinRep σ × LinRep τ)
--- Or perhaps:
--- Maybe ( (LinRep σ ⊎ LinRep τ)  ⊎  (LinRep σ × LinRep τ))
 LinRep (σ :+! τ) = Maybe (LinRep σ ⊎ LinRep τ)
--- Dyn kan gewoon over elk LTyp gaan, niet specifiek LEtup.
 LinRep Dyn = Maybe (Σ LTyp LinRep)
--- LinRep (Dyn) = Maybe (LinRep (f true) ⊎ LinRep (f false))  -- Σ Bool ( LinRep ∘ f ))
---   where f : Bool → LTyp
---         f true = LR
---         f false = LUn
 
 -- Linear environment tuple: a tuple of all the types in a linear environment.
 -- This is used to pass a linear environment as a _value_ into, and out of,
@@ -56,6 +48,13 @@ LinRep Dyn = Maybe (Σ LTyp LinRep)
 LEtup : LEnv -> Set
 LEtup [] = ⊤
 LEtup (τ ∷ Γ) = LinRep τ × LEtup Γ
+
+-- The embedded counterpart of LEtup: a tuple of all the types in a linear -- environment. 
+-- This is used specifically by toDynEvm and addFromDynEvm.
+-- LEτ is a Typ, LEτLTyp is a LTyp
+LEτLtyp : LEnv -> LTyp
+LEτLtyp [] = LUn
+LEτLtyp (τ ∷ Γ) = τ :*! LEτLtyp Γ
 
 -- =====================
 -- END Of MUTUAL RECURSION
@@ -121,10 +120,10 @@ plusv (σ :+! τ) (just (inj₂ x)) (just (inj₂ y)) =
   let z , cz = plusv τ x y
   in just (inj₂ z) , one + cz
 plusv (σ :+! τ) _ _ = nothing , one  -- NOTE: a proper implementation would error here.
-plusv Dyn (just (σ , x)) (just (τ , y)) = {!   !}
-plusv Dyn nothing nothing = nothing , {!   !}
-plusv Dyn (just x) nothing = just x , {!   !}
-plusv Dyn nothing (just y) = just y , {!   !}
+plusv Dyn (just (σ , x)) (just (τ , y)) = {!   !} , {!   !}
+plusv Dyn nothing nothing = nothing , one
+plusv Dyn (just x) nothing = just x , one
+plusv Dyn nothing (just y) = just y , one
 
 -- Add the value 'val' into the position 'idx' in the environment tuple.
 addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> LEtup Γ -> LEtup Γ
@@ -139,7 +138,6 @@ _Eτ!!_ : {Γ : LEnv} {τ : LTyp} -> LEtup Γ -> Idx Γ τ -> LinRep τ
 -- =====================================
 -- Decidable equality for LType and LEnv
 -- =====================================
-_LTyp≟_ : ( x y : LTyp ) → Dec ( x ≡ y)
 _LTyp≟_ LUn LUn = yes refl
 _LTyp≟_ LUn LR = no (λ ())
 _LTyp≟_ LUn (_ :*! _) = no (λ ())

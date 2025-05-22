@@ -10,7 +10,7 @@ open import Data.List using ([]; _∷_; map)
 open import Data.Product using (_×_)
 open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂)
+open import Relation.Binary.PropositionalEquality using (sym; subst; trans; cong; cong₂)
 
 open import spec
 open import correctness.spec
@@ -57,7 +57,7 @@ module plusv-lemmas where
     plusvSparse-zeroR (σ :*! τ) (just x) = refl
     plusvSparse-zeroR (σ :*! τ) nothing = refl
     plusvSparse-zeroR (σ :+! τ) v = refl
-    plusvSparse-zeroR Dyn _ = {!   !}
+    plusvSparse-zeroR Dyn x = {!   !}
 
     plusvSparse-zeroL LUn v = refl
     plusvSparse-zeroL LR v = primFloatPlus-zeroL v
@@ -65,7 +65,7 @@ module plusv-lemmas where
     plusvSparse-zeroL (σ :*! τ) nothing = refl
     plusvSparse-zeroL (σ :+! τ) (just x) = refl
     plusvSparse-zeroL (σ :+! τ) nothing = refl
-    plusvSparse-zeroL Dyn _ = {!   !}
+    plusvSparse-zeroL Dyn x = {!   !}
 
     plusvSparse-comm LUn a b = refl
     plusvSparse-comm LR a b = primFloatPlus-comm a b
@@ -80,7 +80,7 @@ module plusv-lemmas where
     plusvSparse-comm (σ :+! τ) (just x) nothing = refl
     plusvSparse-comm (σ :+! τ) nothing (just y) = refl
     plusvSparse-comm (σ :+! τ) nothing nothing = refl
-    plusvSparse-comm Dyn _ _ = {!   !}
+    plusvSparse-comm Dyn x y = {!   !}
 
     -- ==================
     -- Proofs for: dense plus
@@ -89,7 +89,7 @@ module plusv-lemmas where
     plusvDense-zeroR LR v = primFloatPlus-zeroR v
     plusvDense-zeroR (σ :*! τ) (x , y) = cong₂ (_,_) (plusvDense-zeroR σ x) (plusvDense-zeroR τ y)
     plusvDense-zeroR (σ :+! τ) (x , y) = cong₂ (_,_) (plusvDense-zeroR σ x) (plusvDense-zeroR τ y) 
-    plusvDense-zeroR Dyn _ = {!   !}
+    plusvDense-zeroR Dyn a = {!   !}
 
     plusvDense-zeroL τ v = trans (plusvDense-comm τ (zerovDense τ) v) (plusvDense-zeroR τ v) 
     plusvDense-zeroR' {τ} {a} {b} {{w}} = trans (cong (λ e → plusvDense τ a e) w) (plusvDense-zeroR τ a) 
@@ -99,13 +99,13 @@ module plusv-lemmas where
     plusvDense-comm LR a b = primFloatPlus-comm a b
     plusvDense-comm (σ :*! τ) (x , y) (a , b) = cong₂ (_,_) (plusvDense-comm σ x a) (plusvDense-comm τ y b) 
     plusvDense-comm (σ :+! τ) (x , y) (a , b) = cong₂ (_,_) (plusvDense-comm σ x a) (plusvDense-comm τ y b)
-    plusvDense-comm Dyn _ _ = {!   !}
+    plusvDense-comm Dyn a b = {!   !}
     
     plusvDense-assoc LUn a b c = refl
     plusvDense-assoc LR a b c = primFloatPlus-assoc a b c
     plusvDense-assoc (σ :*! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2) 
     plusvDense-assoc (σ :+! τ) (a1 , a2) (b1 , b2) (c1 , c2) = cong₂ (_,_) (plusvDense-assoc σ a1 b1 c1) (plusvDense-assoc τ a2 b2 c2)
-    plusvDense-assoc Dyn _ _ _ = {!   !}
+    plusvDense-assoc Dyn a b c = {!   !}
 
     plusvDense-congR refl = refl
     plusvDense-congL refl = refl
@@ -117,7 +117,7 @@ module plusv-lemmas where
     zerov-equiv-zerovDense LR = refl
     zerov-equiv-zerovDense (σ :*! τ) = refl
     zerov-equiv-zerovDense (σ :+! τ) = refl
-    zerov-equiv-zerovDense Dyn = {!   !}
+    zerov-equiv-zerovDense Dyn = refl
 
     plusv-equiv-plusvDense {LUn} x y _ = refl
     plusv-equiv-plusvDense {LR} x y _ = refl
@@ -132,7 +132,7 @@ module plusv-lemmas where
     plusv-equiv-plusvDense {σ :+! τ} (just x) nothing _ = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroR')
     plusv-equiv-plusvDense {σ :+! τ} nothing (just y) _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
     plusv-equiv-plusvDense {σ :+! τ} nothing nothing _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
-    plusv-equiv-plusvDense {Dyn} _ _ _ = {!   !}
+    plusv-equiv-plusvDense {Dyn} a b w = {!   !}
 open plusv-lemmas public
 
 
@@ -176,12 +176,10 @@ Etup-equiv-EV {[]} = refl
 Etup-equiv-EV {x ∷ Γ} = cong₂ _×_ refl Etup-equiv-EV
 
 EV-to-Etup {Γ} x 
-    rewrite Etup-equiv-EV {Γ}
-    = x
+    = subst (λ x → x) (sym (Etup-equiv-EV {Γ})) x
 
 Etup-to-EV {Γ} x 
-    rewrite Etup-equiv-EV {Γ}
-    = x
+    = subst (λ x → x) (Etup-equiv-EV {Γ}) x
 
 Etup-zerovDense-equiv-zero-EV {[]} = refl
 Etup-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl Etup-zerovDense-equiv-zero-EV
