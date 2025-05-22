@@ -2,18 +2,18 @@
 module spec.linear-types where
 
 open import Agda.Builtin.Float using (Float; primFloatPlus)
-open import Agda.Builtin.Maybe using (Maybe; nothing; just)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Unit using (⊤; tt)
 
+open import Data.Maybe using (Maybe; nothing; just; maybe′)
 open import Data.List using (List; []; _∷_)
 open import Data.Integer using (ℤ; _+_; +_)
 open import Data.Product using (_×_; Σ)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Nat using (ℕ) renaming (_+_ to _+ℕ_)
-open import Relation.Nullary.Decidable using (Dec; yes; no)
-open import Relation.Binary.PropositionalEquality using (cong; cong₂)
+open import Relation.Nullary.Decidable using (Dec; yes; no; dec⇒maybe)
+open import Relation.Binary.PropositionalEquality using (cong; cong₂; subst)
 open import Function.Base using (id; _$_; _∘_; case_of_)
 
 
@@ -120,7 +120,13 @@ plusv (σ :+! τ) (just (inj₂ x)) (just (inj₂ y)) =
   let z , cz = plusv τ x y
   in just (inj₂ z) , one + cz
 plusv (σ :+! τ) _ _ = nothing , one  -- NOTE: a proper implementation would error here.
-plusv Dyn (just (σ , x)) (just (τ , y)) = {!   !} , {!   !}
+plusv Dyn (just (σ , x)) (just (τ , y))
+  = let type-eq-cost = {!   !}
+    in (case dec⇒maybe (τ LTyp≟ σ) of 
+        maybe′ (λ w → let (v , c) = plusv σ x (subst LinRep w y)
+                      in (just (σ , v)) , one + type-eq-cost + c) 
+               (nothing , one + type-eq-cost)
+    )
 plusv Dyn nothing nothing = nothing , one
 plusv Dyn (just x) nothing = just x , one
 plusv Dyn nothing (just y) = just y , one

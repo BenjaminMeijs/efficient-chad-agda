@@ -163,12 +163,12 @@ module Interp-case {Γ : Env Pr} {σ τ ρ : Typ Pr}
               in Etup2EV (to-witness de (zerovDense (D2τ' σ) , ctg-r .fst)) ev+ Etup2EV (ctg-r .snd)
                 ≡ Etup2EV (to-witness d-case ctg))
       ] (interp e (Etup-to-val a))
-  DSemᵀ-lemma-interp-case = {!   !}
-  --   with interp e (Etup-to-val a) in interp-e-val≡inj-x  
-  -- ... | (inj₁ x) = λ dl → let df = mk-df-inj₁ x interp-e-val≡inj-x dl
-  --                         in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-left  df x interp-e-val≡inj-x dl))
-  -- ... | (inj₂ x) = λ dr → let df = mk-df-inj₂ x interp-e-val≡inj-x dr
-  --                         in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-right df x interp-e-val≡inj-x dr))
+  DSemᵀ-lemma-interp-case 
+    with interp e (Etup-to-val a) in interp-e-val≡inj-x  
+  ... | (inj₁ x) = λ dl → let df = mk-df-inj₁ x interp-e-val≡inj-x dl
+                          in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-left  df x interp-e-val≡inj-x dl))
+  ... | (inj₂ x) = λ dr → let df = mk-df-inj₂ x interp-e-val≡inj-x dr
+                          in sym (trans (DSemᵀ-lemma-interp-case-simplify df) (DSemᵀ-lemma-interp-case-right df x interp-e-val≡inj-x dr))
 
   -- ===================
   -- The main lemma + applying congruence on the condition

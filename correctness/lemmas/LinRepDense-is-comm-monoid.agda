@@ -3,7 +3,7 @@ module correctness.lemmas.LinRepDense-is-comm-monoid where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
-open import Agda.Builtin.Maybe using (just; nothing)
+open import Agda.Builtin.Maybe using (Maybe; just; nothing)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primNatToFloat)
 
 open import Data.List using ([]; _∷_; map)
@@ -57,7 +57,8 @@ module plusv-lemmas where
     plusvSparse-zeroR (σ :*! τ) (just x) = refl
     plusvSparse-zeroR (σ :*! τ) nothing = refl
     plusvSparse-zeroR (σ :+! τ) v = refl
-    plusvSparse-zeroR Dyn x = {!   !}
+    plusvSparse-zeroR Dyn (just x) = refl
+    plusvSparse-zeroR Dyn nothing = refl
 
     plusvSparse-zeroL LUn v = refl
     plusvSparse-zeroL LR v = primFloatPlus-zeroL v
@@ -65,7 +66,8 @@ module plusv-lemmas where
     plusvSparse-zeroL (σ :*! τ) nothing = refl
     plusvSparse-zeroL (σ :+! τ) (just x) = refl
     plusvSparse-zeroL (σ :+! τ) nothing = refl
-    plusvSparse-zeroL Dyn x = {!   !}
+    plusvSparse-zeroL Dyn (just x) = refl
+    plusvSparse-zeroL Dyn nothing = refl
 
     plusvSparse-comm LUn a b = refl
     plusvSparse-comm LR a b = primFloatPlus-comm a b
@@ -80,7 +82,10 @@ module plusv-lemmas where
     plusvSparse-comm (σ :+! τ) (just x) nothing = refl
     plusvSparse-comm (σ :+! τ) nothing (just y) = refl
     plusvSparse-comm (σ :+! τ) nothing nothing = refl
-    plusvSparse-comm Dyn x y = {!   !}
+    plusvSparse-comm Dyn (just x) (just y) = {!   !}
+    plusvSparse-comm Dyn (just x) nothing = refl
+    plusvSparse-comm Dyn nothing (just y) = refl
+    plusvSparse-comm Dyn nothing nothing = refl
 
     -- ==================
     -- Proofs for: dense plus

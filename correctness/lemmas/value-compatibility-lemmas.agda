@@ -25,7 +25,7 @@ open import correctness.spec
 ≃τ-zerov R _ = tt
 ≃τ-zerov ( σ :* τ ) _ = tt
 ≃τ-zerov ( σ :+ τ ) _ = tt
-≃τ-zerov ( σ :-> τ ) _ = {!   !}
+≃τ-zerov ( σ :-> τ ) _ = tt
 
 ≃τ-congL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
         → x ≡ y → x ≃τ z → y ≃τ z
@@ -65,7 +65,7 @@ open import correctness.spec
 ≃τ's-implies-Compatible-LinReps {σ :+ τ} nothing (just _) (inj₂ _) _ _ = tt
 ≃τ's-implies-Compatible-LinReps {σ :+ τ} nothing nothing (inj₁ _) _ _ = tt
 ≃τ's-implies-Compatible-LinReps {σ :+ τ} nothing nothing (inj₂ _) _ _ = tt
-≃τ's-implies-Compatible-LinReps {σ :-> τ} _ _ _ _ _ = {!   !}
+≃τ's-implies-Compatible-LinReps {σ :-> τ} _ _ _ _ _ = tt
 
 ≃τ-and-≃Γ-implies-Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr}
     → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
@@ -117,7 +117,7 @@ Decidable-≃τ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = no λ ()
 Decidable-≃τ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = Decidable-≃τ x y
 Decidable-≃τ {σ :+ τ} nothing (inj₁ x) = yes tt
 Decidable-≃τ {σ :+ τ} nothing (inj₂ y) = yes tt
-Decidable-≃τ {σ :-> τ} _ _ = {!   !}
+Decidable-≃τ {σ :-> τ} _ _ = yes tt
 
 
 Decidable-≃Γ : {Γ : Env Pr} → (x : LEtup (map D2τ' Γ)) → (y : Val Pr Γ)  → Dec (x ≃Γ y)
