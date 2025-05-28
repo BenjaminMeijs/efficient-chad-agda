@@ -13,7 +13,7 @@ open import correctness.spec
 DSyn-ExistsP-Prim : {σ τ : Typ Pr} → Primop Pr σ τ → Rep σ → Set
 DSyn-ExistsP-Prim {σ} {τ} op x = Is-just (DSemᵀ {σ} {τ} (evalprim op) x)
 
--- A type-level predicate stating that the syntactic derivative exists for a valuation and term.
+-- A predicate stating that the syntactic derivative exists for a valuation and term.
 DSyn-ExistsP : {Γ : Env Pr} {τ : Typ Pr} → Val Pr Γ → Term Pr Γ τ → Set
 DSyn-ExistsP val (unit) = ⊤ 
 DSyn-ExistsP val (var idx) = ⊤

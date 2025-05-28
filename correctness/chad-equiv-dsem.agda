@@ -276,3 +276,27 @@ chad-equiv-DSemᵀ {Γ} a evIn ctg (case' {σ = σ} {τ = τ} {ρ = ρ} e l r) ~
         ih-l = trans (chad-equiv-DSemᵀ (x , a) ev' ctg r ~τ ev'≃ev (∃dsyn dsyn')) 
                       (cong₂ _,_ (plusvDense-zeroR' {{zerov-equiv-zerovDense (D2τ' τ)}}) refl)
         ih = trans ih-e (cong₂ _ev+_ (gnoc (cong fst ih-l) λ q → Etup2EV (to-witness de (zerovDense (D2τ' σ) , q))) (cong snd ih-l))
+
+
+
+-- The main correctness theorem, where the accumulator evIn is zero
+LEtup-zero : (Γ : LEnv ) → LEtup Γ
+LEtup-zero [] = tt
+LEtup-zero (τ ∷ Γ) = (zerov τ .fst) , (LEtup-zero Γ)
+
+chad-equiv-DSemᵀ₂ : {Γ : Env Pr} {τ : Typ Pr} 
+                  → let σ  = Etup Pr Γ 
+                        LΓ = map D2τ' Γ in
+                  (a : Rep σ) -- input of function
+                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+                  (t : Term Pr Γ τ) -- primal function
+                → ctg  ≃τ (interp t (Etup-to-val a)) -- compatible incoming cotangent
+                → (∃-dsyn : DSyn-Exists (Etup-to-val a) t) -- function is differentiable at input
+                → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
+                in (LEtup2EV {LΓ} (LACMexec (interp (chad t) (Etup-to-val-primal a) .snd ctg .fst ) (LEtup-zero LΓ))
+                  ≡ Etup2EV {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LEtup2EV {LΓ} (LEtup-zero LΓ))
+chad-equiv-DSemᵀ₂ {Γ} a ctg t ~τ dsyn =
+  chad-equiv-DSemᵀ a (LEtup-zero (map D2τ' Γ)) ctg t ~τ (LEtup-zero-is-compatible (Etup-to-val a)) dsyn
+  where LEtup-zero-is-compatible : { G : Env Pr } → (val : Val Pr G) → LEtup-zero (map D2τ' G) ≃Γ val
+        LEtup-zero-is-compatible {[]} empty = tt
+        LEtup-zero-is-compatible {x ∷ G} (push y val) = ≃τ-zerov' x , (LEtup-zero-is-compatible val)
