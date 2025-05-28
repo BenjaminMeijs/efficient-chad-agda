@@ -71,7 +71,7 @@ to-primal {Un} isRd x = tt
 to-primal {R} isRd x = x
 to-primal {τ1 :* τ2} isRd x = to-primal (isRd .fst) (x .fst) , to-primal (isRd .snd) (x .snd) 
 
-un-primal : { τ : Typ Pr } → (Is-ℝᵈ τ) → Rep (D1τ τ) → Rep τ
+un-primal : { τ : Typ Pr } → Is-ℝᵈ τ → Rep (D1τ τ) → Rep τ
 un-primal {Un} isRd x = tt
 un-primal {R} isRd x = x
 un-primal {τ1 :* τ2} isRd x = un-primal (isRd .fst) (x .fst) , un-primal (isRd .snd) (x .snd)
