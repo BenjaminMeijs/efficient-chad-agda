@@ -3,7 +3,7 @@ module correctness.lemmas.dsem-lemmas where
 open import Agda.Primitive using (Level)
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
-open import Agda.Builtin.Unit using (tt)
+open import Agda.Builtin.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
 open import Data.List using ([]; _∷_; map)
 open import Data.Product using (_×_; uncurry; Σ)
@@ -61,6 +61,48 @@ module Zero {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
     rewrite w
     = DSemᵀ-ctg-zero f a df 
 open Zero public 
+
+module Const {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } 
+  {b : Rep τ } {w : (a : Rep σ) → f a ≡ b }
+  {a : Rep σ}
+  where
+
+  private
+    g1 : Rep σ → ⊤
+    g1 _ = tt 
+    g2 : ⊤ → Rep τ
+    g2 tt = f a
+    g : Rep σ → Rep τ
+    g = g2 ∘ g1
+    ext : g ≗ f
+    ext = λ x → sym (trans (w x) (sym (w a)))
+
+  DSemᵀ-lemma-const : (df : Is-just (DSemᵀ {σ} {τ} f a))
+      → (ctg : LinRepDense (D2τ' τ))
+      → to-witness df ctg ≡ zerovDense (D2τ' σ)
+  DSemᵀ-lemma-const df ctg = 
+    let dg1 = DSemᵀ-exists-unit a
+        dg2 , rule-g2 = DSemᵀ-unit
+        dg , rule-g = DSemᵀ-chain {σ} {Un} {τ} g2 g1 a dg2 dg1 ctg
+    in  trans (sym $ DSemᵀ-extensionality g f ext a dg df ctg) 
+       (trans rule-g 
+       (trans (cong (to-witness dg1) (rule-g2 ctg)) 
+       (DSemᵀ-lemma-ctg-zero' dg1)))
+
+  DSemᵀ-exists-lemma-const : Is-just (DSemᵀ {σ} {τ} f a)
+  DSemᵀ-exists-lemma-const = 
+    let dg1 = DSemᵀ-exists-unit a
+        dg2 = DSemᵀ-unit .fst
+        dg = DSemᵀ-chain {σ} {Un} {τ} g2 g1 a dg2 dg1 (zerovDense (D2τ' τ)) .fst
+    in DSemᵀ-exists-extensionality g f ext a dg
+
+  DSemᵀ-lemma-const₂ : Σ (Is-just (DSemᵀ {σ} {τ} f a))
+          (λ df → (ctg : LinRepDense (D2τ' τ)) → to-witness df ctg ≡ zerovDense (D2τ' σ)) 
+  DSemᵀ-lemma-const₂ = DSemᵀ-exists-lemma-const ,
+    (λ ctg → DSemᵀ-lemma-const DSemᵀ-exists-lemma-const ctg)
+
+    
+open Const public 
 
 module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (Etup Pr Γ)  →  Rep τ } { a : Rep (Etup Pr Γ) }
     { ctg : LinRepDense (D2τ' τ) }

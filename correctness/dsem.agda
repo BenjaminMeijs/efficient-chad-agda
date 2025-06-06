@@ -3,7 +3,7 @@ module correctness.dsem where
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Float using (primFloatPlus; primFloatTimes; primFloatNegate)
-open import Agda.Builtin.Unit using (⊤)
+open import Agda.Builtin.Unit using (⊤; tt)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Empty using (⊥)
 open import Data.Maybe using (Maybe; Is-just; to-witness; just; nothing)
@@ -46,6 +46,9 @@ postulate
 
     DSemᵀ-exists-unit : {σ : Typ Pr} { f : Rep σ → ⊤ } 
         → ( a : Rep σ ) → Is-just (DSemᵀ {σ} {Typ.Un} f a)
+    DSemᵀ-unit : {σ : Typ Pr} { f : ⊤ → Rep σ }
+        → Σ (Is-just (DSemᵀ {Typ.Un} {σ} f tt))
+            (λ df → (ctg : LinRepDense (D2τ' σ)) → to-witness df ctg ≡ tt)
 
     DSemᵀ-chain : {τ1 τ2 τ3 : Typ Pr}
         → (f : Rep τ2 → Rep τ3)

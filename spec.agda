@@ -252,7 +252,6 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
   dynZero : {Γ : Env Du} 
             -> Term Du Γ (Lin Dyn)
   
-  -- TODO: Gamma kan infered worden, dus implicit laten
   lam : ∀ {tag} {σ τ : Typ tag}
         -> { Γ : Env tag } -> Term tag (σ ∷ Γ) τ -> Term tag Γ (σ :-> τ)
 

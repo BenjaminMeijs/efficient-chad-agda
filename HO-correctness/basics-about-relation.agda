@@ -138,14 +138,6 @@ constZeroRep' {σ} {τ1 :-> τ2} x =
   in (λ _ → (a .fst , (λ _ → nothing , (ℤ.pos 0))) , (ℤ.pos 0)) 
      , const (zerovDense (D2τ' σ))
 
-constZeroRep'-equiv-dsem : {σ τ : Typ Pr}
-    → (isRd : Is-ℝᵈ σ)
-    → (x : Rep σ)
-    → Σ (Is-just (DSemᵀ {σ} {τ} (const (zeroRep τ)) x))
-        (λ df → (ctg : LinRep (D2τ' τ)) 
-              → constZeroRep' {σ} {τ} (to-primal isRd x) .snd ctg ≡ to-witness df (sparse2dense ctg))
-constZeroRep'-equiv-dsem {σ} {τ} isRd x = {!   !} -- holds by postulation on Dsem
-
 sndConstZeroRep≡zerovDense : {σ τ : Typ Pr}
   → (x : Rep (D1τ σ))
   → (ctg : LinRep (D2τ' τ))
@@ -156,6 +148,18 @@ sndConstZeroRep≡zerovDense {σ} {R} x ctg = refl
 sndConstZeroRep≡zerovDense {σ} {τ :* τ₁} x ctg = refl
 sndConstZeroRep≡zerovDense {σ} {τ :+ τ₁} x ctg = refl
 sndConstZeroRep≡zerovDense {σ} {τ :-> τ₁} x ctg = refl
+
+constZeroRep'-equiv-dsem : {σ τ : Typ Pr}
+    → (isRd : Is-ℝᵈ σ)
+    → (x : Rep σ)
+    → Σ (Is-just (DSemᵀ {σ} {τ} (const (zeroRep τ)) x))
+        (λ df → (ctg : LinRep (D2τ' τ)) 
+              → constZeroRep' {σ} {τ} (to-primal isRd x) .snd ctg ≡ to-witness df (sparse2dense ctg))
+constZeroRep'-equiv-dsem {σ} {τ} isRd x = 
+  let rule = DSemᵀ-lemma-const₂ {w = λ _ → refl} {a = x}
+  in (rule .fst) , λ ctg →
+        trans (sndConstZeroRep≡zerovDense (to-primal isRd x) ctg)
+              (sym (rule .snd (sparse2dense {D2τ' τ} ctg)))
 
 
 -- We need these functions to be mutually recursive.
