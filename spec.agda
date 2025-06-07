@@ -185,10 +185,7 @@ D1τ Inte = Inte
 D1τ R = R
 D1τ (σ :* τ) = D1τ σ :* D1τ τ
 D1τ (σ :+ τ) = D1τ σ :+ D1τ τ
--- D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> D2Γ (σ ∷ (σ :-> τ) ∷ [])))
--- TODO kijken naar:
-D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> Lin ((D2τ' σ) :*! Dyn) ))
--- Dan komt de exec bij de lam te staan.
+D1τ (σ :-> τ) = D1τ σ :-> (D1τ τ :* (D2τ τ :-> Lin (D2τ' σ :*! Dyn) ))
 
 -- Primal environment mapping. This is D[Γ]₁ in the paper.
 D1Γ : Env Pr -> Env Du
