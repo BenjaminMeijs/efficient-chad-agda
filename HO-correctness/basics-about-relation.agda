@@ -14,7 +14,7 @@ open import Data.Product using (_×_; Σ; swap)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_; subst)
 open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 
-open import spec
+open import spec renaming (LR to LTyp-LR)
 open import correctness.spec
 open import correctness.dsem
 open import correctness.lemmas
@@ -31,7 +31,7 @@ identityInLR : (σ : Typ Pr) → (isRd : Is-ℝᵈ σ)
 identityInLR Un isRd = (λ _ → refl) , (λ _ → refl , λ _ → refl)
 identityInLR R isRd = λ x → refl , ans x 
   where ans : (x : Float) → _
-        ans x = let (d-id1 , rule1) = DSemᵀ-identity {R} x (zerovDense LR) 
+        ans x = let (d-id1 , rule1) = DSemᵀ-identity {R} x (zerovDense LTyp-LR) 
                 in d-id1 , (λ ctg → 
                   let (d-id2 , rule2) = DSemᵀ-identity {R} x ctg 
                   in trans (sym rule2) (DSemᵀ-extensionality id id (λ _ → refl) x d-id2 d-id1 ctg))

@@ -15,7 +15,7 @@ open import Data.Product using (_×_; Σ; swap)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
 
-open import spec
+open import spec hiding (LR)
 open import correctness.spec
 open import correctness.dsyn-defined
 open import correctness.chad-ctg-zero

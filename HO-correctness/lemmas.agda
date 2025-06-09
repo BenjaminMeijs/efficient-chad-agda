@@ -15,7 +15,7 @@ open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_; subst)
 open import Relation.Nullary.Decidable using (yes; no)
 
-open import spec
+open import spec hiding (LR)
 open import correctness.spec
 open import HO-correctness.logical-relation
 

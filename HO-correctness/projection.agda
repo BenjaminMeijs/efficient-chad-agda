@@ -9,7 +9,7 @@ open import Function.Base using (id; _$_; const; _∘_; case_of_)
 open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
 
-open import spec
+open import spec hiding (LR)
 open import correctness.spec
 open import correctness.dsem
 open import correctness.lemmas
