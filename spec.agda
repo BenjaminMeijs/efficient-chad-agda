@@ -682,9 +682,9 @@ eval env (addFromDynEvm {G} {G1} t) =
         maybe′ (λ (G2 , x2) → 
             case dec⇒maybe (LEτLtyp G1 LTyp≟ G2) of 
               maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one + {!   !}) -- TODO: Decide cost
-              -- Error, ergo we decide to return a zero value, whereas a proper implementation would error here.
+              -- Error, ergo we decide to add zero, whereas a proper implementation would error here.
               zero)
-        -- Nothing, ergo we must to return a zero value
+        -- Nothing, ergo we must to add zero
         zero
 eval env (toDynEvm {Γ} {G} t) = 
   let (x , c1) = eval env t 
@@ -802,10 +802,14 @@ chad (case' {σ = σ} {τ = τ} e1 e2 e3) =
                       app (snd' (var (S Z))) (linr (fst' (var Z))))))
 chad {Γ = Γ} (lam {σ = σ} {τ = τ} {Γ = G} t) = 
   pair 
-    (lam (let' (chad t) -- (y,y')₀ ∷ x₁ ∷ Γ
+    (lam (let' (chad t)
             (pair (fst' (var Z)) 
               (lam (let' (runevm (app (snd' (var (S Z))) (var Z)) (pair (zerot σ) (zero-LEτ (map D2τ' Γ)))) 
-                   (lpair (fst' (snd' (var Z))) (toDynEvm (snd' (snd' (var Z)) ))))))))
+                   {! runevm  !})))))
+    -- (lam (let' (chad t)
+    --         (pair (fst' (var Z)) 
+    --           (lam (let' (runevm (app (snd' (var (S Z))) (var Z)) (pair (zerot σ) (zero-LEτ (map D2τ' Γ)))) 
+    --                (lpair (fst' (snd' (var Z))) (toDynEvm (snd' (snd' (var Z)) ))))))))
     (lamwith [] (addFromDynEvm (var Z)))
 chad (app {σ = σ} {τ = τ} s t) = 
   let' (chad t)
