@@ -119,7 +119,7 @@ precond {σ} q τ =
     (Σ ((Rep σ → Rep τ) × 
         (Rep (D1τ σ) → Rep (D1τ τ) 
                                 × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ)))) 
-        (λ (f , f') → P7 σ q τ f f'))
+        (λ (f , f') → LR σ q τ f f'))
 
 zero-LEtup : ( Γ : Env Pr ) → LEtup (map D2τ' Γ)
 zero-LEtup [] = tt
@@ -206,6 +206,6 @@ fundamental-lemma : ( Γ : Env Pr ) ( τ : Typ Pr )
       in (isRd : Is-ℝᵈ σ)
     → (p : HL Γ (precond isRd)) 
     → (t : Term Pr Γ τ)
-    → P7 σ isRd τ (FL-f isRd p t) (FL-f' isRd p t)
+    → LR σ isRd τ (FL-f isRd p t) (FL-f' isRd p t)
 fundamental-lemma Γ τ isRd a t = {!   !}
  

@@ -158,75 +158,75 @@ project'-dsem-lemma {τ = τ} proj x
       in trans (sym rule) ext)
 
 -- Wrapping the derivative of project to fit in the logical relation
-project'P7 : { σ τ : Typ Pr } → { q : Is-ℝᵈ σ } → Lens σ τ q
+project'LR : { σ τ : Typ Pr } → { q : Is-ℝᵈ σ } → Lens σ τ q
   → Rep (D1τ σ) → Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))
-project'P7 {σ} {τ} {q} proj x 
+project'LR {σ} {τ} {q} proj x 
   = (to-primal (Lens-preserves-ℝᵈ proj) (project proj (un-primal q x)))
     , project' proj
 
 
-projectInP7 : (σ τ : Typ Pr) → (isRd : Is-ℝᵈ σ) 
+projectInLR : (σ τ : Typ Pr) → (isRd : Is-ℝᵈ σ) 
     → (proj : Lens σ τ isRd)
-    → P7 σ isRd τ (project proj) (project'P7 proj)
-projectInP7 σ τ isRd proj
+    → LR σ isRd τ (project proj) (project'LR proj)
+projectInLR σ τ isRd proj
   with Lens-preserves-ℝᵈ proj -- needed to convince agda that the non-Rd cases are impossible
 -- First
-projectInP7 (σ1 :* σ2) Un isRd (LensFst .σ1 .σ2 .Un .isRd proj) | _ 
+projectInLR (σ1 :* σ2) Un isRd (LensFst .σ1 .σ2 .Un .isRd proj) | _ 
   = (λ x → refl) , (λ _ → refl , λ ctg → cong₂ _,_ (project'-zero-lemma proj tt refl) refl)
-projectInP7 (σ1 :* σ2) R isRd PROJ@(LensFst .σ1 .σ2 .R .isRd proj) | _ 
+projectInLR (σ1 :* σ2) R isRd PROJ@(LensFst .σ1 .σ2 .R .isRd proj) | _ 
   = λ x → cong (project proj) (sym (lemma-primal₁ (isRd .fst) (x .fst))) 
     , project'-dsem-lemma PROJ x
-projectInP7 (σ1 :* σ2) (τ1 :* τ2) isRd PROJ@(LensFst .σ1 .σ2 .(τ1 :* τ2) .isRd proj) | _ 
+projectInLR (σ1 :* σ2) (τ1 :* τ2) isRd PROJ@(LensFst .σ1 .σ2 .(τ1 :* τ2) .isRd proj) | _ 
   = (l , (r , (l' , r'))) , ((pl , pr) 
   , (λ x → cong₂ _,_ (lensTakeFst-lemma proj (fst x)) (lensTakeSnd-lemma proj (fst x))) , 
   λ y → cong₂ _,_ (cong-to-primal (lensTakeFst-lemma proj (un-primal (fst isRd) (fst y)))) 
                   (cong-to-primal (lensTakeSnd-lemma proj (un-primal (fst isRd) (fst y)))) 
         , ans y )
   where l  = project {_} {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
-        l' = project'P7  {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
-        pl = projectInP7 (σ1 :* σ2)  τ1   isRd  (lensTakeFst PROJ)
+        l' = project'LR  {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
+        pl = projectInLR (σ1 :* σ2)  τ1   isRd  (lensTakeFst PROJ)
         r  = project {_} {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
-        r' = project'P7  {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
-        pr = projectInP7 (σ1 :* σ2)  τ2   isRd  (lensTakeSnd PROJ)
+        r' = project'LR  {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
+        pr = projectInLR (σ1 :* σ2)  τ2   isRd  (lensTakeSnd PROJ)
         ans : (y : Rep (D1τ σ1) × Rep (D1τ σ2)) → (ctg : Maybe (LinRep (D2τ' τ1) × LinRep (D2τ' τ2))) → _
         ans y (just ctg) = cong₂ _,_ (project'-plus-lemma proj ctg) (sym plusvDense-zeroL')
         ans y nothing = cong₂ _,_ (project'-zero-lemma proj nothing refl) refl 
 -- Second
-projectInP7 (σ1 :* σ2) Un isRd (LensSnd .σ1 .σ2 .Un .isRd proj) | _ 
+projectInLR (σ1 :* σ2) Un isRd (LensSnd .σ1 .σ2 .Un .isRd proj) | _ 
   = (λ x → refl) , (λ _ → refl , (λ ctg → cong₂ _,_ refl (project'-zero-lemma proj tt refl)))
-projectInP7 (σ1 :* σ2) R isRd PROJ@(LensSnd .σ1 .σ2 .R .isRd proj) | _ 
+projectInLR (σ1 :* σ2) R isRd PROJ@(LensSnd .σ1 .σ2 .R .isRd proj) | _ 
   = λ x → cong (project proj) (sym (lemma-primal₁ (snd isRd) (snd x))) 
     , project'-dsem-lemma PROJ x
-projectInP7 (σ1 :* σ2) (τ1 :* τ2) isRd PROJ@(LensSnd .σ1 .σ2 .(τ1 :* τ2) .isRd proj) | _ 
+projectInLR (σ1 :* σ2) (τ1 :* τ2) isRd PROJ@(LensSnd .σ1 .σ2 .(τ1 :* τ2) .isRd proj) | _ 
   = (l , (r , (l' , r'))) , (pl , pr) , 
     ((λ x → cong₂ _,_ (lensTakeFst-lemma proj (snd x)) (lensTakeSnd-lemma proj (snd x))) 
     , λ y → (cong₂ _,_ (cong-to-primal (lensTakeFst-lemma proj (un-primal (isRd .snd) (snd y)))) 
                        (cong-to-primal (lensTakeSnd-lemma proj (un-primal (isRd .snd) (snd y))))) ,
     ans y)
   where l  = project {_} {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
-        l' = project'P7  {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
-        pl = projectInP7 (σ1 :* σ2)  τ1   isRd  (lensTakeFst PROJ)
+        l' = project'LR  {σ1 :* σ2} {τ1} {isRd} (lensTakeFst PROJ)
+        pl = projectInLR (σ1 :* σ2)  τ1   isRd  (lensTakeFst PROJ)
         r  = project {_} {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
-        r' = project'P7  {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
-        pr = projectInP7 (σ1 :* σ2)  τ2   isRd  (lensTakeSnd PROJ)
+        r' = project'LR  {σ1 :* σ2} {τ2} {isRd} (lensTakeSnd PROJ)
+        pr = projectInLR (σ1 :* σ2)  τ2   isRd  (lensTakeSnd PROJ)
         ans : (y : Rep (D1τ σ1) × Rep (D1τ σ2)) → (ctg : Maybe (LinRep (D2τ' τ1) × LinRep (D2τ' τ2))) → _
         ans y (just ctg) = cong₂ _,_ (sym plusvDense-zeroL') (project'-plus-lemma proj ctg)
         ans y nothing = cong₂ _,_ refl (project'-zero-lemma proj nothing refl)
 -- Identity 
-projectInP7 Un Un isRd (LensId .Un tt) | _ 
+projectInLR Un Un isRd (LensId .Un tt) | _ 
   = (λ _ → refl) , (λ _ → refl , (λ _ → refl))
-projectInP7 R R isRd (LensId .R tt) | _ 
+projectInLR R R isRd (LensId .R tt) | _ 
   = λ x → refl , project'-dsem-lemma (LensId R tt) x
-projectInP7 (σ1 :* σ2) (τ1 :* τ2) isRd (LensId .(σ1 :* σ2) .isRd) | _ 
+projectInLR (σ1 :* σ2) (τ1 :* τ2) isRd (LensId .(σ1 :* σ2) .isRd) | _ 
   = (l , (r , (l' , r'))) , ((pl , pr) , 
     ((λ x → refl) , λ x → cong₂ _,_ (cong-to-primal {isRd2 = fst isRd} refl) (cong-to-primal {isRd2 = snd isRd} refl) 
       , ans x))
   where l  = project {_} {σ1 :* σ2} {σ1} {isRd} (LensFst σ1 σ2 σ1 isRd (LensId σ1 (fst isRd)))
-        l' = project'P7  {σ1 :* σ2} {τ1} {isRd} (LensFst σ1 σ2 σ1 isRd (LensId σ1 (fst isRd)))
-        pl = projectInP7 (σ1 :* σ2)  τ1   isRd  (LensFst σ1 σ2 σ1 isRd (LensId σ1 (fst isRd)))
+        l' = project'LR  {σ1 :* σ2} {τ1} {isRd} (LensFst σ1 σ2 σ1 isRd (LensId σ1 (fst isRd)))
+        pl = projectInLR (σ1 :* σ2)  τ1   isRd  (LensFst σ1 σ2 σ1 isRd (LensId σ1 (fst isRd)))
         r  = project {_} {σ1 :* σ2} {τ2} {isRd} (LensSnd σ1 σ2 σ2 isRd (LensId σ2 (snd isRd)))
-        r' = project'P7  {σ1 :* σ2} {τ2} {isRd} (LensSnd σ1 σ2 σ2 isRd (LensId σ2 (snd isRd)))
-        pr = projectInP7 (σ1 :* σ2)  τ2   isRd  (LensSnd σ1 σ2 σ2 isRd (LensId σ2 (snd isRd)))
+        r' = project'LR  {σ1 :* σ2} {τ2} {isRd} (LensSnd σ1 σ2 σ2 isRd (LensId σ2 (snd isRd)))
+        pr = projectInLR (σ1 :* σ2)  τ2   isRd  (LensSnd σ1 σ2 σ2 isRd (LensId σ2 (snd isRd)))
         ans : (x : Rep (D1τ σ1) × Rep (D1τ σ2)) → (ctg : Maybe (LinRep (D2τ' σ1) × LinRep (D2τ' σ2))) → _
         ans x (just ctg) = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroL')
         ans x nothing = refl

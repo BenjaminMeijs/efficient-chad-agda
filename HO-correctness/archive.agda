@@ -90,22 +90,22 @@ FL-f'-with-identity : {Γ : Env Pr} {τ : Typ Pr}
     → (x : Rep (D1τ (Etup Pr Γ)))
     → (ctg : LinRep (D2τ' τ)) 
     → (FL-f' isRd (identityPrecond Γ isRd) t x .snd ctg)
-      ≡ (P7-chad isRd t (zero-LEtup Γ) x .snd ctg)
+      ≡ (LR-chad isRd t (zero-LEtup Γ) x .snd ctg)
 FL-f'-with-identity {Γ} {τ} isRd t x ctg = 
     sym {!   !}
 
 
-chad-in-P7 : {Γ : Env Pr} {τ : Typ Pr}
+chad-in-LR : {Γ : Env Pr} {τ : Typ Pr}
     → let σ = Etup Pr Γ
           LΓ = map D2τ' Γ
       in (isRd : Is-ℝᵈ σ)
     → (t : Term Pr Γ τ)
-    → P7 σ isRd τ (interp t ∘ Etup-to-val) (P7-chad isRd t (zero-LEtup Γ))
-chad-in-P7 {Γ} {τ} isRd t =
+    → LR σ isRd τ (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ))
+chad-in-LR {Γ} {τ} isRd t =
     ext
     where input = identityPrecond Γ isRd
           funlemma = fundamental-lemma Γ τ isRd input t
           equiv = (λ x → cong (interp t) (identityPrecond-is-identity-f isRd x)) 
                   , (λ x → cong ( λ q → interp (chad t) q .fst) (identityPrecond-is-identity-f' isRd x) 
                   , λ ctg → FL-f'-with-identity isRd t x ctg)
-          ext = P-extentionallity isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (P7-chad isRd t (zero-LEtup Γ)) equiv funlemma
+          ext = LR-extentionallity isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funlemma
