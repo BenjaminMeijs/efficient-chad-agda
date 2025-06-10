@@ -62,7 +62,7 @@ chad-in-LR {σ} {τ} isRd t =
         input = identityPrecond Γ isRd
         funLemma = fundamental-lemma Γ τ isRd input t
         equiv = (λ x → refl) , (λ x → equiv₁ x , (λ ctg → equiv₂ x ctg))
-        ext = LR-extentionallity isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funLemma
+        ext = LR-extensionality isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funLemma
     in ext
     where equiv₁ : (x : Rep (D1τ σ) × ⊤) → _
           equiv₁ (x , tt) = cong (λ a → interp (chad t) (push a empty) .fst) (lemma-primal₂ (fst isRd) x)

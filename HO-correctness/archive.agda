@@ -108,4 +108,4 @@ chad-in-LR {Γ} {τ} isRd t =
           equiv = (λ x → cong (interp t) (identityPrecond-is-identity-f isRd x)) 
                   , (λ x → cong ( λ q → interp (chad t) q .fst) (identityPrecond-is-identity-f' isRd x) 
                   , λ ctg → FL-f'-with-identity isRd t x ctg)
-          ext = LR-extentionallity isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funlemma
+          ext = LR-extensionality isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funlemma

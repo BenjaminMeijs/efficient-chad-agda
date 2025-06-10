@@ -49,7 +49,7 @@ identityInLR (σ :* τ) isRd = (l , r , (l' , r')) , (Pσ , Pτ) , (λ _ → ref
         ans (just ctg) = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroL')
         ans nothing    = refl
 
-LR-extentionallity : { σ τ : Typ Pr } → ( isRd : Is-ℝᵈ σ  ) 
+LR-extensionality : { σ τ : Typ Pr } → ( isRd : Is-ℝᵈ σ  ) 
     → (f : Rep σ → Rep τ)
     → (f' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
     → (g : Rep σ → Rep τ)
@@ -57,27 +57,27 @@ LR-extentionallity : { σ τ : Typ Pr } → ( isRd : Is-ℝᵈ σ  )
     → LR≡ σ isRd τ f f' g g'
     → LR σ isRd τ f f'
     → LR σ isRd τ g g'
-LR-extentionallity {σ} {Un} isRd f f' g g' eq p = 
+LR-extensionality {σ} {Un} isRd f f' g g' eq p = 
   (λ x → refl) , (λ x → refl , (λ ctg → trans (sym (eq .snd x .snd ctg)) (p .snd x .snd tt)))
-LR-extentionallity {σ} {Inte} isRd f f' g g' eq p
+LR-extensionality {σ} {Inte} isRd f f' g g' eq p
   = (λ x → refl) 
     , (λ x → (trans₂ (p .snd x .fst) (eq .snd x .fst) (eq .fst (un-primal isRd x))) 
     , (λ ctg → trans (sym (eq .snd x .snd ctg)) (p .snd x .snd tt)))
-LR-extentionallity {σ} {R} isRd f f' g g' eq p
+LR-extensionality {σ} {R} isRd f f' g g' eq p
   = λ x → (trans₂ (p x .fst) (eq .fst x) (eq .snd (to-primal isRd x) .fst)) 
     , let df = p x .snd .fst
           dg = DSemᵀ-exists-extensionality f g (eq .fst) x df
       in dg , λ ctg → trans (sym $ eq .snd (to-primal isRd x) .snd ctg) 
                      (trans (p x .snd .snd ctg) 
                      (DSemᵀ-extensionality f g (eq .fst) x df dg ctg))
-LR-extentionallity {σ} {τ1 :* τ2} isRd f f' g g' eq p 
+LR-extensionality {σ} {τ1 :* τ2} isRd f f' g g' eq p 
   = ((p .fst .fst) , ((p .fst .snd .fst) , ((p .fst .snd .snd .fst) , (p .fst .snd .snd .snd)))) 
   , (((p .snd .fst .fst) , (p .snd .fst .snd)) 
   , ((λ x → trans (sym (eq .fst x)) (p .snd .snd .fst x)) 
   , λ x → (trans (sym (eq .snd x .fst)) (p .snd .snd .snd x .fst)) 
   , (λ ctg → trans (sym (eq .snd x .snd  ctg)) (p .snd .snd .snd x .snd ctg))))
-LR-extentionallity {σ} {τ1 :+ τ2} isRd f f' g g' eq p = {!   !}
-LR-extentionallity {σ} {τ1 :-> τ2} isRd F F' G G' eq ((f , f') , p)
+LR-extensionality {σ} {τ1 :+ τ2} isRd f f' g g' eq p = {!   !}
+LR-extensionality {σ} {τ1 :-> τ2} isRd F F' G G' eq ((f , f') , p)
   = (f , f') 
   , λ g g' a → let P = p g g' a
   in (fst P) 
@@ -217,7 +217,7 @@ const-zeroRep-inLR σ (τ1 :-> τ2) isRd =
         g-isLin : (x : Rep (D1τ σ)) → g' x .snd (zerov (D2τ' τ1) .fst) ≡ zerovDense (D2τ' σ)
         g-isLin x = LR-ctg-zero σ τ1 isRd g g' pg x (zerov (D2τ' τ1) .fst) (zerov-equiv-zerovDense (D2τ' τ1))
         h-equiv-constZero = (λ x → refl) , (λ x → refl , (λ ctg → trans (sndConstZeroRep≡zerovDense x ctg) (sym (plusvDense-zeroR' {{g-isLin x}}))))
-        ph = LR-extentionallity isRd (const (zeroRep τ2)) constZeroRep' h h' h-equiv-constZero ih
+        ph = LR-extensionality isRd (const (zeroRep τ2)) constZeroRep' h h' h-equiv-constZero ih
         -- equivs
         f-equiv-F = λ x y → refl
         f'-equiv-F' = λ x y → (λ _ → refl) , (refl , ((λ ctg → refl) 

@@ -101,38 +101,42 @@ LR ρ isRd Un f f' =
 -- LR ρ isRd Inte f f' = LR≡ ρ isRd Inte f f' f (λ x → (f x , const (zerovDense (D2τ' ρ))))
 LR ρ isRd Inte f f' = LR≡ ρ isRd Inte f f' f (λ x → (f (un-primal isRd x) , const (zerovDense (D2τ' ρ))))
 LR ρ isRd R f f' =
-  -- Forall possible inputs of f' ...
+  -- f f' is in the logical relation if:
+  -- For all possible inputs of f' ...
   ( x : Rep ρ ) → 
   -- ... the first element of the tuple produced by f'
   -- is equivalent to f ...
   -- (f x ≡ f' x .fst) 
   (f x ≡ f' (to-primal isRd x) .fst) 
   -- ... and the function is differentiable at x ...
-  × (Σ (Is-just (DSemᵀ {ρ} {R} f x))
---   -- ... and the second element of the tuple produced by f'
---   -- is equivalent to the transposed derivative of f.
-       (λ dsem → f' (to-primal isRd x) .snd ≗ (to-witness dsem)))
+  × (Σ  (Is-just (DSemᵀ {ρ} {R} f x))
+  -- ... and the second element of the tuple produced by f'
+  -- is equivalent to the transposed derivative of f.
+        (λ dsem → f' (to-primal isRd x) .snd ≗ (to-witness dsem)))
 LR ρ isRd (σ :* τ) f f' =
+  -- f f' is in the logical relation if:
   -- There exists some l l' and r r' ...
   Σ ((Rep ρ → Rep σ) × (Rep ρ → Rep τ)
       × (Rep (D1τ ρ) → ( Rep (D1τ σ) × (LinRep (D2τ' σ) → LinRepDense (D2τ' ρ))))
       × (Rep (D1τ ρ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' ρ)))))
   λ (l , r , l' , r' )
-  -- ... that are in LR ...
+  -- ... that are in the logical relation ...
   → Σ (LR ρ isRd σ l l' 
      × LR ρ isRd τ r r')
   (λ _ → 
-  -- ... and combined show that f f' is in P6.
+  -- ... and can be combined using pair to get h and h' ...
     let h  = λ x → (l x , r x )
         h' = λ x → (l' x .fst , r' x .fst) 
                 , (λ ctg → case ctg of
                    maybe′ (λ (ctgL , ctgR) → plusvDense _ (l' x .snd ctgL) (r' x .snd ctgR)) 
                           (zerovDense (D2τ' ρ)))
+  -- ... such that h h' is equivalent to f f'
     in LR≡ ρ isRd (σ :* τ) f f' h h'
   )
 LR ρ isRd (σ :+ τ) f f' = {!   !}
 LR ρ isRd (σ :-> τ) F F' =
--- There exists some f f' ...  (Without EVM types)
+-- F F' is in the relation if:
+-- There exists some f f' ...  (Essentially F F' without EVM types)
   Σ ((Rep ρ → Rep σ → Rep τ)
     × (Rep (D1τ ρ) → (Rep (D1τ σ) → Rep (D1τ τ) × (Rep (D2τ τ) → Rep (Lin Dyn) × Rep (D2τ σ))) × (LinRep Dyn → LinRepDense (D2τ' ρ))))
   λ (f , f')
@@ -141,7 +145,7 @@ LR ρ isRd (σ :-> τ) F F' =
   → (g' : Rep (D1τ ρ) → (Rep (D1τ σ) × (LinRep (D2τ' σ) → LinRepDense (D2τ' ρ))))
 -- ... where g g' is in LR ...
   → LR ρ isRd σ g g'
--- ... g g' applied to f f' is shown to be in LR ... 
+-- ... g g' applied to f f' is in the relation ... 
   → (let h  = λ x → f x (g x) 
          h' = λ x → let (f1 , f2) = f' x
                         (g1 , g2) = g' x
@@ -149,7 +153,7 @@ LR ρ isRd (σ :-> τ) F F' =
                      in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f' x .snd d) (g2 z))
      in LR ρ isRd τ h h')
 -- ... and f f' is equivalent to F F' ...
--- [Note, this is not just extentional equality, but semantic equality of executing an EVM]
+-- [Note, this is not just extensional equality, but semantic equality of executing an EVM]
   × ((x : Rep ρ) (y : Rep σ) → f x y ≡ F x y .fst) 
   × ((x : Rep (D1τ ρ)) (y : Rep (D1τ σ)) → 
         let (f1 , f2) = f' x 
@@ -161,5 +165,4 @@ LR ρ isRd (σ :-> τ) F F' =
                                    (nothing , zerov (D2τ' σ) .fst)
         in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4'
   -- and f' is linear.
-           × Is-Linear (f' x .fst y .snd))
-          --  × Is-Linear {! f' x .snd  !})
+      × Is-Linear (f' x .fst y .snd))
