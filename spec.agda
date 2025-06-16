@@ -659,7 +659,8 @@ eval env (lcastr {τ = τ} e) =
                   in z , one + ce + cz
                (just (inj₂ y)) -> y , one + ce
 eval env lsumzero = nothing , one
-eval {Γ = Γ} env (lam t) = (λ x → eval (push x env) t) , one + + (length Γ)
+eval {Γ = Γ} env (lam t) =
+  (λ x → eval (push x env) t) , one + + (length Γ)
 eval env (fromDyn {Γ = G} {τ = τ} t) = 
   let (x , c1) = eval env t
       zero = (let (v , c2) = zerov τ in v , (one + (c1 + c2)))
@@ -805,11 +806,7 @@ chad {Γ = Γ} (lam {σ = σ} {τ = τ} {Γ = G} t) =
     (lam (let' (chad t)
             (pair (fst' (var Z)) 
               (lam (let' (runevm (app (snd' (var (S Z))) (var Z)) (pair (zerot σ) (zero-LEτ (map D2τ' Γ)))) 
-                   {! runevm  !})))))
-    -- (lam (let' (chad t)
-    --         (pair (fst' (var Z)) 
-    --           (lam (let' (runevm (app (snd' (var (S Z))) (var Z)) (pair (zerot σ) (zero-LEτ (map D2τ' Γ)))) 
-    --                (lpair (fst' (snd' (var Z))) (toDynEvm (snd' (snd' (var Z)) ))))))))
+                   (lpair (fst' (snd' (var Z))) (toDynEvm (snd' (snd' (var Z)) ))))))))
     (lamwith [] (addFromDynEvm (var Z)))
 chad (app {σ = σ} {τ = τ} s t) = 
   let' (chad t)

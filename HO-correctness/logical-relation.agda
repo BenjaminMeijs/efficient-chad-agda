@@ -28,9 +28,10 @@ Is-ℝᵈ Un = ⊤
 Is-ℝᵈ Inte = ⊥
 Is-ℝᵈ R = ⊤
 Is-ℝᵈ (σ :* τ) = Is-ℝᵈ σ × Is-ℝᵈ τ
-Is-ℝᵈ (σ :+ τ) = ⊥
-Is-ℝᵈ (σ :-> τ) = ⊥
-Is-ℝᵈ _ = ⊥
+Is-ℝᵈ (σ :+ τ) = ⊥  -- coproducts are ignored for HO-CHAD
+Is-ℝᵈ (σ :-> τ) = ⊥ -- functions are not vector-like
+Is-ℝᵈ {Du} (EVM x e) = ⊥  -- Type is only used by target language
+Is-ℝᵈ {Du} (Lin x)   = ⊥  -- Type is only used by target language
 
 Is-ℝᵈ? : ∀ {tag} ( τ : Typ tag ) → Dec (Is-ℝᵈ τ)
 Is-ℝᵈ? Un = yes tt
@@ -78,13 +79,13 @@ un-primal {τ1 :* τ2} isRd x = un-primal (isRd .fst) (x .fst) , un-primal (isRd
 
 -- Nested and combined extensional equality
 -- f is equivalent to g and f' is equivalent to g'
-LR≡ : ( σ : Typ Pr ) → ( isRd : Is-ℝᵈ σ  ) → ( τ : Typ Pr )
+LR≡ : {σ : Typ Pr} → {τ : Typ Pr}
     → (f : Rep σ → Rep τ)
     → (f' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
     → (g : Rep σ → Rep τ)
     → (g' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
     → Set
-LR≡ σ _ _ f f' g g' = f ≗ g 
+LR≡ {σ} f f' g g' = f ≗ g 
   × ((x : Rep (D1τ σ)) → 
         let (f1 , f2) = f' x
             (g1 , g2) = g' x
@@ -98,8 +99,8 @@ LR : ( σ : Typ Pr ) → ( Is-ℝᵈ σ )
 LR ρ isRd Un f f' = 
   -- f f' is equivalent to the corresponding (zero) functions
   LR≡ ρ isRd Un f f' (const tt) (const (tt , const (zerovDense (D2τ' ρ))))
--- LR ρ isRd Inte f f' = LR≡ ρ isRd Inte f f' f (λ x → (f x , const (zerovDense (D2τ' ρ))))
-LR ρ isRd Inte f f' = LR≡ ρ isRd Inte f f' f (λ x → (f (un-primal isRd x) , const (zerovDense (D2τ' ρ))))
+LR ρ isRd Inte f f' =
+  LR≡ ρ isRd Inte f f' f (λ x → (f (un-primal isRd x) , const (zerovDense (D2τ' ρ))))
 LR ρ isRd R f f' =
   -- f f' is in the logical relation if:
   -- For all possible inputs of f' ...

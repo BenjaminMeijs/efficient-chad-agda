@@ -96,6 +96,9 @@ module dense-linear-representation where
     plusvDense (σ :+! τ) (x , y) (a , b) = plusvDense σ x a , plusvDense τ y b
     plusvDense Dyn x y = λ τ → plusvDense τ (x τ) (y τ)
 
+    LRD-ext : (x : LinRepDense Dyn) → (y : LinRepDense Dyn) → ((τ : LTyp) → x τ ≡ y τ) → x ≡ y
+    LRD-ext x y w = {! w  !}
+
 open dense-linear-representation public
 
 module environment-vector where

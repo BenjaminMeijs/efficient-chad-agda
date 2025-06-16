@@ -121,7 +121,7 @@ precond {σ} q τ =
                                 × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ)))) 
         (λ (f , f') → LR σ q τ f f'))
 
-zero-LEtup : ( Γ : Env Pr ) → LEtup (map D2τ' Γ)
+zero-LEtup : (Γ : Env Pr) → LEtup (map D2τ' Γ)
 zero-LEtup [] = tt
 zero-LEtup (τ ∷ Γ) = (zerov (D2τ' τ) .fst) , (zero-LEtup Γ)
 
