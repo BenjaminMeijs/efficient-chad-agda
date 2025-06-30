@@ -25,7 +25,7 @@ Is-ℝᵈ R = ⊤
 Is-ℝᵈ (σ :* τ) = Is-ℝᵈ σ × Is-ℝᵈ τ
 Is-ℝᵈ (σ :+ τ) = ⊥  -- coproducts are ignored for HO-CHAD
 Is-ℝᵈ (σ :-> τ) = ⊥ -- functions are not vector-like
-Is-ℝᵈ {Du} (EVM x e) = ⊥  -- Type is only used by target language
+Is-ℝᵈ {Du} (LETdM x e) = ⊥  -- Type is only used by target language
 Is-ℝᵈ {Du} (Lin x)   = ⊥  -- Type is only used by target language
 
 Is-ℝᵈ? : ∀ {tag} ( τ : Typ tag ) → Dec (Is-ℝᵈ τ)
@@ -39,7 +39,7 @@ Is-ℝᵈ? (τ1 :* τ2)
 ... | no a | b = no λ z → a (z .fst)
 Is-ℝᵈ? (τ1 :+ τ2) = no λ ()
 Is-ℝᵈ? (τ1 :-> τ2) = no λ ()
-Is-ℝᵈ? (EVM x τ) = no λ ()
+Is-ℝᵈ? (LETdM x τ) = no λ ()
 Is-ℝᵈ? (Lin x) = no λ ()
 
 primal-Is-ℝᵈ : {τ : Typ Pr} → Is-ℝᵈ τ → Is-ℝᵈ (D1τ τ)
@@ -133,7 +133,7 @@ LR ρ isRd (σ :* τ) f f' =
 LR ρ isRd (σ :+ τ) f f' = {!   !}
 LR ρ isRd (σ :-> τ) F F' =
 -- F F' is in the relation if:
--- There exists some pair f f' ...  (Essentially F F' without EVM types)
+-- There exists some pair f f' ...  (Essentially F F' without LETdM types)
   Σ ((Rep ρ → Rep σ → Rep τ)
     × (Rep (D1τ ρ) → (Rep (D1τ σ) → Rep (D1τ τ) × (Rep (D2τ τ) → LinRep Dyn × Rep (D2τ σ))) × (LinRep Dyn → LinRepDense (D2τ' ρ))))
   λ (f , f')
@@ -150,7 +150,7 @@ LR ρ isRd (σ :-> τ) F F' =
                      in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f2 d) (g2 z))
      in LR ρ isRd τ h h')
 -- ... and f f' is equivalent to F F' ...
--- [Note, this is not just extensional equality, but semantic equality of executing an EVM]
+-- [Note, this is not just extensional equality, but semantic equality of executing an LETdM]
 --  [Note, this is not direct extensional equality, we have to ignore the evaluation cost,
 --  deal with sparsity and swap the order of a pair]
   × ((x : Rep ρ) (y : Rep σ) → f x y ≡ F x y .fst) 

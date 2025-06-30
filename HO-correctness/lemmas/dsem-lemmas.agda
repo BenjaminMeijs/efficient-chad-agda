@@ -110,10 +110,10 @@ module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (ET Pr Γ)  →  Rep τ } {
     ( df : Is-just (DSemᵀ {ET Pr Γ} {τ} f a) )
     where
 
-    DSemᵀ-ev-lemma-ctg-zero' : LRD-ET2LETd (to-witness df ctg) ≡ zero-EV (map D2τ' Γ)
+    DSemᵀ-ev-lemma-ctg-zero' : LRD-ET2LETd (to-witness df ctg) ≡ zero-LETd (map D2τ' Γ)
     DSemᵀ-ev-lemma-ctg-zero'
       = trans (cong (LRD-ET2LETd ∘ to-witness df) w) 
-              (trans (cong LRD-ET2LETd (DSemᵀ-lemma-ctg-zero' df)) ET-zerovDense-equiv-zero-EV)
+              (trans (cong LRD-ET2LETd (DSemᵀ-lemma-ctg-zero' df)) ET-zerovDense-equiv-zero-LETd)
 
     DSemᵀ-ev-lemma-ctg-zero-evIn' : { evIn : LETs (map D2τ' Γ)  }
                     → LETs2d {map D2τ' Γ} evIn 
@@ -130,7 +130,7 @@ module Onehot where
             → Compatible-idx-LETs (idx , ctg) evIn
             → LETs2d (addLEτ idx' ctg evIn)
               ≡ (LRD-ET2LETd (onehot idx (sparse2dense ctg)) ev+ LETs2d evIn)
-        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' ET-zerovDense-equiv-zero-EV))
+        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' ET-zerovDense-equiv-zero-LETd))
         onehot-equiv-addLEτ {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym plusvDense-zeroL') (onehot-equiv-addLEτ idx ctg xs w)
 
     onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}

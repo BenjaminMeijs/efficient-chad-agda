@@ -149,23 +149,23 @@ module plusv-lemmas where
 open plusv-lemmas public
 
 
-ev+congR : {Γ : LEnv} {x : EV Γ} {y : EV Γ} {z : EV Γ}
+ev+congR : {Γ : LEnv} {x : LETd Γ} {y : LETd Γ} {z : LETd Γ}
             → y ≡ z → x ev+ y ≡ x ev+ z
-ev+congL : {Γ : LEnv} {x : EV Γ} {y : EV Γ} {z : EV Γ}
+ev+congL : {Γ : LEnv} {x : LETd Γ} {y : LETd Γ} {z : LETd Γ}
             → x ≡ z → x ev+ y ≡ z ev+ y
-ev+zeroR : {Γ : LEnv} → (a : EV Γ) → a ev+ (zero-EV Γ) ≡ a
-ev+zeroL : {Γ : LEnv} → (a : EV Γ) → (zero-EV Γ) ev+ a ≡ a
-ev+zeroL' : {Γ : LEnv} {a : EV Γ} → {b : EV Γ} → a ≡ zero-EV Γ  → a ev+ b ≡ b
-ev+zeroR' : {Γ : LEnv} {a : EV Γ} {b : EV Γ} → b ≡ zero-EV Γ  → a ev+ b ≡ a
-ev+comm : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → a ev+ b ≡ b ev+ a
-ev+assoc : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → (c : EV Γ)
+ev+zeroR : {Γ : LEnv} → (a : LETd Γ) → a ev+ (zero-LETd Γ) ≡ a
+ev+zeroL : {Γ : LEnv} → (a : LETd Γ) → (zero-LETd Γ) ev+ a ≡ a
+ev+zeroL' : {Γ : LEnv} {a : LETd Γ} → {b : LETd Γ} → a ≡ zero-LETd Γ  → a ev+ b ≡ b
+ev+zeroR' : {Γ : LEnv} {a : LETd Γ} {b : LETd Γ} → b ≡ zero-LETd Γ  → a ev+ b ≡ a
+ev+comm : {Γ : LEnv} → (a : LETd Γ) → (b : LETd Γ) → a ev+ b ≡ b ev+ a
+ev+assoc : {Γ : LEnv} → (a : LETd Γ) → (b : LETd Γ) → (c : LETd Γ)
             → (a ev+ b) ev+ c ≡ a ev+ (b ev+ c)
 
--- Relation of EV to other constructs
-ET-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) ≡ EV (map D2τ' Γ)
-EV-to-ET : {Γ : Env Pr} → EV (map D2τ' Γ) → LinRepDense (D2τ' (ET Pr Γ))
-ET-to-EV : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → EV (map D2τ' Γ)
-ET-zerovDense-equiv-zero-EV : {τ : Env Pr} → LRD-ET2LETd (zerovDense (D2τ' (ET Pr τ))) ≡ zero-EV (map D2τ' τ)
+-- Relation of LETd to other constructs
+ET-equiv-LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) ≡ LETd (map D2τ' Γ)
+LETd-to-ET : {Γ : Env Pr} → LETd (map D2τ' Γ) → LinRepDense (D2τ' (ET Pr Γ))
+ET-to-LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → LETd (map D2τ' Γ)
+ET-zerovDense-equiv-zero-LETd : {τ : Env Pr} → LRD-ET2LETd (zerovDense (D2τ' (ET Pr τ))) ≡ zero-LETd (map D2τ' τ)
 plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (ET Pr Γ)) ) → ( y : LinRepDense (D2τ' (ET Pr Γ)) )
                     → LRD-ET2LETd (plusvDense (D2τ' (ET Pr Γ)) x y)
                         ≡ LRD-ET2LETd x ev+ LRD-ET2LETd y
@@ -175,7 +175,7 @@ ev+congL w = cong₂ _ev+_ w refl
 
 ev+zeroR {[]} x = refl
 ev+zeroR {τ ∷ Γ} (x , xs) = cong₂ (_,_) (plusvDense-zeroR τ x) (ev+zeroR xs) 
-ev+zeroL {Γ} x = trans (ev+comm (zero-EV Γ) x) (ev+zeroR x)  
+ev+zeroL {Γ} x = trans (ev+comm (zero-LETd Γ) x) (ev+zeroR x)  
 ev+zeroR' {Γ} {a} {b} w = trans (ev+congR w) (ev+zeroR a)
 ev+zeroL' {Γ} {a} {b} w = trans (ev+congL w) (ev+zeroL b)
 
@@ -185,17 +185,17 @@ ev+comm {τ ∷ Γ} a b = cong₂ (_,_) (plusvDense-comm τ (a .fst) (b .fst)) (
 ev+assoc {[]} a b c = refl
 ev+assoc {τ ∷ Γ} a b c = cong₂ (_,_) (plusvDense-assoc τ (a .fst) (b .fst) (c .fst)) (ev+assoc (a .snd) (b .snd) (c .snd))
 
-ET-equiv-EV {[]} = refl
-ET-equiv-EV {x ∷ Γ} = cong₂ _×_ refl ET-equiv-EV
+ET-equiv-LETd {[]} = refl
+ET-equiv-LETd {x ∷ Γ} = cong₂ _×_ refl ET-equiv-LETd
 
-EV-to-ET {Γ} x 
-    = subst (λ x → x) (sym (ET-equiv-EV {Γ})) x
+LETd-to-ET {Γ} x 
+    = subst (λ x → x) (sym (ET-equiv-LETd {Γ})) x
 
-ET-to-EV {Γ} x 
-    = subst (λ x → x) (ET-equiv-EV {Γ}) x
+ET-to-LETd {Γ} x 
+    = subst (λ x → x) (ET-equiv-LETd {Γ}) x
 
-ET-zerovDense-equiv-zero-EV {[]} = refl
-ET-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl ET-zerovDense-equiv-zero-EV
+ET-zerovDense-equiv-zero-LETd {[]} = refl
+ET-zerovDense-equiv-zero-LETd {x ∷ τ} = cong₂ _,_ refl ET-zerovDense-equiv-zero-LETd
 
 plusvDense-equiv-ev+ {[]} x y = refl
 plusvDense-equiv-ev+ {τ ∷ Γ} x y = cong₂ _,_ refl (plusvDense-equiv-ev+ (x .snd) (y .snd))

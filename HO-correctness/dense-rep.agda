@@ -87,22 +87,22 @@ module dense-linear-representation where
 open dense-linear-representation public
 
 module environment-vector where
-    EV : LEnv → Set
-    EV Γ = HL Γ LinRepDense
+    LETd : LEnv → Set
+    LETd Γ = HL Γ LinRepDense
 
-    LETs2d : { Γ : LEnv } → LETs Γ → EV Γ
+    LETs2d : { Γ : LEnv } → LETs Γ → LETd Γ
     LETs2d {[]} tt = tt
     LETs2d {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LETs2d {Γ} xs 
 
-    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → EV (map D2τ' Γ)
+    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → LETd (map D2τ' Γ)
     LRD-ET2LETd {[]} tt = tt
     LRD-ET2LETd {τ ∷ Γ} (x , xs) = x , LRD-ET2LETd xs 
 
-    zero-EV : (Γ : LEnv) → EV Γ
-    zero-EV [] = tt
-    zero-EV (x ∷ env) = zerovDense x , zero-EV env 
+    zero-LETd : (Γ : LEnv) → LETd Γ
+    zero-LETd [] = tt
+    zero-LETd (x ∷ env) = zerovDense x , zero-LETd env 
 
-    _ev+_ : {Γ : LEnv} → EV Γ → EV Γ → EV Γ
+    _ev+_ : {Γ : LEnv} → LETd Γ → LETd Γ → LETd Γ
     _ev+_ {[]} tt tt = tt
     _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = plusvDense _ vL vR , (evL ev+ evR)
 

@@ -35,7 +35,7 @@ LR-chad : {Γ : Env Pr} {τ : Typ Pr}
 LR-chad {Γ = Γ} isRd t evIn x = 
     let val = ET-to-val (ET-D1τ-distr₁ Γ x)
         (a , b) = interp (chad t) val
-    in a , (λ ctg → EV-to-ET (LETs2d {map D2τ' Γ} (LACM.exec (b ctg .fst) evIn)))
+    in a , (λ ctg → LETd-to-ET (LETs2d {map D2τ' Γ} (LACM.exec (b ctg .fst) evIn)))
 
 ValIdProjections :  (Γ : Env Pr) → (q : Is-ℝᵈ (ET Pr Γ)) 
     → (G : Env Pr) → Lens (ET Pr Γ) (ET Pr G) q

@@ -55,9 +55,9 @@ data Typ : PDTag -> Set where
   _:+_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
   _:->_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
 
-  -- Environment vector monad. This is the same EVM as in the paper; the
+  -- Environment vector monad. This is the same LETdM as in the paper; the
   -- implementation is LACM.
-  EVM : LEnv -> Typ Du -> Typ Du
+  LETdM : LEnv -> Typ Du -> Typ Du
 
   -- The linear types (with embedded potential)
   Lin : LTyp -> Typ Du
@@ -78,7 +78,7 @@ Rep R = Float
 Rep (σ :* τ) = Rep σ × Rep τ
 Rep (σ :+ τ) = Rep σ ⊎ Rep τ
 Rep (σ :-> τ) = Rep σ -> Rep τ × ℤ
-Rep (EVM Γ τ) = LACM Γ (Rep τ)
+Rep (LETdM Γ τ) = LACM Γ (Rep τ)
 Rep (Lin τ) = LinRep τ
 
 -- Convert a type from a source-language type to a target-language type. This
@@ -171,11 +171,11 @@ D2τ' (σ :-> τ) = Dyn
 D2τ : Typ Pr -> Typ Du
 D2τ τ = Lin (D2τ' τ)
 
--- The codomain of the backpropagator of a differentiated program. 'EVM' is the
+-- The codomain of the backpropagator of a differentiated program. 'LETdM' is the
 -- environment vector monad, instantiated with the local accumulation monad
 -- LACM. 'D2Γ' is used in the type of 'chad' below.
 D2Γ : Env Pr -> Typ Du
-D2Γ Γ = EVM (map D2τ' Γ) Un
+D2Γ Γ = LETdM (map D2τ' Γ) Un
 
 -- The primal type mapping, written D[τ]₁ in the paper.
 D1τ : Typ Pr -> Typ Du
@@ -239,7 +239,7 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
 
   addFromDynEvm : {Γ : Env Du} {Γ' : LEnv}
         -> Term Du Γ (Lin Dyn)
-        -> Term Du Γ (EVM Γ' Un)
+        -> Term Du Γ (LETdM Γ' Un)
 
   toDynEvm : {Γ : Env Du} {Γ' : LEnv}
         -> Term Du Γ (LEτ Γ')
@@ -263,16 +263,16 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> Term Du (σ ∷ Γ') τ -> Term Du Γ (σ :-> τ)
 
   pureevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-         -> Term Du Γ τ -> Term Du Γ (EVM Γ' τ)
+         -> Term Du Γ τ -> Term Du Γ (LETdM Γ' τ)
   bindevm : {Γ : Env Du} {Γ' : LEnv} {σ τ : Typ Du}
-         -> Term Du Γ (EVM Γ' σ) -> Term Du Γ (σ :-> EVM Γ' τ) -> Term Du Γ (EVM Γ' τ)
+         -> Term Du Γ (LETdM Γ' σ) -> Term Du Γ (σ :-> LETdM Γ' τ) -> Term Du Γ (LETdM Γ' τ)
   runevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-        -> Term Du Γ (EVM Γ' τ) -> Term Du Γ (LEτ Γ') -> Term Du Γ (τ :* LEτ Γ')
+        -> Term Du Γ (LETdM Γ' τ) -> Term Du Γ (LEτ Γ') -> Term Du Γ (τ :* LEτ Γ')
   addevm : {Γ : Env Du} {Γ' : LEnv} {τ : LTyp}
-        -> Idx Γ' τ -> Term Du Γ (Lin τ) -> Term Du Γ (EVM Γ' Un)
+        -> Idx Γ' τ -> Term Du Γ (Lin τ) -> Term Du Γ (LETdM Γ' Un)
   scopeevm : {Γ : Env Du} {Γ' : LEnv} {τ : LTyp} {σ : Typ Du}
-          -> Term Du Γ (Lin τ) -> Term Du Γ (EVM (τ ∷ Γ') σ)
-          -> Term Du Γ (EVM Γ' (Lin τ :* σ))
+          -> Term Du Γ (Lin τ) -> Term Du Γ (LETdM (τ ∷ Γ') σ)
+          -> Term Du Γ (LETdM Γ' (Lin τ :* σ))
 
   lunit : {Γ : Env Du}
         -> Term Du Γ (Lin LUn)
@@ -417,11 +417,11 @@ lamwith {_} {Γ} vars body =
     buildinj (i ∷ vars) Z = buildidx i
     buildinj (i ∷ vars) (S idx) = buildinj vars idx
 
--- 'bindevm' from Term is '>>=' of the environment vector monad EVM; this is
+-- 'bindevm' from Term is '>>=' of the environment vector monad LETdM; this is
 -- '>>'. 'a >> b' is expanded to 'let x = b in a >>= \_ -> x'. Note the
 -- creation of a closure using 'lamwith' containing one entry, namely x.
 thenevm : {Γ : LEnv} {Γ' : Env Du}
-       -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un)
+       -> Term Du Γ' (LETdM Γ Un) -> Term Du Γ' (LETdM Γ Un) -> Term Du Γ' (LETdM Γ Un)
 thenevm a b =
   let' b $
     bindevm (sink1 a) (lamwith (zero ∷ []) (var (S Z)))
@@ -511,7 +511,7 @@ d1Prim {σ} {τ} op =
     duPrim op
 
 
--------------------- EVALUATION ------------------------------------------------
+-------------------- LETdALUATION ------------------------------------------------
 
 -- A valuation / value environment: one value for each type in the typing
 -- environment.
@@ -664,7 +664,7 @@ eval env (addFromDynEvm {G} {G1} t) =
   in case x1 of 
         maybe′ (λ (G2 , x2) → 
             case dec⇒maybe (LEτLtyp G1 LTyp≟ G2) of 
-              maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one) -- the cost is part of the EVM action
+              maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one) -- the cost is part of the LETdM action
               -- Error, ergo we decide to add zero, whereas a proper implementation would error here.
               zero)
         -- Nothing, ergo we must to add zero
@@ -849,8 +849,8 @@ size Dyn (just (τ , x)) = 1 +ℕ size τ x
 :+-injective {tag} {σ1} {σ2} {τ1} {τ2} refl = refl , refl
 :->-injective : ∀ {tag} → { σ1 σ2 τ1 τ2 : Typ tag } → (σ1 :-> σ2) ≡ (τ1 :-> τ2) → σ1 ≡ τ1 × σ2 ≡ τ2
 :->-injective {tag} {σ1} {σ2} {τ1} {τ2} refl = refl , refl
-EVM-injective : { σ τ : Typ Du } → {env1 env2 : LEnv} → EVM env1 σ ≡ EVM env2 τ → env1 ≡ env2 × σ ≡ τ
-EVM-injective {σ} {τ} {evn1} {env2} refl = refl , refl
+LETdM-injective : { σ τ : Typ Du } → {env1 env2 : LEnv} → LETdM env1 σ ≡ LETdM env2 τ → env1 ≡ env2 × σ ≡ τ
+LETdM-injective {σ} {τ} {evn1} {env2} refl = refl , refl
 Lin-injective : { σ τ : LTyp } → Lin σ ≡ Lin τ → σ ≡ τ
 Lin-injective {σ} {τ} refl = refl
 
@@ -868,11 +868,11 @@ R Typ≟ R = yes refl
 ... | yes w1 | yes w2 = yes (cong₂ _:+_ w1 w2)
 ... | no w1  | _      = no λ x → w1 (:+-injective x .fst)
 ... | _      | no w2  = no λ x → w2 (:+-injective x .snd)
-(EVM x1 x2) Typ≟ (EVM y1 y2)
+(LETdM x1 x2) Typ≟ (LETdM y1 y2)
   with x1 LEnv≟ y1 | x2 Typ≟ y2
-... | yes w1 | yes w2 = yes (cong₂ EVM w1 w2)
-... | no w1  | _      = no λ x → w1 (EVM-injective x .fst)
-... | _      | no w2  = no λ x → w2 (EVM-injective x .snd)
+... | yes w1 | yes w2 = yes (cong₂ LETdM w1 w2)
+... | no w1  | _      = no λ x → w1 (LETdM-injective x .fst)
+... | _      | no w2  = no λ x → w2 (LETdM-injective x .snd)
 (x1 :-> x2) Typ≟ (y1 :-> y2)
   with x1 Typ≟ y1 | x2 Typ≟ y2 
 ... | yes w1 | yes w2 = yes (cong₂ _:->_ w1 w2)
@@ -887,55 +887,55 @@ Un Typ≟ R = no λ ()
 Un Typ≟ (y :* y₁) = no λ ()
 Un Typ≟ (y :+ y₁) = no λ ()
 Un Typ≟ (y :-> y₁) = no λ ()
-Un Typ≟ EVM x y = no λ ()
+Un Typ≟ LETdM x y = no λ ()
 Un Typ≟ Lin x = no λ ()
 Inte Typ≟ Un = no λ ()
 Inte Typ≟ R = no λ ()
 Inte Typ≟ (y :* y₁) = no λ ()
 Inte Typ≟ (y :+ y₁) = no λ ()
 Inte Typ≟ (y :-> y₁) = no λ ()
-Inte Typ≟ EVM x y = no λ ()
+Inte Typ≟ LETdM x y = no λ ()
 Inte Typ≟ Lin x = no λ ()
 R Typ≟ Un = no λ ()
 R Typ≟ Inte = no λ ()
 R Typ≟ (y :* y₁) = no λ ()
 R Typ≟ (y :+ y₁) = no λ ()
 R Typ≟ (y :-> y₁) = no λ ()
-R Typ≟ EVM x y = no λ ()
+R Typ≟ LETdM x y = no λ ()
 R Typ≟ Lin x = no λ ()
 (x :* x₁) Typ≟ Un = no λ ()
 (x :* x₁) Typ≟ Inte = no λ ()
 (x :* x₁) Typ≟ R = no λ ()
 (x :* x₁) Typ≟ (y :+ y₁) = no λ ()
 (x :* x₁) Typ≟ (y :-> y₁) = no λ ()
-(x :* x₁) Typ≟ EVM x₂ y = no λ ()
+(x :* x₁) Typ≟ LETdM x₂ y = no λ ()
 (x :* x₁) Typ≟ Lin x₂ = no λ ()
 (x :+ x₁) Typ≟ Un = no λ ()
 (x :+ x₁) Typ≟ Inte = no λ ()
 (x :+ x₁) Typ≟ R = no λ ()
 (x :+ x₁) Typ≟ (y :* y₁) = no λ ()
 (x :+ x₁) Typ≟ (y :-> y₁) = no λ ()
-(x :+ x₁) Typ≟ EVM x₂ y = no λ ()
+(x :+ x₁) Typ≟ LETdM x₂ y = no λ ()
 (x :+ x₁) Typ≟ Lin x₂ = no λ ()
 (x :-> x₁) Typ≟ Un = no λ ()
 (x :-> x₁) Typ≟ Inte = no λ ()
 (x :-> x₁) Typ≟ R = no λ ()
 (x :-> x₁) Typ≟ (y :* y₁) = no λ ()
 (x :-> x₁) Typ≟ (y :+ y₁) = no λ ()
-(x :-> x₁) Typ≟ EVM x₂ y = no λ ()
+(x :-> x₁) Typ≟ LETdM x₂ y = no λ ()
 (x :-> x₁) Typ≟ Lin x₂ = no λ ()
-EVM x x₁ Typ≟ Un = no λ ()
-EVM x x₁ Typ≟ Inte = no λ ()
-EVM x x₁ Typ≟ R = no λ ()
-EVM x x₁ Typ≟ (y :* y₁) = no λ ()
-EVM x x₁ Typ≟ (y :+ y₁) = no λ ()
-EVM x x₁ Typ≟ (y :-> y₁) = no λ ()
-EVM x x₁ Typ≟ Lin x₂ = no λ ()
+LETdM x x₁ Typ≟ Un = no λ ()
+LETdM x x₁ Typ≟ Inte = no λ ()
+LETdM x x₁ Typ≟ R = no λ ()
+LETdM x x₁ Typ≟ (y :* y₁) = no λ ()
+LETdM x x₁ Typ≟ (y :+ y₁) = no λ ()
+LETdM x x₁ Typ≟ (y :-> y₁) = no λ ()
+LETdM x x₁ Typ≟ Lin x₂ = no λ ()
 Lin x Typ≟ Un = no λ ()
 Lin x Typ≟ Inte = no λ ()
 Lin x Typ≟ R = no λ ()
 Lin x Typ≟ (y :* y₁) = no λ ()
 Lin x Typ≟ (y :+ y₁) = no λ ()
 Lin x Typ≟ (y :-> y₁) = no λ ()
-Lin x Typ≟ EVM x₁ y = no λ ()
+Lin x Typ≟ LETdM x₁ y = no λ ()
     
