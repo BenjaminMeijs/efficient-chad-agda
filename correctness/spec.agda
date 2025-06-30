@@ -26,7 +26,7 @@ interp e env = fst (eval env e)
 
 -- LACM.run, only returning the environment
 -- Folowing the naming of the haskell state monad (MTL)
-LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
+LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LETs Γ → LETs Γ
 LACMexec {Γ} f e = LACM.run f e .snd .fst
 
 -- Postulations about Floats
@@ -40,16 +40,16 @@ postulate
 
 
 module environment-value-tuple where
-    Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag
-    Etup _ [] = Un
-    Etup tag (τ ∷ Γ) = τ :* Etup tag Γ
+    ET : ( tag : PDTag ) → List (Typ tag) → Typ tag
+    ET _ [] = Un
+    ET tag (τ ∷ Γ) = τ :* ET tag Γ
 
-    Etup-to-val : ∀ {tag} {Γ : Env tag} → Rep (Etup tag Γ) → Val tag Γ 
-    Etup-to-val {_} {[]} _ = empty
-    Etup-to-val {_} {τ ∷ Γ} (x , xs) = push x (Etup-to-val xs)
+    ET-to-val : ∀ {tag} {Γ : Env tag} → Rep (ET tag Γ) → Val tag Γ 
+    ET-to-val {_} {[]} _ = empty
+    ET-to-val {_} {τ ∷ Γ} (x , xs) = push x (ET-to-val xs)
 
-    Etup-to-val-primal : {Γ : Env Pr} → Rep (Etup Pr Γ) → Val Du (D1Γ Γ) 
-    Etup-to-val-primal x = primalVal (Etup-to-val x) 
+    ET-to-val-primal : {Γ : Env Pr} → Rep (ET Pr Γ) → Val Du (D1Γ Γ) 
+    ET-to-val-primal x = primalVal (ET-to-val x) 
 
 open environment-value-tuple public
 
@@ -84,23 +84,23 @@ module dense-linear-representation where
 open dense-linear-representation public
 
 module environment-vector where
-    EV : LEnv → Set
-    EV [] = ⊤
-    EV (τ ∷ Γ) = LinRepDense τ × EV Γ
+    LETd : LEnv → Set
+    LETd [] = ⊤
+    LETd (τ ∷ Γ) = LinRepDense τ × LETd Γ
 
-    LEtup2EV : { Γ : LEnv } → LEtup Γ → EV Γ
-    LEtup2EV {[]} tt = tt
-    LEtup2EV {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LEtup2EV {Γ} xs 
+    LETs2d : { Γ : LEnv } → LETs Γ → LETd Γ
+    LETs2d {[]} tt = tt
+    LETs2d {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LETs2d {Γ} xs 
 
-    Etup2EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
-    Etup2EV {[]} tt = tt
-    Etup2EV {τ ∷ Γ} (x , xs) = x , Etup2EV xs 
+    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → LETd (map D2τ' Γ)
+    LRD-ET2LETd {[]} tt = tt
+    LRD-ET2LETd {τ ∷ Γ} (x , xs) = x , LRD-ET2LETd xs 
 
-    zero-EV : (Γ : LEnv) → EV Γ
-    zero-EV [] = tt
-    zero-EV (x ∷ env) = zerovDense x , zero-EV env 
+    zero-LETd : (Γ : LEnv) → LETd Γ
+    zero-LETd [] = tt
+    zero-LETd (x ∷ env) = zerovDense x , zero-LETd env 
 
-    _ev+_ : {Γ : LEnv} → EV Γ → EV Γ → EV Γ
+    _ev+_ : {Γ : LEnv} → LETd Γ → LETd Γ → LETd Γ
     _ev+_ {[]} tt tt = tt
     _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = plusvDense _ vL vR , (evL ev+ evR)
 
@@ -121,7 +121,7 @@ module value-compatibility where
     _≃τ_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃τ y
     _≃τ_ {σ :+ τ} nothing _ = ⊤
 
-    _≃Γ_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
+    _≃Γ_ : {Γ : Env Pr} → LETs (map D2τ' Γ) → Val Pr Γ  → Set
     _≃Γ_ {[]} x y = ⊤
     _≃Γ_ {τ ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {τ} x y) × (xs ≃Γ ys)
 
@@ -142,9 +142,9 @@ module value-compatibility where
     Compatible-LinReps {σ :+! τ} nothing (just x) = ⊤
     Compatible-LinReps {σ :+! τ} nothing nothing = ⊤
 
-    Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
-    Compatible-idx-LEtup {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y
-    Compatible-idx-LEtup {Γ} {τ} (S idx , x) (y , ys) = Compatible-idx-LEtup (idx , x) ys
+    Compatible-idx-LETs : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LETs (map D2τ' Γ) ) → Set
+    Compatible-idx-LETs {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y
+    Compatible-idx-LETs {Γ} {τ} (S idx , x) (y , ys) = Compatible-idx-LETs (idx , x) ys
 
     Compatible-idx-val : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
     Compatible-idx-val {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 

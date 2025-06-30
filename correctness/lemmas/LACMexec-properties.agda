@@ -23,14 +23,14 @@ LACMsequence : ∀ {Γ : LEnv} {a b : Set} -> LACM Γ a -> LACM Γ b -> LACM Γ 
 LACMsequence f g = LACMbind f ( λ _ → g )
 
 LACMexec-pure : ∀ {Γ : LEnv} {a : Set} → (x : a)
-    → (ev : LEtup Γ)
+    → (ev : LETs Γ)
     → LACMexec {Γ} (LACM.pure x) ev ≡ ev
 LACMexec-pure {Γ = Γ} x ev = fst $ LACM.run-pure x ev
 
 LACMexec-bind : ∀ {Γ : LEnv} {a b : Set} 
     → (m1 : LACM Γ a) 
     → (m2 : a -> LACM Γ b)
-    → (evIn : LEtup Γ)
+    → (evIn : LETs Γ)
     → let evOut1         = LACMexec (LACMbind m1 m2) evIn
           r1 , evAux , _ = LACM.run m1 evIn
           evOut2         = LACMexec (m2 r1) evAux
@@ -39,7 +39,7 @@ LACMexec-bind {Γ} m1 m2 ev = fst $ LACM.run-bind m1 (λ x → (m2 x , ℤ.pos 1
 
 LACMexec-scope : ∀ {Γ : LEnv} {a : Set}  {τ : LTyp}
     → (m : LACM (τ ∷ Γ) a) -> (inval : LinRep τ)
-    → (ev : LEtup Γ)
+    → (ev : LETs Γ)
     → let (outval1 , x1) , ev1 , _ = LACM.run (LACM.scope inval m) ev
           x2 , (outval2 , ev2) , _ = LACM.run m (inval , ev)
     in (x1 ≡ x2) × (ev1 ≡ ev2) × (outval1 ≡ outval2)
@@ -48,7 +48,7 @@ LACMexec-scope {Γ} m val ev = let a , b , c , _ = LACM.run-scope m val ev
 
 LACMexec-add : ∀ {Γ : LEnv} {τ : LTyp}
     → (idx : Idx Γ τ) → (val : LinRep τ)
-    → (env : LEtup Γ)
+    → (env : LETs Γ)
     → let env' = LACMexec (LACM.add idx val) env
     in  env' ≡ addLEτ idx val env
 LACMexec-add idx val env = LACM.run-add idx val env .fst 
@@ -56,7 +56,7 @@ LACMexec-add idx val env = LACM.run-add idx val env .fst
 LACMexec-sequence : ∀ {Γ : LEnv} {a b : Set} 
     → (m1 : LACM Γ a) 
     → (m2 : LACM Γ b)
-    → (evIn : LEtup Γ)
+    → (evIn : LETs Γ)
     → let evOut1 = LACMexec (LACMsequence m1  m2) evIn
           evAux  = LACMexec m1 evIn
           evOut2 = LACMexec m2 evAux

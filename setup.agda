@@ -148,7 +148,7 @@ zero-small-cost-v (σ :* τ) = ≤ᵇ⇒≤ tt
 zero-small-cost-v (σ :+ τ) = ≤ᵇ⇒≤ tt
 
 run-bind2 : ∀ {Γ : Env Pr} {a b : Set} -> (m1 : LACM (map D2τ' Γ) a) -> (k : a -> LACM (map D2τ' Γ) b × ℤ)
-         -> (env : LEtup (map D2τ' Γ))
+         -> (env : LETs (map D2τ' Γ))
          -> let _ , env' , c = LACM.run (LACM.bind m1 k) env
                 r1 , env1 , c1 = LACM.run m1 env
                 m2 , ccall = k r1
@@ -163,13 +163,13 @@ run-bind2 {Γ} m1 k env =
 run-scope2 : ∀ {Γ : LEnv} {a : Set} {τ : LTyp}
           -> (m1 : LACM (τ ∷ Γ) a) -> (m2 : LACM (τ ∷ Γ) a) -> m1 ≡ m2
           -> (inval : LinRep τ)
-          -> (env : LEtup Γ)
+          -> (env : LETs Γ)
           -> let (outval1 , x1) , env1 , c1 = LACM.run (LACM.scope inval m1) env
                  x2 , (outval2 , env2) , c2 = LACM.run m2 (inval , env)
              in (x1 ≡ x2) × (outval1 ≡ outval2) × (env1 ≡ env2) × (c1 ≡ c2)
 run-scope2 m1 m2 prf inval env rewrite prf = LACM.run-scope m2 inval env
 
-φ-of-addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> (env : LEtup Γ)
+φ-of-addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> (env : LETs Γ)
            -> φ' Γ (addLEτ idx val env) ≡ φ' Γ env - φ τ (env Eτ!! idx) + φ τ (addLEτ idx val env Eτ!! idx)
 φ-of-addLEτ {_ ∷ Γ} {τ} Z val env =
   solve 3 (\fp ft fx -> fp #+ ft := fx #+ ft :- fx #+ fp) refl
@@ -238,7 +238,7 @@ plusv-amortises {σ :+! τ} (just (inj₂ x)) (just (inj₁ y)) =
        (φ τ x) (φ σ y))
     (neg-mono-≤ (+-mono-≤ (φ-positive τ x) (φ-positive σ y)))
 
-lemma-addLEτ-plusv : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) (val : LinRep τ) (env : LEtup Γ)
+lemma-addLEτ-plusv : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) (val : LinRep τ) (env : LETs Γ)
                   -> addLEτ idx val env Eτ!! idx ≡ fst (plusv τ val (env Eτ!! idx))
 lemma-addLEτ-plusv Z val env = refl
 lemma-addLEτ-plusv (S i) val (x , env) = lemma-addLEτ-plusv i val env

@@ -20,12 +20,12 @@ open import chad-preserves-primal
 
 addLEτ-ctg-zero : {Γ : Env Pr} {τ : Typ Pr}
                 → (idx : Idx Γ τ)
-                  (evIn : LEtup (map D2τ' Γ) )
+                  (evIn : LETs (map D2τ' Γ) )
                   (ctg : LinRep (D2τ' τ))
-                → ( Compatible-idx-LEtup (idx , ctg) evIn )
+                → ( Compatible-idx-LETs (idx , ctg) evIn )
                 → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) )
-                → LEtup2EV (addLEτ (convIdx D2τ' idx) ctg evIn)
-                  ≡ LEtup2EV evIn
+                → LETs2d (addLEτ (convIdx D2τ' idx) ctg evIn)
+                  ≡ LETs2d evIn
 addLEτ-ctg-zero {Γ} Z evIn ctg w≃ w = cong₂ _,_ (trans (plusv-equiv-plusvDense ctg (evIn .fst) w≃) (plusvDense-zeroL' {{w}})) refl
 addLEτ-ctg-zero {Γ} (S idx) evIn ctg w≃ w = cong₂ _,_ refl (addLEτ-ctg-zero idx (evIn .snd) ctg w≃ w)
 
@@ -49,20 +49,20 @@ dprim'-ctg-zero x ctg w SIGN = refl
 chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
                   → let LΓ = map D2τ' Γ in
                   (val : Val Pr Γ) -- input of function
-                  (evIn : LEtup LΓ ) -- incoming LEtup
+                  (evIn : LETs LΓ ) -- incoming LETs
                   (ctg : LinRep (D2τ' τ)) -- incoming cotangent
                   (t : Term Pr Γ τ) -- primal function
                 → ( ctg  ≃τ (interp t val)) -- compatible incoming cotangent
-                → ( evIn ≃Γ val ) -- compatible incoming LEtup
+                → ( evIn ≃Γ val ) -- compatible incoming LETs
                 → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) ) -- a witness to the fact that the cotangent is semantically a zero value
-                →   LEtup2EV {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
-                  ≡ LEtup2EV {LΓ} evIn
+                →   LETs2d {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
+                  ≡ LETs2d {LΓ} evIn
 chad-ctg-zero {Γ} val evIn ctg unit _ _ _
   rewrite LACMexec-pure tt evIn
   = refl
 chad-ctg-zero {Γ} val evIn ctg (var x) ~τ ~Γ w
   rewrite LACMexec-add (convIdx D2τ' x) ctg evIn
-  = let ~evIn-val = ≃τ-and-≃Γ-implies-Compatible-idx-LEtup x ctg evIn val ~τ ~Γ
+  = let ~evIn-val = ≃τ-and-≃Γ-implies-Compatible-idx-LETs x ctg evIn val ~τ ~Γ
     in addLEτ-ctg-zero x evIn ctg ~evIn-val w 
 chad-ctg-zero {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) ~τ ~Γ w
   using l' ← interp (chad l) (primalVal val) .snd (zerov (D2τ' σ) .fst) .fst

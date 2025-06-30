@@ -607,8 +607,8 @@ th1 {Γ} env ctg denvin (case' {σ = σ} {τ = τ} {ρ = ρ} e1 e2 e3)
 φ-zerot-bound (σ :+ τ) (just (inj₂ y)) = +-mono-≤ (+≤+ (s≤s z≤n)) (φ-positive (D2τ' τ) y)
 
 φ-zero-env-bound : {Γ' : Env Du} {env : Val Du Γ'}
-                -> (Γ : Env Pr) -> (tup : LEtup (map D2τ' Γ))
-                -> φ' (map D2τ' Γ) (LEtup-to-LEτ (map D2τ' Γ) (fst (eval env (zero-env-term Γ))))
+                -> (Γ : Env Pr) -> (tup : LETs (map D2τ' Γ))
+                -> φ' (map D2τ' Γ) (LETs-to-LEτ (map D2τ' Γ) (fst (eval env (zero-env-term Γ))))
                    ≤ φ' (map D2τ' Γ) tup
 φ-zero-env-bound [] .tt = +≤+ z≤n
 φ-zero-env-bound (τ ∷ Γ) (x , tup) = +-mono-≤ (φ-zerot-bound τ x) (φ-zero-env-bound Γ tup)
@@ -622,7 +622,7 @@ th2 {Γ} {τ} env ctg t =
       env1 : Val Du (D2τ τ ∷ D1Γ Γ)
       env1 = push ctg (primalVal env)
       zeroenv , czeroenv = eval env1 (zero-env-term Γ)
-      denvin = LEtup-to-LEτ (map D2τ' Γ) zeroenv
+      denvin = LETs-to-LEτ (map D2τ' Γ) zeroenv
       φdenvin = φ' (map D2τ' Γ) denvin
 
       -- world 1: sunk

@@ -50,9 +50,9 @@ data Typ : PDTag -> Set where
   _:+_ : ∀ {tag} -> Typ tag -> Typ tag -> Typ tag
 
   _:->_ : Typ Du -> Typ Du -> Typ Du
-  -- Environment vector monad. This is the same EVM as in the paper; the
+  -- Environment vector monad. This is the same LETdM as in the paper; the
   -- implementation is LACM.
-  EVM : LEnv -> Typ Du -> Typ Du
+  LETdM : LEnv -> Typ Du -> Typ Du
 
   -- The linear types (with embedded potential)
   Lin : LTyp -> Typ Du
@@ -70,7 +70,7 @@ Rep R = Float
 Rep (σ :* τ) = Rep σ × Rep τ
 Rep (σ :+ τ) = Rep σ ⊎ Rep τ
 Rep (σ :-> τ) = Rep σ -> Rep τ × ℤ
-Rep (EVM Γ τ) = LACM Γ (Rep τ)
+Rep (LETdM Γ τ) = LACM Γ (Rep τ)
 Rep (Lin τ) = LinRep τ
 
 -- Convert a type from a source-language type to a target-language type. This
@@ -82,25 +82,25 @@ dut R = R
 dut (σ :* τ) = dut σ :* dut τ
 dut (σ :+ τ) = dut σ :+ dut τ
 
--- The embedded counterpart of LEtup: a tuple of all the types in a linear
+-- The embedded counterpart of LETs: a tuple of all the types in a linear
 -- environment. This is used to pass a linear environment as a _value_ into,
 -- and out of, the monadic computation in the target program.
 LEτ : LEnv -> Typ Du
 LEτ [] = Un
 LEτ (τ ∷ Γ) = Lin τ :* LEτ Γ
 
--- LEtup and ⟦LEτ⟧ are the same thing.
-LEtup-eq-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) ≡ LEtup Γ
-LEtup-eq-LEτ [] = refl
-LEtup-eq-LEτ (τ ∷ Γ) rewrite LEtup-eq-LEτ Γ = refl
+-- LETs and ⟦LEτ⟧ are the same thing.
+LETs-eq-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) ≡ LETs Γ
+LETs-eq-LEτ [] = refl
+LETs-eq-LEτ (τ ∷ Γ) rewrite LETs-eq-LEτ Γ = refl
 
-LEtup-to-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) -> LEtup Γ
-LEtup-to-LEτ [] x = x
-LEtup-to-LEτ (τ ∷ Γ) (x , env) = x , LEtup-to-LEτ Γ env
+LETs-to-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) -> LETs Γ
+LETs-to-LEτ [] x = x
+LETs-to-LEτ (τ ∷ Γ) (x , env) = x , LETs-to-LEτ Γ env
 
-LEτ-to-LEtup : (Γ : LEnv) -> LEtup Γ -> Rep (LEτ Γ)
-LEτ-to-LEtup [] x = x
-LEτ-to-LEtup (τ ∷ Γ) (x , env) = x , LEτ-to-LEtup Γ env
+LEτ-to-LETs : (Γ : LEnv) -> LETs Γ -> Rep (LEτ Γ)
+LEτ-to-LETs [] x = x
+LEτ-to-LETs (τ ∷ Γ) (x , env) = x , LEτ-to-LETs Γ env
 
 
 -------------------- PRIMITIVE OPERATIONS --------------------------------------
@@ -190,16 +190,16 @@ data Term : (tag : PDTag) -> (Γ : Env tag) -> (τ : Typ tag) -> Set where
         -> Term Du Γ (σ :-> τ) -> Term Du Γ σ -> Term Du Γ τ
 
   pureevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-         -> Term Du Γ τ -> Term Du Γ (EVM Γ' τ)
+         -> Term Du Γ τ -> Term Du Γ (LETdM Γ' τ)
   bindevm : {Γ : Env Du} {Γ' : LEnv} {σ τ : Typ Du}
-         -> Term Du Γ (EVM Γ' σ) -> Term Du Γ (σ :-> EVM Γ' τ) -> Term Du Γ (EVM Γ' τ)
+         -> Term Du Γ (LETdM Γ' σ) -> Term Du Γ (σ :-> LETdM Γ' τ) -> Term Du Γ (LETdM Γ' τ)
   runevm : {Γ : Env Du} {Γ' : LEnv} {τ : Typ Du}
-        -> Term Du Γ (EVM Γ' τ) -> Term Du Γ (LEτ Γ') -> Term Du Γ (τ :* LEτ Γ')
+        -> Term Du Γ (LETdM Γ' τ) -> Term Du Γ (LEτ Γ') -> Term Du Γ (τ :* LEτ Γ')
   addevm : {Γ : Env Du} {Γ' : LEnv} {τ : LTyp}
-        -> Idx Γ' τ -> Term Du Γ (Lin τ) -> Term Du Γ (EVM Γ' Un)
+        -> Idx Γ' τ -> Term Du Γ (Lin τ) -> Term Du Γ (LETdM Γ' Un)
   scopeevm : {Γ : Env Du} {Γ' : LEnv} {τ : LTyp} {σ : Typ Du}
-          -> Term Du Γ (Lin τ) -> Term Du Γ (EVM (τ ∷ Γ') σ)
-          -> Term Du Γ (EVM Γ' (Lin τ :* σ))
+          -> Term Du Γ (Lin τ) -> Term Du Γ (LETdM (τ ∷ Γ') σ)
+          -> Term Du Γ (LETdM Γ' (Lin τ :* σ))
 
   lunit : {Γ : Env Du}
         -> Term Du Γ (Lin LUn)
@@ -338,11 +338,11 @@ lamwith {_} {Γ} vars body =
     buildinj (i ∷ vars) Z = buildidx i
     buildinj (i ∷ vars) (S idx) = buildinj vars idx
 
--- 'bindevm' from Term is '>>=' of the environment vector monad EVM; this is
+-- 'bindevm' from Term is '>>=' of the environment vector monad LETdM; this is
 -- '>>'. 'a >> b' is expanded to 'let x = b in a >>= \_ -> x'. Note the
 -- creation of a closure using 'lamwith' containing one entry, namely x.
 thenevm : {Γ : LEnv} {Γ' : Env Du}
-       -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un) -> Term Du Γ' (EVM Γ Un)
+       -> Term Du Γ' (LETdM Γ Un) -> Term Du Γ' (LETdM Γ Un) -> Term Du Γ' (LETdM Γ Un)
 thenevm a b =
   let' b $
     bindevm (sink1 a) (lamwith (zero ∷ []) (var (S Z)))
@@ -389,11 +389,11 @@ D1Γ = map D1τ
 D2Γtup : Env Pr -> Typ Du
 D2Γtup Γ = LEτ (map D2τ' Γ)
 
--- The codomain of the backpropagator of a differentiated program. 'EVM' is the
+-- The codomain of the backpropagator of a differentiated program. 'LETdM' is the
 -- environment vector monad, instantiated with the local accumulation monad
 -- LACM. 'D2Γ' is used in the type of 'chad' below.
 D2Γ : Env Pr -> Typ Du
-D2Γ Γ = EVM (map D2τ' Γ) Un
+D2Γ Γ = LETdM (map D2τ' Γ) Un
 
 -- Convert a _value_ of source-language type to a primal value in the
 -- differentiated world. Because D1τ is the identity for non-function types,
@@ -465,7 +465,7 @@ d1Prim {σ} {τ} op =
     duPrim op
 
 
--------------------- EVALUATION ------------------------------------------------
+-------------------- LETdALUATION ------------------------------------------------
 
 -- A valuation / value environment: one value for each type in the typing
 -- environment.
@@ -547,8 +547,8 @@ eval env (bindevm {Γ' = Γ'} e1 e2) =
 eval env (runevm {Γ' = Γ'} e1 e2) =
   let mf , ce1 = eval env e1
       denv , cdenv = eval env e2
-      x , envctg , capp = LACM.run mf (LEtup-to-LEτ Γ' denv)
-  in (x , LEτ-to-LEtup Γ' envctg) , one + ce1 + cdenv + capp
+      x , envctg , capp = LACM.run mf (LETs-to-LEτ Γ' denv)
+  in (x , LEτ-to-LETs Γ' envctg) , one + ce1 + cdenv + capp
 eval env (addevm {Γ' = Γ'} idx e) =
   let e' , ce = eval env e
   in LACM.add idx e' , one + ce
@@ -705,7 +705,7 @@ chad (case' {σ = σ} {τ = τ} e1 e2 e3) =
 φ (σ :+! τ) (just (inj₂ y)) = one + φ τ y
 
 -- The potential function mapped over a list of linear types.
-φ' : (Γ : LEnv) -> LEtup Γ -> ℤ
+φ' : (Γ : LEnv) -> LETs Γ -> ℤ
 φ' [] tt = + 0
 φ' (τ ∷ Γ) (x , env) = φ τ x + φ' Γ env
 
@@ -716,7 +716,7 @@ TH1-STATEMENT =
   {Γ : Env Pr} {τ : Typ Pr}
   -> (env : Val Pr Γ)
   -> (ctg : Rep (D2τ τ))
-  -> (denvin : LEtup (map D2τ' Γ))
+  -> (denvin : LETs (map D2τ' Γ))
   -> (t : Term Pr Γ τ)
   -> let (_primal , bp) , crun = eval (primalVal env) (chad t)
          envf , ccall = bp ctg

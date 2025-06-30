@@ -23,7 +23,7 @@ open import spec.linear-types
 abstract
   -- Local accumulation monad.
   LACM : LEnv -> Set -> Set
-  LACM Γ a = LEtup Γ -> a × LEtup Γ × ℤ
+  LACM Γ a = LETs Γ -> a × LETs Γ × ℤ
 
   -- The methods of the monad, including pure and bind.
 
@@ -42,7 +42,7 @@ abstract
 
   -- Returns computation result, the output environment, and the cost of
   -- evaluating the monadic computation.
-  run : ∀ {Γ : LEnv} {a : Set} -> LACM Γ a -> LEtup Γ -> a × LEtup Γ × ℤ
+  run : ∀ {Γ : LEnv} {a : Set} -> LACM Γ a -> LETs Γ -> a × LETs Γ × ℤ
   run {Γ} f e =
     let r , e' , c = f e
     in r , e' , one + + length Γ + c
@@ -78,12 +78,12 @@ abstract
   -- to be benchmarked on an actual machine anyway).
 
   run-pure : ∀ {Γ : LEnv} {a : Set} -> (x : a)
-          -> (env : LEtup Γ)
+          -> (env : LETs Γ)
           -> let _ , env' , c = run {Γ} (pure x) env
              in (env' ≡ env) × (c ≡ one + + length Γ + one)
 
   run-bind : ∀ {Γ : LEnv} {a b : Set} -> (m1 : LACM Γ a) -> (k : a -> LACM Γ b × ℤ)
-          -> (env : LEtup Γ)
+          -> (env : LETs Γ)
           -> let _ , env' , c = run (bind m1 k) env
                  r1 , env1 , c1 = run m1 env
                  m2 , ccall = k r1
@@ -92,14 +92,14 @@ abstract
 
   run-add : ∀ {Γ : LEnv} {τ : LTyp}
          -> (idx : Idx Γ τ) -> (val : LinRep τ)
-         -> (env : LEtup Γ)
+         -> (env : LETs Γ)
          -> let tt , env' , c = run (add idx val) env
             in (env' ≡ addLEτ idx val env)
                × (c ≡ + 2 + snd (plusv τ val (env Eτ!! idx)) + + length Γ)
 
   run-scope : ∀ {Γ : LEnv} {a : Set} {τ : LTyp}
            -> (m : LACM (τ ∷ Γ) a) -> (inval : LinRep τ)
-           -> (env : LEtup Γ)
+           -> (env : LETs Γ)
            -> let (outval1 , x1) , env1 , c1 = run (scope inval m) env
                   x2 , (outval2 , env2) , c2 = run m (inval , env)
               in (x1 ≡ x2) × (outval1 ≡ outval2) × (env1 ≡ env2) × (c1 ≡ c2)

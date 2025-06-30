@@ -27,7 +27,7 @@ interp-zerot-equiv-zerov (σ :+ τ) = refl
 
 simplify-exec-chad-fst : {Γ : Env Pr} {σ τ : Typ Pr} 
     → (val : Val Pr Γ)
-      (evIn : LEtup (map D2τ' Γ) )
+      (evIn : LETs (map D2τ' Γ) )
       (ctg : LinRep (D2τ' σ))
       (t : Term Pr Γ (σ :* τ))
     → LACMexec (interp (chad (fst' t)) (primalVal val) .snd ctg .fst ) evIn
@@ -40,7 +40,7 @@ simplify-exec-chad-fst {Γ} {σ} {τ} val evIn ctg t
 
 simplify-exec-chad-snd : {Γ : Env Pr} {σ τ : Typ Pr} 
     → (val : Val Pr Γ)
-      (evIn : LEtup (map D2τ' Γ) )
+      (evIn : LETs (map D2τ' Γ) )
       (ctg : LinRep (D2τ' τ))
       (t : Term Pr Γ (σ :* τ))
     → LACMexec (interp (chad (snd' t)) (primalVal val) .snd ctg .fst ) evIn
@@ -54,10 +54,10 @@ simplify-exec-chad-snd {Γ} {σ} {τ} val evIn ctg t
 -- This lemma is used to simplify LACMexec of a let'
 -- it is polymorphic in the valuation v for example:
 -- -> A is Val Pr Γ, toVal is id
--- -> A is Etup Pr Γ, toVal is Etup-to-val
+-- -> A is ET Pr Γ, toVal is ET-to-val
 simplify-exec-chad-let : {A : Set} {Γ : Env Pr} {τ σ : Typ Pr} 
     → (v : A) (toVal : A → Val Pr Γ)
-    → (evIn : LEtup (map D2τ' Γ) )
+    → (evIn : LETs (map D2τ' Γ) )
       (ctg : LinRep (D2τ' τ))
     → (rhs : Term Pr Γ σ)
       (body : Term Pr (σ ∷ Γ) τ)
@@ -89,7 +89,7 @@ simplify-exec-chad-let {_} {Γ} {τ} {σ} v toVal evIn ctg rhs body
 
 simplify-exec-chad-primop : {Γ : Env Pr} {σ τ : Typ Pr} 
   → (val : Val Pr Γ)
-    (evIn : LEtup (map D2τ' Γ) )
+    (evIn : LETs (map D2τ' Γ) )
     (ctg : LinRep (D2τ' τ))
     (t : Term Pr Γ σ)
     (op : Primop Pr σ τ )
@@ -110,10 +110,10 @@ simplify-exec-chad-primop {Γ} {σ} {τ} val evIn ctg t op
 
 -- Please note that due to this specific use-case, type of this function is rather verbose.
 -- There is no function in Spec that normalizes to this type, as this type is the result of applying the above transformations to:
---    LACMexec (interp (chad (let' e l r) (Etup-to-val-primal a) .snd ctg .fst ) evIn (t is either l or r, depending on the case distinction of 'interp e val')
+--    LACMexec (interp (chad (let' e l r) (ET-to-val-primal a) .snd ctg .fst ) evIn (t is either l or r, depending on the case distinction of 'interp e val')
 simplify-exec-chad-case : {Γ : Env Pr} {σ τ ρ π : Typ Pr} 
   → (val : Val Pr Γ)
-    (evIn : LEtup (map D2τ' Γ) )
+    (evIn : LETs (map D2τ' Γ) )
     (ctg : LinRep (D2τ' ρ))
     (e : Term Pr Γ (σ :+ τ))
     (t : Term Pr (π ∷ Γ) ρ)

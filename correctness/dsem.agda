@@ -16,12 +16,12 @@ open import Relation.Binary.PropositionalEquality using (_≗_)
 open import spec using (Typ; Pr; Env; Rep; D2τ' ; _:*_; _:+_; R; valprj)
 open import spec.linear-types using (Idx; S; Z)
 
-open import correctness.spec using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
+open import correctness.spec using (LinRepDense; zerovDense; plusvDense; ET; ET-to-val)
 
 onehot : {Γ : Env Pr} {τ : Typ Pr}
         → (idx : Idx Γ τ)
         → (x : LinRepDense (D2τ' τ))
-        → LinRepDense (D2τ' (Etup Pr Γ))
+        → LinRepDense (D2τ' (ET Pr Γ))
 onehot {ρ ∷ Γ} {τ} Z       x = x , zerovDense _
 onehot {ρ ∷ Γ} {τ} (S idx) x = zerovDense _ , onehot idx x
 
@@ -80,11 +80,11 @@ postulate
               ⇔ (( Is-just (DSemᵀ {σ} {τ1} f a) × Is-just (DSemᵀ {σ} {τ2} g a)))
 
     DSemᵀ-var : {Γ : Env Pr} {τ : Typ Pr}
-              → let σ = Etup Pr Γ
+              → let σ = ET Pr Γ
               in (a : Rep σ)
               → (idx : Idx Γ τ)
               → (ctg : LinRepDense (D2τ' τ))
-              → Σ (Is-just $ DSemᵀ {σ} {τ} (flip valprj idx ∘ Etup-to-val) a)
+              → Σ (Is-just $ DSemᵀ {σ} {τ} (flip valprj idx ∘ ET-to-val) a)
                   (λ df → to-witness df ctg ≡ onehot idx ctg)
 
     DSemᵀ-case : {σ1 σ2 ρ τ : Typ Pr}

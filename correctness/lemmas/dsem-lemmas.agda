@@ -62,20 +62,20 @@ module Zero {σ τ : Typ Pr} { f : Rep σ  →  Rep τ } { a : Rep σ }
     = DSemᵀ-ctg-zero f a df 
 open Zero public 
 
-module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (Etup Pr Γ)  →  Rep τ } { a : Rep (Etup Pr Γ) }
+module Ev-zero {Γ : Env Pr} {τ : Typ Pr} { f : Rep (ET Pr Γ)  →  Rep τ } { a : Rep (ET Pr Γ) }
     { ctg : LinRepDense (D2τ' τ) }
     {{ w : ctg ≡ zerovDense (D2τ' τ)}}
-    ( df : Is-just (DSemᵀ {Etup Pr Γ} {τ} f a) )
+    ( df : Is-just (DSemᵀ {ET Pr Γ} {τ} f a) )
     where
 
-    DSemᵀ-ev-lemma-ctg-zero' : Etup2EV (to-witness df ctg) ≡ zero-EV (map D2τ' Γ)
+    DSemᵀ-ev-lemma-ctg-zero' : LRD-ET2LETd (to-witness df ctg) ≡ zero-LETd (map D2τ' Γ)
     DSemᵀ-ev-lemma-ctg-zero'
-      = trans (cong (Etup2EV ∘ to-witness df) w) 
-              (trans (cong Etup2EV (DSemᵀ-lemma-ctg-zero' df)) Etup-zerovDense-equiv-zero-EV)
+      = trans (cong (LRD-ET2LETd ∘ to-witness df) w) 
+              (trans (cong LRD-ET2LETd (DSemᵀ-lemma-ctg-zero' df)) ET-zerovDense-equiv-zero-LETd)
 
-    DSemᵀ-ev-lemma-ctg-zero-evIn' : { evIn : LEtup (map D2τ' Γ)  }
-                    → LEtup2EV {map D2τ' Γ} evIn 
-                      ≡ Etup2EV (to-witness df ctg) ev+ LEtup2EV {map D2τ' Γ} evIn
+    DSemᵀ-ev-lemma-ctg-zero-evIn' : { evIn : LETs (map D2τ' Γ)  }
+                    → LETs2d {map D2τ' Γ} evIn 
+                      ≡ LRD-ET2LETd (to-witness df ctg) ev+ LETs2d {map D2τ' Γ} evIn
     DSemᵀ-ev-lemma-ctg-zero-evIn' {evIn} = sym (ev+zeroL' DSemᵀ-ev-lemma-ctg-zero')
 open Ev-zero public
 
@@ -84,21 +84,21 @@ module Onehot where
         onehot-equiv-addLEτ : {Γ : Env Pr} {τ : Typ Pr}
             → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
             in (ctg : LinRep (D2τ' τ))
-            → (evIn : LEtup (map D2τ' Γ) )
-            → Compatible-idx-LEtup (idx , ctg) evIn
-            → LEtup2EV (addLEτ idx' ctg evIn)
-              ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
-        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' Etup-zerovDense-equiv-zero-EV))
+            → (evIn : LETs (map D2τ' Γ) )
+            → Compatible-idx-LETs (idx , ctg) evIn
+            → LETs2d (addLEτ idx' ctg evIn)
+              ≡ (LRD-ET2LETd (onehot idx (sparse2dense ctg)) ev+ LETs2d evIn)
+        onehot-equiv-addLEτ {τ ∷ Γ}  Z      ctg (x , xs) w = cong₂ _,_ (plusv-equiv-plusvDense ctg x w) (sym (ev+zeroL' ET-zerovDense-equiv-zero-LETd))
         onehot-equiv-addLEτ {τ ∷ Γ} (S idx) ctg (x , xs) w = cong₂ _,_ (sym plusvDense-zeroL') (onehot-equiv-addLEτ idx ctg xs w)
 
     onehot-equiv-addLEτ-lemma : {Γ : Env Pr} {τ : Typ Pr}
         → (idx : Idx Γ τ) → let idx' = convIdx D2τ' idx
         in (ctg : LinRep (D2τ' τ))
-        → (evIn : LEtup (map D2τ' Γ) )
+        → (evIn : LETs (map D2τ' Γ) )
         → (val : Val Pr Γ) → (ctg ≃τ valprj val idx) → (evIn ≃Γ val)
-        → LEtup2EV (addLEτ idx' ctg evIn)
-          ≡ (Etup2EV (onehot idx (sparse2dense ctg)) ev+ LEtup2EV evIn)
-    onehot-equiv-addLEτ-lemma idx ctg evIn val ~τ ~Γ = onehot-equiv-addLEτ idx ctg evIn (≃τ-and-≃Γ-implies-Compatible-idx-LEtup idx ctg evIn val ~τ ~Γ)
+        → LETs2d (addLEτ idx' ctg evIn)
+          ≡ (LRD-ET2LETd (onehot idx (sparse2dense ctg)) ev+ LETs2d evIn)
+    onehot-equiv-addLEτ-lemma idx ctg evIn val ~τ ~Γ = onehot-equiv-addLEτ idx ctg evIn (≃τ-and-≃Γ-implies-Compatible-idx-LETs idx ctg evIn val ~τ ~Γ)
 open Onehot public
 
 module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  Rep τ2) (a : Rep σ) where
@@ -148,21 +148,21 @@ module Pair { σ τ1 τ2 : Typ Pr } (f : Rep σ →  Rep τ1) (g : Rep σ →  R
                  (plusvDense-zeroL' {{DSemᵀ-lemma-ctg-zero' {{zerov-equiv-zerovDense (D2τ' τ1)}} df}})
 open Pair public
 
-module Ev-pair {Γ : Env Pr} {τ1 τ2 : Typ Pr } (f : Rep (Etup Pr Γ) →  Rep τ1) (g : Rep (Etup Pr Γ) →  Rep τ2) (a : Rep (Etup Pr Γ))
+module Ev-pair {Γ : Env Pr} {τ1 τ2 : Typ Pr } (f : Rep (ET Pr Γ) →  Rep τ1) (g : Rep (ET Pr Γ) →  Rep τ2) (a : Rep (ET Pr Γ))
             (ctg-f : LinRepDense (D2τ' τ1)) (ctg-g : LinRepDense (D2τ' τ2))
-            (df : Is-just (DSemᵀ {Etup Pr Γ} {τ1} f a))
-            (dg : Is-just (DSemᵀ {Etup Pr Γ} {τ2} g a))
-            (dh : Is-just (DSemᵀ {Etup Pr Γ} {τ1 :* τ2} (λ e → (f e , g e) ) a))
+            (df : Is-just (DSemᵀ {ET Pr Γ} {τ1} f a))
+            (dg : Is-just (DSemᵀ {ET Pr Γ} {τ2} g a))
+            (dh : Is-just (DSemᵀ {ET Pr Γ} {τ1 :* τ2} (λ e → (f e , g e) ) a))
     where
     private
-      h : Rep (Etup Pr Γ) → Rep (τ1 :* τ2)
+      h : Rep (ET Pr Γ) → Rep (τ1 :* τ2)
       h e = (f e , g e)
 
-    DSemᵀ-ev-lemma-pair : (Etup2EV (to-witness df ctg-f) ev+ Etup2EV (to-witness dg ctg-g)) 
-                           ≡ Etup2EV (to-witness dh (ctg-f , ctg-g))
+    DSemᵀ-ev-lemma-pair : (LRD-ET2LETd (to-witness df ctg-f) ev+ LRD-ET2LETd (to-witness dg ctg-g)) 
+                           ≡ LRD-ET2LETd (to-witness dh (ctg-f , ctg-g))
     DSemᵀ-ev-lemma-pair 
       = let rule = DSemᵀ-pair f g a dh df dg ctg-f ctg-g
-        in sym (trans₂ (cong Etup2EV rule) refl (plusvDense-equiv-ev+ (to-witness df ctg-f) (to-witness dg ctg-g)))
+        in sym (trans₂ (cong LRD-ET2LETd rule) refl (plusvDense-equiv-ev+ (to-witness df ctg-f) (to-witness dg ctg-g)))
 open Ev-pair public
 
 module Chain 

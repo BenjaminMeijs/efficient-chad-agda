@@ -40,8 +40,8 @@ plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₁ _) w1 w2 w3 = tt
 plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₂ _) w1 w2 w3 = tt
 
 addLEτ-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr}
-            → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
-            → (evIn ≃Γ val) → (Compatible-idx-LEtup (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
+            → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ)
+            → (evIn ≃Γ val) → (Compatible-idx-LETs (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
             → addLEτ (convIdx D2τ' idx) ctg evIn ≃Γ val
 addLEτ-preserves-≃Γ {τ ∷ Γ} Z       ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {τ} ctg x y w2 w3 (w1 .fst) , w1 .snd
 addLEτ-preserves-≃Γ {τ ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3
@@ -65,11 +65,11 @@ dprim'-preserves-≃τ val ctg SIGN t w = tt
 -- ===============================
 chad-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr} 
                 → (val : Val Pr Γ) -- input of function
-                  (evIn : LEtup (map D2τ' Γ) ) -- incoming LEtup
+                  (evIn : LETs (map D2τ' Γ) ) -- incoming LETs
                   (ctg : LinRep (D2τ' τ)) -- incoming cotangent
                   (t : Term Pr Γ τ) -- primal function
                 → ctg ≃τ (interp t val) -- precondition incoming cotangent
-                → evIn ≃Γ val -- precondition incoming LEtup
+                → evIn ≃Γ val -- precondition incoming LETs
                 → LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn ≃Γ val
 chad-preserves-≃Γ _ evIn _ unit _ w2
   rewrite LACMexec-pure tt evIn
@@ -77,7 +77,7 @@ chad-preserves-≃Γ _ evIn _ unit _ w2
 chad-preserves-≃Γ {Γ} val evIn ctg (var x) w1 w2
   using idx ← convIdx D2τ' x
   rewrite LACMexec-add idx ctg evIn
-  = let ≃evIn-etup = ≃τ-and-≃Γ-implies-Compatible-idx-LEtup x ctg evIn val w1 w2 
+  = let ≃evIn-etup = ≃τ-and-≃Γ-implies-Compatible-idx-LETs x ctg evIn val w1 w2 
         ≃evIn-val = ≃τ-and-≃Γ-implies-Compatible-idx-val x ctg evIn val w1 w2 
     in addLEτ-preserves-≃Γ x ctg evIn val w2 ≃evIn-etup ≃evIn-val
 chad-preserves-≃Γ {Γ} val evIn nothing (pair {σ = σ} {τ = τ} l r) w1 w2
