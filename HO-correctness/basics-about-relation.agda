@@ -17,7 +17,9 @@ open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 open import spec renaming (LR to LTyp-LR)
 open import correctness.spec
 open import correctness.dsem
-open import correctness.lemmas
+open import correctness.dsem
+open import correctness.lemmas.dsem-lemmas
+open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import HO-correctness.logical-relation
 open import HO-correctness.lemmas
 open import HO-correctness.projection

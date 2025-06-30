@@ -121,7 +121,7 @@ plusv (σ :+! τ) (just (inj₂ x)) (just (inj₂ y)) =
   in just (inj₂ z) , one + cz
 plusv (σ :+! τ) _ _ = nothing , one  -- NOTE: a proper implementation would error here.
 plusv Dyn (just (σ , x)) (just (τ , y))
-  = let type-eq-cost = {!   !}
+  = let type-eq-cost = one -- NOTE: 
     in (case dec⇒maybe (τ LTyp≟ σ) of 
         maybe′ (λ w → let (v , c) = plusv σ x (subst LinRep w y)
                       in (just (σ , v)) , one + type-eq-cost + c) 

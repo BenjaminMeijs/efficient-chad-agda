@@ -7,20 +7,15 @@ open import Agda.Builtin.Unit using (⊤; tt)
 open import Agda.Builtin.Float using (Float)
 
 open import Data.Empty using (⊥)
-open import Data.List using (_∷_; map; [])
-open import Data.Sum using (inj₁; inj₂; _⊎_; [_,_]; isInj₁; isInj₂)
-open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe; maybe′)
+open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe′)
 open import Function.Base using (id; _$_; const; _∘_; case_of_)
 open import Data.Product using (_×_; Σ; swap)
-open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
+open import Relation.Binary.PropositionalEquality using (_≗_)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
 
 open import spec hiding (LR)
 open import correctness.spec
-open import correctness.dsyn-defined
-open import correctness.chad-ctg-zero
-open import correctness.lemmas
-open import correctness.dsem
+open import correctness.dsem using (DSemᵀ)
 
 -- τ is a nested tuple of Rs
 Is-ℝᵈ : ∀ {tag} ( τ : Typ tag ) → Set

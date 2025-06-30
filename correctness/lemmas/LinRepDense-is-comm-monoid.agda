@@ -7,10 +7,12 @@ open import Agda.Builtin.Maybe using (Maybe; just; nothing)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primNatToFloat)
 
 open import Data.List using ([]; _∷_; map)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Product using (_×_)
 open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
 open import Relation.Binary.PropositionalEquality using (sym; subst; trans; cong; cong₂)
+open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 
 open import spec
 open import correctness.spec
@@ -82,7 +84,13 @@ module plusv-lemmas where
     plusvSparse-comm (σ :+! τ) (just x) nothing = refl
     plusvSparse-comm (σ :+! τ) nothing (just y) = refl
     plusvSparse-comm (σ :+! τ) nothing nothing = refl
-    plusvSparse-comm Dyn (just x) (just y) = {!   !}
+    plusvSparse-comm Dyn (just (σ , x)) (just (τ , y))
+        with (σ LTyp≟ τ)
+        with (τ LTyp≟ σ)
+    ... | yes refl | yes refl = cong (λ q → just (σ , q)) (plusvSparse-comm σ x y)
+    ... | no  a    | no  b    = refl
+    ... | no a     | yes  b   = ⊥-elim (a (sym b)) -- Cannot happen, ≡ is symmetrical 
+    ... | yes a    | no  b    = ⊥-elim (b (sym a))
     plusvSparse-comm Dyn (just x) nothing = refl
     plusvSparse-comm Dyn nothing (just y) = refl
     plusvSparse-comm Dyn nothing nothing = refl

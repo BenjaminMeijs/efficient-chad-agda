@@ -2,9 +2,8 @@ module HO-correctness.projection where
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
-open import Agda.Builtin.Float using (Float)
 
-open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe; maybe′)
+open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness)
 open import Function.Base using (id; _$_; const; _∘_; case_of_)
 open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
@@ -12,7 +11,7 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong�
 open import spec hiding (LR)
 open import correctness.spec
 open import correctness.dsem
-open import correctness.lemmas
+open import correctness.lemmas.LinRepDense-is-comm-monoid
 open import HO-correctness.logical-relation
 open import HO-correctness.lemmas
 

@@ -9,18 +9,15 @@ open import Level using (Level)
 open import Data.Maybe using (Maybe; just; nothing; Is-just; to-witness; maybe; maybe′)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.List using (List; map; _∷_; []; foldr; foldl; zipWith)
-open import Function.Base using (id; _$_; const; _∘_; case_of_)
+open import Function.Base using (_$_; const; _∘_)
 open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; dcong₂; subst; trans; cong; cong₂; _≗_)
 
 open import spec hiding (LR)
 open import correctness.spec
 open import correctness.dsem
-open import correctness.lemmas
 open import HO-correctness.logical-relation
 open import HO-correctness.lemmas
-open import HO-correctness.projection
-open import HO-correctness.basics-about-relation
 
 -- ==============================
 -- Heterogeneous lists
