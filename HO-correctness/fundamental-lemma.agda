@@ -14,10 +14,10 @@ open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; dcong₂; subst; trans; cong; cong₂; _≗_)
 
 open import spec hiding (LR)
-open import correctness.spec
-open import correctness.dsem
+open import HO-correctness.representation
+open import HO-correctness.dsem
 open import HO-correctness.logical-relation
-open import HO-correctness.lemmas
+open import HO-correctness.lemmas.trivial
 
 -- ==============================
 -- Heterogeneous lists

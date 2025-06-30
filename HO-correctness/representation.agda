@@ -1,5 +1,4 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-module correctness.spec where
+module HO-correctness.representation where
 
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primFloatLess)
@@ -98,7 +97,6 @@ module dense-linear-representation where
 
     postulate 
         LRD-ext : (x : LinRepDense Dyn) → (y : LinRepDense Dyn) → ((τ : LTyp) → x τ ≡ y τ) → x ≡ y
-
 open dense-linear-representation public
 
 module environment-vector where
@@ -123,6 +121,7 @@ module environment-vector where
     _ev+_ {typ ∷ Γ} (vL , evL) (vR , evR) = plusvDense _ vL vR , (evL ev+ evR)
 
 open environment-vector public
+
 
 module value-compatibility where
     -- x ≃ y is a witness to the fact that x and y are compatible (of the same shape) in their constructors for sum types.

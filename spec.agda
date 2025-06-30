@@ -682,7 +682,7 @@ eval env (addFromDynEvm {G} {G1} t) =
   in case x1 of 
         maybe′ (λ (G2 , x2) → 
             case dec⇒maybe (LEτLtyp G1 LTyp≟ G2) of 
-              maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one + {!   !}) -- TODO: Decide cost
+              maybe′ (λ w → LACM.add-LEτLtyp {G1} (subst LinRep (sym w) x2) , one) -- the cost is part of the EVM action
               -- Error, ergo we decide to add zero, whereas a proper implementation would error here.
               zero)
         -- Nothing, ergo we must to add zero

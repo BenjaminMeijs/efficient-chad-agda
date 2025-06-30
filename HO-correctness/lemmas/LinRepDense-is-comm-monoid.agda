@@ -1,5 +1,5 @@
 {-# OPTIONS --allow-unsolved-metas #-}
-module correctness.lemmas.LinRepDense-is-comm-monoid where
+module HO-correctness.lemmas.LinRepDense-is-comm-monoid where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -15,7 +15,7 @@ open import Relation.Binary.PropositionalEquality using (sym; subst; trans; cong
 open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 
 open import spec
-open import correctness.spec
+open import HO-correctness.representation
 
 module plusv-lemmas where
     -- This can be derived from the postulations

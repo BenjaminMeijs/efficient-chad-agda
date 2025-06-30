@@ -1,4 +1,4 @@
-module correctness.dsem where
+module HO-correctness.dsem where
 
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -16,7 +16,7 @@ open import Relation.Binary.PropositionalEquality using (_≗_)
 open import spec using (Typ; Pr; Env; Rep; D2τ' ; _:*_; _:+_; R; valprj)
 open import spec.linear-types using (Idx; S; Z)
 
-open import correctness.spec using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
+open import HO-correctness.representation using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
 
 onehot : {Γ : Env Pr} {τ : Typ Pr}
         → (idx : Idx Γ τ)

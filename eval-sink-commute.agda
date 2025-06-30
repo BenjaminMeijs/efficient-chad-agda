@@ -14,8 +14,8 @@ open import Data.Product using (_×_)
 open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
 open import Relation.Binary.PropositionalEquality
+open import Relation.Nullary.Decidable using (Dec; yes; no)
 
-open import setup
 open import spec
 
 
@@ -27,11 +27,11 @@ forall-fin-trivial : {n : ℕ} {f : Fin n -> Set} -> ((x : Fin n) -> f x) -> for
 forall-fin-trivial {ℕ.zero} g = tt
 forall-fin-trivial {ℕ.suc n} g = g zero , forall-fin-trivial (\x -> g (suc x))
 
-make-index : {Γ : Env tag} (idx : Fin (length Γ)) -> Idx Γ (Γ !! idx)
+make-index : ∀ {tag} → {Γ : Env tag} (idx : Fin (length Γ)) -> Idx Γ (Γ !! idx)
 make-index {Γ = σ ∷ Γ} zero = Z
 make-index {Γ = σ ∷ Γ} (suc i) = S (make-index i)
 
-sinks-to : {Γ Γ' : Env tag}
+sinks-to : ∀ {tag} → {Γ Γ' : Env tag}
         -> (w : Weakening Γ Γ')
         -> (env : Val tag Γ) (env2 : Val tag Γ')
         -> Set
@@ -40,7 +40,7 @@ sinks-to w env env2 =
                         idx' = weaken-var w idx
                     in valprj env idx ≡ valprj env2 idx')
 
-sinks-to-idx : {Γ Γ' : Env tag}
+sinks-to-idx : ∀ {tag} → {Γ Γ' : Env tag}
             -> (w : Weakening Γ Γ')
             -> (env : Val tag Γ) (env2 : Val tag Γ')
             -> sinks-to w env env2
@@ -50,7 +50,7 @@ sinks-to-idx WEnd (push _ env) (push _ env2) (_ , p) (S i) = sinks-to-idx WEnd e
 sinks-to-idx (WCopy w) (push _ env) (push _ env2) (_ , p) (S i) = sinks-to-idx w env env2 p i
 sinks-to-idx (WSkip w) env (push _ env2) p (S i) = sinks-to-idx w env env2 p (S i)
 
-wend-is-id : {Γ : Env tag}
+wend-is-id : ∀ {tag} → {Γ : Env tag}
           -> (env : Val tag Γ) (env2 : Val tag Γ)
           -> sinks-to WEnd env env2
           -> env ≡ env2
@@ -69,7 +69,7 @@ inj-weaken-commute {Γclo = τ ∷ Γclo} f w env env2 p
   rewrite inj-weaken-commute (f ∘ S) w env env2 p =
     refl
 
-eval-sink-commute : {Γ Γ' : Env tag} {τ : Typ tag}
+eval-sink-commute : ∀ {tag} → {Γ Γ' : Env tag} {τ : Typ tag}
                  -> (env : Val tag Γ) (env2 : Val tag Γ')
                  -> (w : Weakening Γ Γ')
                  -> sinks-to w env env2
@@ -178,4 +178,27 @@ eval-sink-commute env env2 w p (lcastr e)
 ... | just (inj₁ x) rewrite eval-sink-commute env env2 w p e = refl
 ... | just (inj₂ y) rewrite eval-sink-commute env env2 w p e = refl
 eval-sink-commute env env2 w p lsumzero = refl
-eval-sink-commute env env2 w p _ = {!   !}
+eval-sink-commute env env2 w p dynZero = refl
+eval-sink-commute env env2 w p (toDyn e)
+  rewrite eval-sink-commute env env2 w p e =
+    refl
+eval-sink-commute env env2 w p (fromDyn e) 
+  rewrite eval-sink-commute env env2 w p e =
+    refl
+eval-sink-commute env env2 w p (toDynEvm e) 
+  rewrite eval-sink-commute env env2 w p e =
+    refl
+eval-sink-commute env env2 w p (addFromDynEvm {G1} {G2} e)
+  rewrite eval-sink-commute env env2 w p e
+  with eval env2 (sink w e) .fst
+... | nothing = refl
+... |  just (τ , x)
+  with LEτLtyp G2 LTyp≟ τ 
+... | yes refl = refl
+... | no _     = refl
+eval-sink-commute env env2 w p (lam e)
+  -- Note, this case is not (yet) provable!
+  -- The cost of evaluating a lambda is proportional to the size of the environment of the closure.
+  -- Since currently the closure stores the entire environtment, the cost depends on env or env2.
+  -- Instead, a closure should take the minimal environment, such that min_env(env) ≡ min_env(env2)
+  = {!   !}

@@ -1,4 +1,4 @@
-module correctness.lemmas.dsem-lemmas where 
+module HO-correctness.lemmas.dsem-lemmas where 
 
 open import Agda.Primitive using (Level)
 open import Agda.Builtin.Equality using (_≡_; refl)
@@ -19,12 +19,12 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong�
 open import Relation.Nullary.Negation using (¬_)
 open Relation.Binary.PropositionalEquality.≡-Reasoning
 
-open import correctness.lemmas.LinRepDense-is-comm-monoid
-open import correctness.lemmas.value-compatibility-lemmas
 
 open import spec
-open import correctness.spec
-open import correctness.dsem
+open import HO-correctness.representation
+open import HO-correctness.dsem
+open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
+open import HO-correctness.lemmas.value-compatibility-lemmas
 import spec.LACM as LACM
 
 -- ======================
@@ -356,4 +356,4 @@ module Exists-Case
     DSemᵀ-exists-lemma-case-inj₂ : (v : Rep σ2) → (fst a ≡ inj₂ v) → Fr v
     DSemᵀ-exists-lemma-case-inj₂ v refl = case-rule
 
-open Exists-Case public
+open Exists-Case public 

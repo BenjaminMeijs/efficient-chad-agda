@@ -1,5 +1,5 @@
 {-# OPTIONS --allow-unsolved-metas #-}
-module correctness.lemmas.value-compatibility-lemmas where
+module HO-correctness.lemmas.value-compatibility-lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -14,7 +14,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
 
 open import spec
-open import correctness.spec
+open import HO-correctness.representation
 
 -- ===============================
 -- Basic lemmas about ≃τ and ≃Γ

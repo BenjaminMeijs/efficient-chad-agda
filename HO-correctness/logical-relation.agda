@@ -14,8 +14,8 @@ open import Relation.Binary.PropositionalEquality using (_≗_)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
 
 open import spec hiding (LR)
-open import correctness.spec
-open import correctness.dsem using (DSemᵀ)
+open import HO-correctness.representation
+open import HO-correctness.dsem using (DSemᵀ)
 
 -- τ is a nested tuple of Rs
 Is-ℝᵈ : ∀ {tag} ( τ : Typ tag ) → Set
