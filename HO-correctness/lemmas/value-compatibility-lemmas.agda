@@ -14,7 +14,7 @@ open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
 
 open import spec
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 
 -- ===============================
 -- Basic lemmas about ≃τ and ≃Γ

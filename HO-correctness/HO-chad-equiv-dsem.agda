@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module HO-correctness.HO-chad-equiv-dsem where
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
@@ -14,14 +13,16 @@ open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; dcong₂; subst; trans; cong; cong₂; _≗_)
 
 open import spec hiding (LR)
+open import spec.LACM as LACM
+open import spec.HL-list
 
 open import HO-correctness.dsem
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.logical-relation
-open import HO-correctness.lemmas.trivial
-open import HO-correctness.lemmas.projection
-open import HO-correctness.lemmas.relation
+open import HO-correctness.lemmas.trivial-equivalences
+open import HO-correctness.lemmas.projection-in-relation
+open import HO-correctness.lemmas.basics-relation
 open import HO-correctness.fundamental-lemma
 
 LR-chad : {Γ : Env Pr} {τ : Typ Pr}
@@ -34,7 +35,7 @@ LR-chad : {Γ : Env Pr} {τ : Typ Pr}
 LR-chad {Γ = Γ} isRd t evIn x = 
     let val = Etup-to-val (Etup-D1τ-distr₁ Γ x)
         (a , b) = interp (chad t) val
-    in a , (λ ctg → EV-to-Etup (LEtup2EV {map D2τ' Γ} (LACMexec (b ctg .fst) evIn)))
+    in a , (λ ctg → EV-to-Etup (LEtup2EV {map D2τ' Γ} (LACM.exec (b ctg .fst) evIn)))
 
 ValIdProjections :  (Γ : Env Pr) → (q : Is-ℝᵈ (Etup Pr Γ)) 
     → (G : Env Pr) → Lens (Etup Pr Γ) (Etup Pr G) q
@@ -70,7 +71,7 @@ chad-in-LR {σ} {τ} isRd t =
           equiv₂ : (x : Rep (D1τ σ) × ⊤) → (ctg : LinRep (D2τ' τ)) → _
           equiv₂ (x , tt) ctg = cong₂ _,_ 
                                 (trans plusvDense-zeroR' 
-                                    (cong (λ a → sparse2dense (LACMexec (interp (chad t) (push a empty) .snd ctg .fst) (zerov (D2τ' σ) .fst , tt) .fst)) 
+                                    (cong (λ a → sparse2dense (LACM.exec (interp (chad t) (push a empty) .snd ctg .fst) (zerov (D2τ' σ) .fst , tt) .fst)) 
                                         (lemma-primal₂ (fst isRd) x))) refl
 
 LR-chad-equiv-DSem : {σ τ : Typ Pr } 
@@ -95,7 +96,7 @@ HO-chad-equiv-DSem : {σ τ : Typ Pr }
     → (df : Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) (x , tt)))
     → let evIn = zerov (D2τ' σ) .fst , tt
           val = to-primal q1 x , tt
-      in sparse2dense (LACMexec (interp (chad t) (Etup-to-val val) .snd ctg .fst) evIn .fst)
+      in sparse2dense (LACM.exec (interp (chad t) (Etup-to-val val) .snd ctg .fst) evIn .fst)
          ≡ to-witness df (sparse2dense ctg) .fst
 HO-chad-equiv-DSem {σ} {τ} q1 q2 t x ctg df
   = cong fst (LR-chad-equiv-DSem q1 q2 t x ctg df)

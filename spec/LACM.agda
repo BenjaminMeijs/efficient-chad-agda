@@ -153,3 +153,9 @@ abstract
   --             (+ length Γ)
   --             (snd (snd (m (val , env))))
   --   in refl , refl , refl , p
+
+
+-- Project only the environment from LACM.run
+-- Folowing the naming of the haskell state monad (MTL)
+exec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
+exec {Γ} f e = run f e .snd .fst

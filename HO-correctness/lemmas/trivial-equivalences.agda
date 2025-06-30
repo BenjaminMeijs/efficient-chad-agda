@@ -1,4 +1,4 @@
-module HO-correctness.lemmas.trivial where
+module HO-correctness.lemmas.trivial-equivalences where
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong�
 open import Relation.Nullary.Decidable using (yes; no)
 
 open import spec hiding (LR)
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.logical-relation
 
 

@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module spec where
 
 open import Agda.Builtin.Bool using (true; false)
@@ -453,17 +452,6 @@ zeroRep (τ :+ τ₁) = inj₁ (zeroRep τ)
 zeroRep (τ :-> τ₁) = λ z →
     zeroRep τ₁ , ℤ.pos 0
 
-primal : (τ : Typ Pr) -> Rep τ -> Rep (D1τ τ)
-primal Un tt = tt
-primal Inte x = x
-primal R x = x
-primal (σ :* τ) (x , y) = primal σ x , primal τ y
-primal (σ :+ τ) (inj₁ x) = inj₁ (primal σ x)
-primal (σ :+ τ) (inj₂ y) = inj₂ (primal τ y)
-primal (σ :-> τ) f = {!   !}
-  -- QUESTION: there is no sensible primal for a function
-  -- λ x → (primal τ (zeroRep τ) , (λ ctg → (LACM.pure tt) , (+ ℕ.zero))) , (+ ℕ.zero)
-
 -- Our primitive operations work on types of which the primal is the same as
 -- the original type. This is of course true for _all_ our types in this Agda
 -- development, but this ceases to be true once we add function types to the
@@ -535,12 +523,6 @@ data Val (tag : PDTag) : Env tag -> Set where
 valprj : ∀ {tag} {Γ : Env tag} {τ : Typ tag} -> (env : Val tag Γ) -> Idx Γ τ -> Rep τ
 valprj (push x env) Z = x
 valprj (push x env) (S i) = valprj env i
-
--- Map 'primal' over a valuation, lifting a valuation from the
--- non-differentiated world into a valuation in source-language world.
-primalVal : {Γ : Env Pr} -> Val Pr Γ -> Val Du (D1Γ Γ)
-primalVal empty = empty
-primalVal {τ ∷ _} (push x env) = push (primal τ x) (primalVal env)
 
 -- Given an inclusion of Γ' in Γ, and a valuation of Γ, build a valuation of
 -- Γ'. This is used for evaluation of closures in 'eval' below.
@@ -692,8 +674,9 @@ eval env (toDynEvm {Γ} {G} t) =
       (v , c2) = LEτ-to-LEτLtyp {G} x
   in just (LEτLtyp G , v) , one + c1 + c2
 
-
-
+-- Project out the evaluation result from 'eval'.
+interp : ∀ {tag} {Γ : Env tag} {τ : Typ tag} → Term tag Γ τ → Val tag Γ → Rep τ
+interp e env = fst (eval env e)
 
 -- Project out the number of evaluation steps from 'eval'.
 cost : ∀ {tag} {Γ : Env tag} {τ : Typ tag} -> Val tag Γ -> Term tag Γ τ -> ℤ
@@ -834,34 +817,14 @@ chad (app {σ = σ} {τ = τ} s t) =
 φ (σ :+! τ) nothing = one
 φ (σ :+! τ) (just (inj₁ x)) = one + φ σ x
 φ (σ :+! τ) (just (inj₂ y)) = one + φ τ y
-φ Dyn x = {!   !}
+φ Dyn nothing = one
+φ Dyn (just (τ , x)) = one + φ τ x
 
 -- The potential function mapped over a list of linear types.
 φ' : (Γ : LEnv) -> LEtup Γ -> ℤ
 φ' [] tt = + 0
 φ' (τ ∷ Γ) (x , env) = φ τ x + φ' Γ env
 
--- The statement of the complexity theorem including potential. A value of this
--- type (i.e. a proof of the theorem) is given in `chad-cost.agda`.
-TH1-STATEMENT : Set
-TH1-STATEMENT =
-  {Γ : Env Pr} {τ : Typ Pr}
-  -> (env : Val Pr Γ)
-  -> (ctg : Rep (D2τ τ))
-  -> (denvin : LEtup (map D2τ' Γ))
-  -> (t : Term Pr Γ τ)
-  -> let (_primal , bp) , crun = eval (primalVal env) (chad t)
-         envf , ccall = bp ctg
-         tt , denvout , cmonad = LACM.run envf denvin
-     in
-     crun
-      + ccall
-      + cmonad
-      - φ (D2τ' τ) ctg
-      - φ' (map D2τ' Γ) denvin
-      + φ' (map D2τ' Γ) denvout
-      - + length Γ
-      ≤ + 34 * cost env t
 
 -- In th2 we bound φ by the size of the incoming cotangent. This measures the
 -- size of a cotangent value.
@@ -875,24 +838,6 @@ size (σ :+! τ) (just (inj₁ x)) = 1 +ℕ size σ x
 size (σ :+! τ) (just (inj₂ y)) = 1 +ℕ size τ y
 size Dyn nothing = 1
 size Dyn (just (τ , x)) = 1 +ℕ size τ x
-
--- The statement of the corollary that bounds φ to not mention potential any
--- more. A value of this type (i.e. a proof of the theorem) is given in
--- `chad-cost.agda`.
-TH2-STATEMENT : Set
-TH2-STATEMENT =
-  {Γ : Env Pr} {τ : Typ Pr}
-  -> (env : Val Pr Γ)
-  -> (ctg : Rep (D2τ τ))
-  -> (t : Term Pr Γ τ)
-  -> cost (push ctg (primalVal env))
-          (runevm (app (snd' (sink (WSkip WEnd) (chad t)))
-                       (var Z))
-                  (zero-env-term Γ))
-      ≤ + 5
-         + + 34 * cost env t
-         + + size (D2τ' τ) ctg
-         + + 4 * + length Γ
 
 -- -------------------------
 -- The implementation of decidable equality for types

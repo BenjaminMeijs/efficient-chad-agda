@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality using (_≗_)
 open import Relation.Nullary.Decidable using (Dec; yes; no)
 
 open import spec hiding (LR)
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.dsem using (DSemᵀ)
 
 -- τ is a nested tuple of Rs

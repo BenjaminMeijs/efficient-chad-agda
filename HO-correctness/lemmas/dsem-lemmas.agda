@@ -21,7 +21,7 @@ open Relation.Binary.PropositionalEquality.≡-Reasoning
 
 
 open import spec
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.dsem
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
 open import HO-correctness.lemmas.value-compatibility-lemmas

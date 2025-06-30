@@ -1,4 +1,4 @@
-module HO-correctness.representation where
+module HO-correctness.dense-rep where
 
 open import Agda.Builtin.Equality using (_≡_)
 open import Agda.Builtin.Float using (Float; primFloatPlus; primFloatTimes; primFloatNegate; primFloatLess)
@@ -20,17 +20,6 @@ open import spec
 import spec.LACM as LACM
 open LACM using (LACM)
 
--- eval from 'Spec' with the following conveniences:
--- -> ignoring the complexity cost
--- -> flipping the arguments
-interp : ∀ {tag} {Γ : Env tag} {τ : Typ tag} → Term tag Γ τ → Val tag Γ → Rep τ
-interp e env = fst (eval env e)
-
--- LACM.run, only returning the environment
--- Folowing the naming of the haskell state monad (MTL)
-LACMexec : ∀ {Γ : LEnv} {a : Set} → LACM Γ a → LEtup Γ → LEtup Γ
-LACMexec {Γ} f e = LACM.run f e .snd .fst
-
 -- Postulations about Floats
 postulate
     primFloatPlus-comm : (x : Float) → (y : Float) → primFloatPlus x y ≡ primFloatPlus y x
@@ -49,9 +38,6 @@ module environment-value-tuple where
     Etup-to-val : ∀ {tag} {Γ : Env tag} → Rep (Etup tag Γ) → Val tag Γ 
     Etup-to-val {_} {[]} _ = empty
     Etup-to-val {_} {τ ∷ Γ} (x , xs) = push x (Etup-to-val xs)
-
-    Etup-to-val-primal : {Γ : Env Pr} → Rep (Etup Pr Γ) → Val Du (D1Γ Γ) 
-    Etup-to-val-primal x = primalVal (Etup-to-val x) 
 
 open environment-value-tuple public
 

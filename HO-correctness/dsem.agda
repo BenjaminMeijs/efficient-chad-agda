@@ -16,7 +16,7 @@ open import Relation.Binary.PropositionalEquality using (_≗_)
 open import spec using (Typ; Pr; Env; Rep; D2τ' ; _:*_; _:+_; R; valprj)
 open import spec.linear-types using (Idx; S; Z)
 
-open import HO-correctness.representation using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
+open import HO-correctness.dense-rep using (LinRepDense; zerovDense; plusvDense; Etup; Etup-to-val)
 
 onehot : {Γ : Env Pr} {τ : Typ Pr}
         → (idx : Idx Γ τ)

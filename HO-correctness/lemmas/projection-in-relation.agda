@@ -1,4 +1,4 @@
-module HO-correctness.lemmas.projection where
+module HO-correctness.lemmas.projection-in-relation where
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
@@ -9,11 +9,11 @@ open import Data.Product using (_×_; Σ)
 open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong₂; _≗_)
 
 open import spec hiding (LR)
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.dsem
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
 open import HO-correctness.logical-relation
-open import HO-correctness.lemmas.trivial
+open import HO-correctness.lemmas.trivial-equivalences
 
 -- Since we generalized ℝᵈ to nested tuples of reals and unit,
 -- we need to generalize the concept of projection.

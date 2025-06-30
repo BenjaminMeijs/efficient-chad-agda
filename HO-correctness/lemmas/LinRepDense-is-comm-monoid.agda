@@ -15,7 +15,7 @@ open import Relation.Binary.PropositionalEquality using (sym; subst; trans; cong
 open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 
 open import spec
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 
 module plusv-lemmas where
     -- This can be derived from the postulations

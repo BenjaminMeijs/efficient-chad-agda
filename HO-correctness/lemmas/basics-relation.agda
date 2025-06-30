@@ -1,5 +1,5 @@
 {-# OPTIONS --allow-unsolved-metas #-}
-module HO-correctness.lemmas.relation where
+module HO-correctness.lemmas.basics-relation where
 open import Agda.Builtin.Equality using (_≡_; refl)
 open import Agda.Builtin.Sigma using (_,_; fst; snd)
 open import Agda.Builtin.Unit using (⊤; tt)
@@ -15,13 +15,13 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; cong�
 open import Relation.Nullary.Decidable using (Dec; dec⇒maybe; yes; no)
 
 open import spec renaming (LR to LTyp-LR)
-open import HO-correctness.representation
+open import HO-correctness.dense-rep
 open import HO-correctness.dsem
 open import HO-correctness.logical-relation
 open import HO-correctness.lemmas.dsem-lemmas
-open import HO-correctness.lemmas.projection
+open import HO-correctness.lemmas.projection-in-relation
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
-open import HO-correctness.lemmas.trivial
+open import HO-correctness.lemmas.trivial-equivalences
 
 private
     trans₂ : {A : Set} {x y a b : A} → x ≡ y → x ≡ a → y ≡ b → a ≡ b
