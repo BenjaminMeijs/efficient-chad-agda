@@ -36,7 +36,7 @@ open import HO-correctness.dense-rep
 ≃τ-congR τ x y z refl w = w
 
 ≃Γ-intro-zero : {Γ : Env Pr} {τ : Typ Pr}
-            → (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
+            → (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
             → evIn ≃Γ val
             → (zerov (D2τ' τ) .fst , evIn) ≃Γ push x val
 ≃Γ-intro-zero {Γ} {τ} evIn val x w = ≃τ-zerov τ x , w
@@ -67,17 +67,17 @@ open import HO-correctness.dense-rep
 ≃τ's-implies-Compatible-LinReps {σ :+ τ} nothing nothing (inj₂ _) _ _ = tt
 ≃τ's-implies-Compatible-LinReps {σ :-> τ} _ _ _ _ _ = tt
 
-≃τ-and-≃Γ-implies-Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr}
-    → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
+≃τ-and-≃Γ-implies-Compatible-idx-LETs : {Γ : Env Pr} {τ : Typ Pr}
+    → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ)
     → (ctg ≃τ valprj val idx) → (evIn ≃Γ val)
-    → Compatible-idx-LEtup (idx , ctg) evIn
-≃τ-and-≃Γ-implies-Compatible-idx-LEtup Z ctg (x , xs) (push y ys) w1 w2
+    → Compatible-idx-LETs (idx , ctg) evIn
+≃τ-and-≃Γ-implies-Compatible-idx-LETs Z ctg (x , xs) (push y ys) w1 w2
     = ≃τ's-implies-Compatible-LinReps ctg x y w1 (fst w2)
-≃τ-and-≃Γ-implies-Compatible-idx-LEtup (S idx) ctg (x , xs) (push y ys) w1 w2
-    = ≃τ-and-≃Γ-implies-Compatible-idx-LEtup idx ctg xs ys w1 (snd w2)
+≃τ-and-≃Γ-implies-Compatible-idx-LETs (S idx) ctg (x , xs) (push y ys) w1 w2
+    = ≃τ-and-≃Γ-implies-Compatible-idx-LETs idx ctg xs ys w1 (snd w2)
 
 ≃τ-and-≃Γ-implies-Compatible-idx-val : {Γ : Env Pr} {τ : Typ Pr}
-    → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LEtup (map D2τ' Γ)) (val : Val Pr Γ)
+    → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ)
     → (ctg ≃τ valprj val idx) → (evIn ≃Γ val)
     → Compatible-idx-val (idx , ctg) val
 ≃τ-and-≃Γ-implies-Compatible-idx-val Z ctg (x , xs) (push y ys) w1 w2
@@ -93,7 +93,7 @@ open import HO-correctness.dense-rep
 
 ≃Γ-intro-zero' : {Γ : Env Pr} ( τ : Typ Pr )
             → { val : Val Pr Γ } { x : Rep τ } 
-            → (evIn : LEtup (map D2τ' Γ))
+            → (evIn : LETs (map D2τ' Γ))
             → evIn ≃Γ val
             → (zerov (D2τ' τ) .fst , evIn) ≃Γ push x val
 ≃Γ-intro-zero' {Γ} τ {val} {x} evIn w = ≃Γ-intro-zero {Γ} {τ} evIn val x w
@@ -120,7 +120,7 @@ Decidable-≃τ {σ :+ τ} nothing (inj₂ y) = yes tt
 Decidable-≃τ {σ :-> τ} _ _ = yes tt
 
 
-Decidable-≃Γ : {Γ : Env Pr} → (x : LEtup (map D2τ' Γ)) → (y : Val Pr Γ)  → Dec (x ≃Γ y)
+Decidable-≃Γ : {Γ : Env Pr} → (x : LETs (map D2τ' Γ)) → (y : Val Pr Γ)  → Dec (x ≃Γ y)
 Decidable-≃Γ {[]} x y = yes tt
 Decidable-≃Γ {τ ∷ Γ} (x , xs) (push y ys)
   with Decidable-≃τ {τ} x y | Decidable-≃Γ {Γ} xs ys

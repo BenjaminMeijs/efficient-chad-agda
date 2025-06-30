@@ -90,13 +90,13 @@ module environment-vector where
     EV : LEnv → Set
     EV Γ = HL Γ LinRepDense
 
-    LEtup2EV : { Γ : LEnv } → LEtup Γ → EV Γ
-    LEtup2EV {[]} tt = tt
-    LEtup2EV {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LEtup2EV {Γ} xs 
+    LETs2d : { Γ : LEnv } → LETs Γ → EV Γ
+    LETs2d {[]} tt = tt
+    LETs2d {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LETs2d {Γ} xs 
 
-    Etup2EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
-    Etup2EV {[]} tt = tt
-    Etup2EV {τ ∷ Γ} (x , xs) = x , Etup2EV xs 
+    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
+    LRD-ET2LETd {[]} tt = tt
+    LRD-ET2LETd {τ ∷ Γ} (x , xs) = x , LRD-ET2LETd xs 
 
     zero-EV : (Γ : LEnv) → EV Γ
     zero-EV [] = tt
@@ -127,7 +127,7 @@ module value-compatibility where
     _≃τ_ {σ :-> τ} x f = ⊤
 
 
-    _≃Γ_ : {Γ : Env Pr} → LEtup (map D2τ' Γ) → Val Pr Γ  → Set
+    _≃Γ_ : {Γ : Env Pr} → LETs (map D2τ' Γ) → Val Pr Γ  → Set
     _≃Γ_ {[]} x y = ⊤
     _≃Γ_ {τ ∷ Γ} (x , xs) (push y ys) = (_≃τ_ {τ} x y) × (xs ≃Γ ys)
 
@@ -150,9 +150,9 @@ module value-compatibility where
     -- TODO: figure out what Compatible-LinReps means for Dyn
     Compatible-LinReps {Dyn} _ _ = ⊤
 
-    Compatible-idx-LEtup : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LEtup (map D2τ' Γ) ) → Set
-    Compatible-idx-LEtup {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y
-    Compatible-idx-LEtup {Γ} {τ} (S idx , x) (y , ys) = Compatible-idx-LEtup (idx , x) ys
+    Compatible-idx-LETs : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LETs (map D2τ' Γ) ) → Set
+    Compatible-idx-LETs {Γ} {τ} (Z , x) (y , ys) = Compatible-LinReps x y
+    Compatible-idx-LETs {Γ} {τ} (S idx , x) (y , ys) = Compatible-idx-LETs (idx , x) ys
 
     Compatible-idx-val : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (Val Pr Γ) → Set
     Compatible-idx-val {Γ} {τ} (Z , x) (push y ys) = x ≃τ y 

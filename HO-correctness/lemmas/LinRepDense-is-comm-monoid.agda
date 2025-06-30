@@ -165,10 +165,10 @@ ev+assoc : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → (c : EV Γ)
 Etup-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ EV (map D2τ' Γ)
 EV-to-Etup : {Γ : Env Pr} → EV (map D2τ' Γ) → LinRepDense (D2τ' (Etup Pr Γ))
 Etup-to-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
-Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → Etup2EV (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
+Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → LRD-ET2LETd (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
 plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
-                    → Etup2EV (plusvDense (D2τ' (Etup Pr Γ)) x y)
-                        ≡ Etup2EV x ev+ Etup2EV y
+                    → LRD-ET2LETd (plusvDense (D2τ' (Etup Pr Γ)) x y)
+                        ≡ LRD-ET2LETd x ev+ LRD-ET2LETd y
 
 ev+congR w = cong₂ _ev+_ refl w
 ev+congL w = cong₂ _ev+_ w refl

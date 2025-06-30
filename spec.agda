@@ -91,23 +91,23 @@ dut (σ :* τ) = dut σ :* dut τ
 dut (σ :+ τ) = dut σ :+ dut τ
 dut (σ :-> τ) = dut σ :-> dut τ
 
--- The embedded counterpart of LEtup: a tuple of all the types in a linear
+-- The embedded counterpart of LETs: a tuple of all the types in a linear
 -- environment. This is used to pass a linear environment as a _value_ into,
 -- and out of, the monadic computation in the target program.
 LEτ : LEnv -> Typ Du
 LEτ [] = Un
 LEτ (τ ∷ Γ) = Lin τ :* LEτ Γ
 
--- LEtup and ⟦LEτ⟧ are the same thing.
-LEtup-eq-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) ≡ LEtup Γ
-LEtup-eq-LEτ [] = refl
-LEtup-eq-LEτ (τ ∷ Γ) rewrite LEtup-eq-LEτ Γ = refl
+-- LETs and ⟦LEτ⟧ are the same thing.
+LETs-eq-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) ≡ LETs Γ
+LETs-eq-LEτ [] = refl
+LETs-eq-LEτ (τ ∷ Γ) rewrite LETs-eq-LEτ Γ = refl
 
-LEtup-to-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) -> LEtup Γ
-LEtup-to-LEτ Γ x = subst (λ x → x) (LEtup-eq-LEτ Γ) x
+LETs-to-LEτ : (Γ : LEnv) -> Rep (LEτ Γ) -> LETs Γ
+LETs-to-LEτ Γ x = subst (λ x → x) (LETs-eq-LEτ Γ) x
 
-LEτ-to-LEtup : (Γ : LEnv) -> LEtup Γ -> Rep (LEτ Γ)
-LEτ-to-LEtup Γ x = subst id (sym $ LEtup-eq-LEτ Γ) x
+LEτ-to-LETs : (Γ : LEnv) -> LETs Γ -> Rep (LEτ Γ)
+LEτ-to-LETs Γ x = subst id (sym $ LETs-eq-LEτ Γ) x
 
 LEτ-to-LEτLtyp : {Γ : LEnv} → Rep (LEτ Γ) → ( LinRep (LEτLtyp Γ) × ℤ)
 LEτ-to-LEτLtyp  {[]} x = (tt , one)
@@ -587,8 +587,8 @@ eval env (bindevm {Γ' = Γ'} e1 e2) =
 eval env (runevm {Γ' = Γ'} e1 e2) =
   let mf , ce1 = eval env e1
       denv , cdenv = eval env e2
-      x , envctg , capp = LACM.run mf (LEtup-to-LEτ Γ' denv)
-  in (x , LEτ-to-LEtup Γ' envctg) , one + ce1 + cdenv + capp
+      x , envctg , capp = LACM.run mf (LETs-to-LEτ Γ' denv)
+  in (x , LEτ-to-LETs Γ' envctg) , one + ce1 + cdenv + capp
 eval env (addevm {Γ' = Γ'} idx e) =
   let e' , ce = eval env e
   in LACM.add idx e' , one + ce
@@ -821,7 +821,7 @@ chad (app {σ = σ} {τ = τ} s t) =
 φ Dyn (just (τ , x)) = one + φ τ x
 
 -- The potential function mapped over a list of linear types.
-φ' : (Γ : LEnv) -> LEtup Γ -> ℤ
+φ' : (Γ : LEnv) -> LETs Γ -> ℤ
 φ' [] tt = + 0
 φ' (τ ∷ Γ) (x , env) = φ τ x + φ' Γ env
 

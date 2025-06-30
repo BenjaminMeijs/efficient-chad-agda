@@ -45,11 +45,11 @@ LinRep Dyn = Maybe (Σ LTyp LinRep)
 -- Linear environment tuple: a tuple of all the types in a linear environment.
 -- This is used to pass a linear environment as a _value_ into, and out of,
 -- the monadic computation in the target program.
-LEtup : LEnv -> Set
-LEtup [] = ⊤
-LEtup (τ ∷ Γ) = LinRep τ × LEtup Γ
+LETs : LEnv -> Set
+LETs [] = ⊤
+LETs (τ ∷ Γ) = LinRep τ × LETs Γ
 
--- The embedded counterpart of LEtup: a tuple of all the types in a linear -- environment. 
+-- The embedded counterpart of LETs: a tuple of all the types in a linear -- environment. 
 -- This is used specifically by toDynEvm and addFromDynEvm.
 -- LEτ is a Typ, LEτLTyp is a LTyp
 LEτLtyp : LEnv -> LTyp
@@ -132,12 +132,12 @@ plusv Dyn (just x) nothing = just x , one
 plusv Dyn nothing (just y) = just y , one
 
 -- Add the value 'val' into the position 'idx' in the environment tuple.
-addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> LEtup Γ -> LEtup Γ
+addLEτ : {Γ : LEnv} {τ : LTyp} -> (idx : Idx Γ τ) -> (val : LinRep τ) -> LETs Γ -> LETs Γ
 addLEτ Z val (x , env) = fst (plusv _ val x) , env
 addLEτ (S i) val (x , env) = x , addLEτ i val env
 
 -- Project a value out of an environment tuple.
-_Eτ!!_ : {Γ : LEnv} {τ : LTyp} -> LEtup Γ -> Idx Γ τ -> LinRep τ
+_Eτ!!_ : {Γ : LEnv} {τ : LTyp} -> LETs Γ -> Idx Γ τ -> LinRep τ
 (x , env) Eτ!! Z = x
 (x , env) Eτ!! (S i) = env Eτ!! i
 

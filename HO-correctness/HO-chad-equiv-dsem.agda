@@ -30,12 +30,12 @@ LR-chad : {Γ : Env Pr} {τ : Typ Pr}
           LΓ = map D2τ' Γ
     in (isRd : Is-ℝᵈ σ)
     → (t : Term Pr Γ τ)
-    → (evIn : LEtup LΓ)
+    → (evIn : LETs LΓ)
     → Rep (D1τ σ) → Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))
 LR-chad {Γ = Γ} isRd t evIn x = 
     let val = Etup-to-val (Etup-D1τ-distr₁ Γ x)
         (a , b) = interp (chad t) val
-    in a , (λ ctg → EV-to-Etup (LEtup2EV {map D2τ' Γ} (LACM.exec (b ctg .fst) evIn)))
+    in a , (λ ctg → EV-to-Etup (LETs2d {map D2τ' Γ} (LACM.exec (b ctg .fst) evIn)))
 
 ValIdProjections :  (Γ : Env Pr) → (q : Is-ℝᵈ (Etup Pr Γ)) 
     → (G : Env Pr) → Lens (Etup Pr Γ) (Etup Pr G) q
@@ -58,13 +58,13 @@ chad-in-LR : {σ τ : Typ Pr}
     → let Γ = (σ ∷ [])
       in (isRd : Is-ℝᵈ (Etup Pr Γ))
     → (t : Term Pr Γ τ)
-    → LR (Etup Pr Γ) isRd τ (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ))
+    → LR (Etup Pr Γ) isRd τ (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LETs Γ))
 chad-in-LR {σ} {τ} isRd t = 
     let Γ = σ ∷ []
         input = identityPrecond Γ isRd
         funLemma = fundamental-lemma Γ τ isRd input t
         equiv = (λ x → refl) , (λ x → equiv₁ x , (λ ctg → equiv₂ x ctg))
-        ext = LR-extensionality isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LEtup Γ)) equiv funLemma
+        ext = LR-extensionality isRd (FL-f isRd input t) (FL-f' isRd input t) (interp t ∘ Etup-to-val) (LR-chad isRd t (zero-LETs Γ)) equiv funLemma
     in ext
     where equiv₁ : (x : Rep (D1τ σ) × ⊤) → _
           equiv₁ (x , tt) = cong (λ a → interp (chad t) (push a empty) .fst) (lemma-primal₂ (fst isRd) x)
@@ -81,7 +81,7 @@ LR-chad-equiv-DSem : {σ τ : Typ Pr }
     → (x : Rep σ)
     → (ctg : LinRep (D2τ' τ))
     → (df : Is-just (DSemᵀ {Etup Pr Γ} {τ} (interp t ∘ Etup-to-val) (x , tt)))
-    → LR-chad (q1 , tt) t (zero-LEtup Γ) (to-primal q1 x , tt) .snd ctg
+    → LR-chad (q1 , tt) t (zero-LETs Γ) (to-primal q1 x , tt) .snd ctg
       ≡ to-witness df (sparse2dense ctg) 
 LR-chad-equiv-DSem {σ} {τ} q1 q2 t x ctg df =
    let inP = chad-in-LR  (q1 , tt) t

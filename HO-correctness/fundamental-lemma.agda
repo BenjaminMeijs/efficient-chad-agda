@@ -31,13 +31,13 @@ Etup-to-HL {_} {Γ} = sub (Etup-≡-HL Γ)
 HL-to-Etup : ∀ {tag} → { Γ : Env tag } → HL Γ Rep → Rep (Etup tag Γ)
 HL-to-Etup {_} {Γ} = sub (sym $ Etup-≡-HL Γ)
 
-LEtup-≡-HL : ( Γ : Env Pr ) → LEtup (map D2τ' Γ) ≡ HL (map D2τ' Γ) LinRep
-LEtup-≡-HL [] = refl
-LEtup-≡-HL (x ∷ Γ) = cong₂ _×_ refl (LEtup-≡-HL Γ)
-LEtup-to-HL : { Γ : Env Pr } → LEtup (map D2τ' Γ) → HL (map D2τ' Γ) LinRep
-LEtup-to-HL {Γ} x = sub (LEtup-≡-HL Γ) x
-HL-to-LEtup : { Γ : Env Pr } → HL (map D2τ' Γ) LinRep → LEtup (map D2τ' Γ) 
-HL-to-LEtup {Γ} x = sub (sym $ LEtup-≡-HL Γ) x
+LETs-≡-HL : ( Γ : Env Pr ) → LETs (map D2τ' Γ) ≡ HL (map D2τ' Γ) LinRep
+LETs-≡-HL [] = refl
+LETs-≡-HL (x ∷ Γ) = cong₂ _×_ refl (LETs-≡-HL Γ)
+LETs-to-HL : { Γ : Env Pr } → LETs (map D2τ' Γ) → HL (map D2τ' Γ) LinRep
+LETs-to-HL {Γ} x = sub (LETs-≡-HL Γ) x
+HL-to-LETs : { Γ : Env Pr } → HL (map D2τ' Γ) LinRep → LETs (map D2τ' Γ) 
+HL-to-LETs {Γ} x = sub (sym $ LETs-≡-HL Γ) x
 
 
 precond : {σ : Typ Pr}
@@ -49,9 +49,9 @@ precond {σ} q τ =
                                 × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ)))) 
         (λ (f , f') → LR σ q τ f f'))
 
-zero-LEtup : (Γ : Env Pr) → LEtup (map D2τ' Γ)
-zero-LEtup [] = tt
-zero-LEtup (τ ∷ Γ) = (zerov (D2τ' τ) .fst) , (zero-LEtup Γ)
+zero-LETs : (Γ : Env Pr) → LETs (map D2τ' Γ)
+zero-LETs [] = tt
+zero-LETs (τ ∷ Γ) = (zerov (D2τ' τ) .fst) , (zero-LETs Γ)
 
 FL-f-val : {Γ : Env Pr}
     → (q : Is-ℝᵈ (Etup Pr Γ))
@@ -81,10 +81,10 @@ getCtgPropagators {Γ} q p x =
 
 sumCtgPropagators : {Γ : Env Pr}
     → (q : Is-ℝᵈ (Etup Pr Γ))
-    → HL Γ (propagator (Etup Pr Γ)) → LEtup (map D2τ' Γ)
+    → HL Γ (propagator (Etup Pr Γ)) → LETs (map D2τ' Γ)
     → LinRepDense (D2τ' (Etup Pr Γ))
 sumCtgPropagators {Γ} q l1 w = 
-    let l2 = sub (sym HL-chain) (LEtup-to-HL w)
+    let l2 = sub (sym HL-chain) (LETs-to-HL w)
         applied = HL-zipWith (λ _ x y → x y) l1 l2
         plus _ x y = plusvDense (D2τ' (Etup Pr Γ)) x y 
         zero = zerovDense (D2τ' (Etup Pr Γ)) 
@@ -125,7 +125,7 @@ FL-f' : {Γ : Env Pr} {τ : Typ Pr}
 FL-f' {Γ} {τ} isRd w t x =
     let propagators = getCtgPropagators {Γ} isRd w x
         (g , g') = interp (chad t) (FL-f'-val isRd w x)
-    in g , λ ctg → let w = (LACM.exec (g' ctg .fst) (zero-LEtup Γ))
+    in g , λ ctg → let w = (LACM.exec (g' ctg .fst) (zero-LETs Γ))
                    in sumCtgPropagators isRd propagators w
 
 fundamental-lemma : ( Γ : Env Pr ) ( τ : Typ Pr )
