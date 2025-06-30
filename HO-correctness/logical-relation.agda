@@ -85,7 +85,8 @@ LR≡ : {σ : Typ Pr} → {τ : Typ Pr}
     → (g : Rep σ → Rep τ)
     → (g' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
     → Set
-LR≡ {σ} f f' g g' = f ≗ g 
+LR≡ {σ} f f' g g' =
+  f ≗ g 
   × ((x : Rep (D1τ σ)) → 
         let (f1 , f2) = f' x
             (g1 , g2) = g' x
@@ -98,9 +99,9 @@ LR : ( σ : Typ Pr ) → ( Is-ℝᵈ σ )
     → Set
 LR ρ isRd Un f f' = 
   -- f f' is equivalent to the corresponding (zero) functions
-  LR≡ ρ isRd Un f f' (const tt) (const (tt , const (zerovDense (D2τ' ρ))))
+  LR≡ {τ = Un} f f' (const tt) (const (tt , const (zerovDense (D2τ' ρ))))
 LR ρ isRd Inte f f' =
-  LR≡ ρ isRd Inte f f' f (λ x → (f (un-primal isRd x) , const (zerovDense (D2τ' ρ))))
+  LR≡ {τ = Inte} f f' f (λ x → (f (un-primal isRd x) , const (zerovDense (D2τ' ρ))))
 LR ρ isRd R f f' =
   -- f f' is in the logical relation if:
   -- For all possible inputs of f' ...
@@ -116,7 +117,7 @@ LR ρ isRd R f f' =
         (λ dsem → f' (to-primal isRd x) .snd ≗ (to-witness dsem)))
 LR ρ isRd (σ :* τ) f f' =
   -- f f' is in the logical relation if:
-  -- There exists some l l' and r r' ...
+  -- There exist some l l' and r r' ...
   Σ ((Rep ρ → Rep σ) × (Rep ρ → Rep τ)
       × (Rep (D1τ ρ) → ( Rep (D1τ σ) × (LinRep (D2τ' σ) → LinRepDense (D2τ' ρ))))
       × (Rep (D1τ ρ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' ρ)))))
@@ -125,45 +126,54 @@ LR ρ isRd (σ :* τ) f f' =
   → Σ (LR ρ isRd σ l l' 
      × LR ρ isRd τ r r')
   (λ _ → 
-  -- ... and can be combined using pair to get h and h' ...
-    let h  = λ x → (l x , r x )
-        h' = λ x → (l' x .fst , r' x .fst) 
-                , (λ ctg → case ctg of
-                   maybe′ (λ (ctgL , ctgR) → plusvDense _ (l' x .snd ctgL) (r' x .snd ctgR)) 
-                          (zerovDense (D2τ' ρ)))
-  -- ... such that h h' is equivalent to f f'
-    in LR≡ ρ isRd (σ :* τ) f f' h h'
+  -- ... and furthermore, their pairing to h h' ...
+    let h  = λ x →  (l x , r x )
+        h' = λ x →  (l' x .fst , r' x .fst) 
+                    , (λ ctg → case ctg of
+                      maybe′ (λ (ctgL , ctgR) → plusvDense _ (l' x .snd ctgL) (r' x .snd ctgR)) 
+                              (zerovDense (D2τ' ρ)))
+  -- ... is equivalent to f f'
+    in LR≡ {ρ} {σ :* τ} f f' h h'
   )
 LR ρ isRd (σ :+ τ) f f' = {!   !}
 LR ρ isRd (σ :-> τ) F F' =
 -- F F' is in the relation if:
--- There exists some f f' ...  (Essentially F F' without EVM types)
+-- There exists some pair f f' ...  (Essentially F F' without EVM types)
   Σ ((Rep ρ → Rep σ → Rep τ)
-    × (Rep (D1τ ρ) → (Rep (D1τ σ) → Rep (D1τ τ) × (Rep (D2τ τ) → Rep (Lin Dyn) × Rep (D2τ σ))) × (LinRep Dyn → LinRepDense (D2τ' ρ))))
+    × (Rep (D1τ ρ) → (Rep (D1τ σ) → Rep (D1τ τ) × (Rep (D2τ τ) → LinRep Dyn × Rep (D2τ σ))) × (LinRep Dyn → LinRepDense (D2τ' ρ))))
   λ (f , f')
 -- ... such that for all g g' ...
   → (g : Rep ρ → Rep σ) 
   → (g' : Rep (D1τ ρ) → (Rep (D1τ σ) × (LinRep (D2τ' σ) → LinRepDense (D2τ' ρ))))
--- ... where g g' is in LR ...
+-- ... where g g' is in in the relation ...
   → LR ρ isRd σ g g'
--- ... g g' applied to f f' is in the relation ... 
+-- ... f f' composed with g g' is in the relation ... 
   → (let h  = λ x → f x (g x) 
          h' = λ x → let (f1 , f2) = f' x
                         (g1 , g2) = g' x
                         (h1 , h2) = f1 g1
-                     in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f' x .snd d) (g2 z))
+                     in h1 , (λ y → let (d , z) = h2 y in plusvDense (D2τ' ρ) (f2 d) (g2 z))
      in LR ρ isRd τ h h')
 -- ... and f f' is equivalent to F F' ...
 -- [Note, this is not just extensional equality, but semantic equality of executing an EVM]
+--  [Note, this is not direct extensional equality, we have to ignore the evaluation cost,
+--  deal with sparsity and swap the order of a pair]
   × ((x : Rep ρ) (y : Rep σ) → f x y ≡ F x y .fst) 
   × ((x : Rep (D1τ ρ)) (y : Rep (D1τ σ)) → 
         let (f1 , f2) = f' x 
             (f3 , f4) = f1 y
+            -- F' has a very large type. We decompose it into its useful parts
+            -- F2 : LinRep Dyn → LinRepDense (D2τ' ρ)
             (F1 , F2) = F' x
-            ((F3 , F4) , _) = F1 y
-            F4' = λ ctg → case F4 ctg .fst of 
+            -- F3 : Rep (D1τ τ)
+            ((F3 , F5) , _ignored-cost) = F1 y 
+            -- For F5, with type:
+            -- F5 : LinRep (D2τ' τ) → Maybe (LinRep (D2τ' σ) × LinRep Dyn) × Agda.Builtin.Int.Int
+            -- We can ignore the cost, reduce a level of sparsity and swap the pair:
+            -- F4 : LinRep (D2τ' τ) → (LinRep Dyn ×  LinRep (D2τ' σ))
+            F4 = λ ctg → case F5 ctg .fst of 
                             maybe′ swap
                                    (nothing , zerov (D2τ' σ) .fst)
-        in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4'
+        in f2 ≗ F2 × f3 ≡ F3 × f4 ≗ F4
   -- and f' is linear.
       × Is-Linear (f' x .fst y .snd))

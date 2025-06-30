@@ -32,8 +32,8 @@ open import HO-correctness.lemmas
 -- Using this, we can do induction on all projections.
 data Lens : ∀ {tag} → (σ τ : Typ tag) → (Is-ℝᵈ σ) → Set where
   LensFst : ∀ {tag} → (σ1 σ2 τ : Typ tag) → (q : Is-ℝᵈ (σ1 :* σ2)) → Lens σ1 τ (fst q) → Lens (σ1 :* σ2) τ q
-  LensSnd : ∀ {tag} →  (σ1 σ2 τ : Typ tag) → (q : Is-ℝᵈ (σ1 :* σ2)) → Lens σ2 τ (snd q) → Lens (σ1 :* σ2) τ q
-  LensId : ∀ {tag} → ( σ : Typ tag ) → (q : Is-ℝᵈ σ) → Lens σ σ q
+  LensSnd : ∀ {tag} → (σ1 σ2 τ : Typ tag) → (q : Is-ℝᵈ (σ1 :* σ2)) → Lens σ2 τ (snd q) → Lens (σ1 :* σ2) τ q
+  LensId  : ∀ {tag} → (σ : Typ tag ) → (q : Is-ℝᵈ σ) → Lens σ σ q
 
 project : ∀ {tag} { σ τ : Typ tag } → { q : Is-ℝᵈ σ } → Lens σ τ q → Rep σ → Rep τ
 project {tag} {σ} {τ} {q} (LensFst σ1 σ2 .τ .q proj) x = project {tag} {σ1} {τ} { fst q } proj (fst x)

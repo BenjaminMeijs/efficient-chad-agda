@@ -54,7 +54,7 @@ LR-extensionality : { σ τ : Typ Pr } → ( isRd : Is-ℝᵈ σ  )
     → (f' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
     → (g : Rep σ → Rep τ)
     → (g' : Rep (D1τ σ) → ( Rep (D1τ τ) × (LinRep (D2τ' τ) → LinRepDense (D2τ' σ))))
-    → LR≡ σ isRd τ f f' g g'
+    → LR≡ f f' g g'
     → LR σ isRd τ f f'
     → LR σ isRd τ g g'
 LR-extensionality {σ} {Un} isRd f f' g g' eq p = 
