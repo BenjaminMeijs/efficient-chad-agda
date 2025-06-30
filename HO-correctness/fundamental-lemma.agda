@@ -11,7 +11,7 @@ open import Relation.Binary.PropositionalEquality using (sym; trans; cong; congâ
 
 open import spec hiding (LR)
 open import spec.LACM as LACM
-open import spec.HL-list
+open import spec.HL
 open import HO-correctness.dense-rep
 open import HO-correctness.dsem
 open import HO-correctness.logical-relation

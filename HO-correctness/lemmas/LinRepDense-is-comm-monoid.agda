@@ -145,7 +145,7 @@ module plusv-lemmas where
     plusv-equiv-plusvDense {σ :+! τ} (just x) nothing _ = cong₂ _,_ (sym plusvDense-zeroR') (sym plusvDense-zeroR')
     plusv-equiv-plusvDense {σ :+! τ} nothing (just y) _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
     plusv-equiv-plusvDense {σ :+! τ} nothing nothing _ = cong₂ _,_ (sym plusvDense-zeroL') (sym plusvDense-zeroL')
-    plusv-equiv-plusvDense {Dyn} a b w = {!   !}
+    plusv-equiv-plusvDense {Dyn} a b _ = {!  !}
 open plusv-lemmas public
 
 

@@ -17,6 +17,7 @@ open import Relation.Binary.PropositionalEquality using (subst)
 open import Relation.Nullary.Decidable using (dec⇒maybe; yes; no)
 
 open import spec
+open import spec.HL
 import spec.LACM as LACM
 open LACM using (LACM)
 
@@ -87,8 +88,7 @@ open dense-linear-representation public
 
 module environment-vector where
     EV : LEnv → Set
-    EV [] = ⊤
-    EV (τ ∷ Γ) = LinRepDense τ × EV Γ
+    EV Γ = HL Γ LinRepDense
 
     LEtup2EV : { Γ : LEnv } → LEtup Γ → EV Γ
     LEtup2EV {[]} tt = tt

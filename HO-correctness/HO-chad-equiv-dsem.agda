@@ -14,7 +14,7 @@ open import Relation.Binary.PropositionalEquality using (sym; dcong₂; subst; t
 
 open import spec hiding (LR)
 open import spec.LACM as LACM
-open import spec.HL-list
+open import spec.HL
 
 open import HO-correctness.dsem
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
