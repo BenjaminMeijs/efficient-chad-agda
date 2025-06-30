@@ -126,14 +126,14 @@ sub-cong : {l : Level} {A B : Set l}
     → (sub w1 x) ≡ (sub w2 y)
 sub-cong refl refl refl = refl
 
-Etup-D1τ-distr≡ : ( Γ : Env Pr ) → (D1τ (Etup Pr Γ)) ≡ (Etup Du (map D1τ Γ))
-Etup-D1τ-distr≡ ( [] ) = refl
-Etup-D1τ-distr≡ ( τ ∷ Γ ) = cong₂ _:*_ refl (Etup-D1τ-distr≡ Γ)
+ET-D1τ-distr≡ : ( Γ : Env Pr ) → (D1τ (ET Pr Γ)) ≡ (ET Du (map D1τ Γ))
+ET-D1τ-distr≡ ( [] ) = refl
+ET-D1τ-distr≡ ( τ ∷ Γ ) = cong₂ _:*_ refl (ET-D1τ-distr≡ Γ)
 
-Etup-D1τ-distr₁ : ( Γ : Env Pr ) → Rep (D1τ (Etup Pr Γ)) → Rep (Etup Du (map D1τ Γ))
-Etup-D1τ-distr₁ Γ x
-  = sub (cong Rep (Etup-D1τ-distr≡ Γ)) x
+ET-D1τ-distr₁ : ( Γ : Env Pr ) → Rep (D1τ (ET Pr Γ)) → Rep (ET Du (map D1τ Γ))
+ET-D1τ-distr₁ Γ x
+  = sub (cong Rep (ET-D1τ-distr≡ Γ)) x
 
-Etup-D1τ-distr₂ : ( Γ : Env Pr ) → Rep (Etup Du (map D1τ Γ)) → Rep (D1τ (Etup Pr Γ))
-Etup-D1τ-distr₂ Γ x
-  = sub (cong Rep (sym $ Etup-D1τ-distr≡ Γ)) x
+ET-D1τ-distr₂ : ( Γ : Env Pr ) → Rep (ET Du (map D1τ Γ)) → Rep (D1τ (ET Pr Γ))
+ET-D1τ-distr₂ Γ x
+  = sub (cong Rep (sym $ ET-D1τ-distr≡ Γ)) x

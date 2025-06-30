@@ -162,12 +162,12 @@ ev+assoc : {Γ : LEnv} → (a : EV Γ) → (b : EV Γ) → (c : EV Γ)
             → (a ev+ b) ev+ c ≡ a ev+ (b ev+ c)
 
 -- Relation of EV to other constructs
-Etup-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) ≡ EV (map D2τ' Γ)
-EV-to-Etup : {Γ : Env Pr} → EV (map D2τ' Γ) → LinRepDense (D2τ' (Etup Pr Γ))
-Etup-to-EV : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
-Etup-zerovDense-equiv-zero-EV : {τ : Env Pr} → LRD-ET2LETd (zerovDense (D2τ' (Etup Pr τ))) ≡ zero-EV (map D2τ' τ)
-plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (Etup Pr Γ)) ) → ( y : LinRepDense (D2τ' (Etup Pr Γ)) )
-                    → LRD-ET2LETd (plusvDense (D2τ' (Etup Pr Γ)) x y)
+ET-equiv-EV : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) ≡ EV (map D2τ' Γ)
+EV-to-ET : {Γ : Env Pr} → EV (map D2τ' Γ) → LinRepDense (D2τ' (ET Pr Γ))
+ET-to-EV : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → EV (map D2τ' Γ)
+ET-zerovDense-equiv-zero-EV : {τ : Env Pr} → LRD-ET2LETd (zerovDense (D2τ' (ET Pr τ))) ≡ zero-EV (map D2τ' τ)
+plusvDense-equiv-ev+ : {Γ : Env Pr} → ( x : LinRepDense (D2τ' (ET Pr Γ)) ) → ( y : LinRepDense (D2τ' (ET Pr Γ)) )
+                    → LRD-ET2LETd (plusvDense (D2τ' (ET Pr Γ)) x y)
                         ≡ LRD-ET2LETd x ev+ LRD-ET2LETd y
 
 ev+congR w = cong₂ _ev+_ refl w
@@ -185,17 +185,17 @@ ev+comm {τ ∷ Γ} a b = cong₂ (_,_) (plusvDense-comm τ (a .fst) (b .fst)) (
 ev+assoc {[]} a b c = refl
 ev+assoc {τ ∷ Γ} a b c = cong₂ (_,_) (plusvDense-assoc τ (a .fst) (b .fst) (c .fst)) (ev+assoc (a .snd) (b .snd) (c .snd))
 
-Etup-equiv-EV {[]} = refl
-Etup-equiv-EV {x ∷ Γ} = cong₂ _×_ refl Etup-equiv-EV
+ET-equiv-EV {[]} = refl
+ET-equiv-EV {x ∷ Γ} = cong₂ _×_ refl ET-equiv-EV
 
-EV-to-Etup {Γ} x 
-    = subst (λ x → x) (sym (Etup-equiv-EV {Γ})) x
+EV-to-ET {Γ} x 
+    = subst (λ x → x) (sym (ET-equiv-EV {Γ})) x
 
-Etup-to-EV {Γ} x 
-    = subst (λ x → x) (Etup-equiv-EV {Γ}) x
+ET-to-EV {Γ} x 
+    = subst (λ x → x) (ET-equiv-EV {Γ}) x
 
-Etup-zerovDense-equiv-zero-EV {[]} = refl
-Etup-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl Etup-zerovDense-equiv-zero-EV
+ET-zerovDense-equiv-zero-EV {[]} = refl
+ET-zerovDense-equiv-zero-EV {x ∷ τ} = cong₂ _,_ refl ET-zerovDense-equiv-zero-EV
 
 plusvDense-equiv-ev+ {[]} x y = refl
 plusvDense-equiv-ev+ {τ ∷ Γ} x y = cong₂ _,_ refl (plusvDense-equiv-ev+ (x .snd) (y .snd))

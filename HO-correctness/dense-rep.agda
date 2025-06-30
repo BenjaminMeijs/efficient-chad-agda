@@ -32,13 +32,13 @@ postulate
 
 
 module environment-value-tuple where
-    Etup : ( tag : PDTag ) → List (Typ tag) → Typ tag
-    Etup _ [] = Un
-    Etup tag (τ ∷ Γ) = τ :* Etup tag Γ
+    ET : ( tag : PDTag ) → List (Typ tag) → Typ tag
+    ET _ [] = Un
+    ET tag (τ ∷ Γ) = τ :* ET tag Γ
 
-    Etup-to-val : ∀ {tag} {Γ : Env tag} → Rep (Etup tag Γ) → Val tag Γ 
-    Etup-to-val {_} {[]} _ = empty
-    Etup-to-val {_} {τ ∷ Γ} (x , xs) = push x (Etup-to-val xs)
+    ET-to-val : ∀ {tag} {Γ : Env tag} → Rep (ET tag Γ) → Val tag Γ 
+    ET-to-val {_} {[]} _ = empty
+    ET-to-val {_} {τ ∷ Γ} (x , xs) = push x (ET-to-val xs)
 
 open environment-value-tuple public
 
@@ -94,7 +94,7 @@ module environment-vector where
     LETs2d {[]} tt = tt
     LETs2d {(τ ∷ Γ)} (x , xs) = sparse2dense {τ} x , LETs2d {Γ} xs 
 
-    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (Etup Pr Γ)) → EV (map D2τ' Γ)
+    LRD-ET2LETd : {Γ : Env Pr} → LinRepDense (D2τ' (ET Pr Γ)) → EV (map D2τ' Γ)
     LRD-ET2LETd {[]} tt = tt
     LRD-ET2LETd {τ ∷ Γ} (x , xs) = x , LRD-ET2LETd xs 
 
