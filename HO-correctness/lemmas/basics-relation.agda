@@ -23,12 +23,14 @@ open import HO-correctness.lemmas.projection-in-relation
 open import HO-correctness.lemmas.LinRepDense-is-comm-monoid
 open import HO-correctness.lemmas.trivial-equivalences
 
+-- TODO: basics about relations bewijzen afmaken
+
 private
     trans₂ : {A : Set} {x y a b : A} → x ≡ y → x ≡ a → y ≡ b → a ≡ b
     trans₂ refl refl refl = refl
 
 identityInLR : (σ : Typ Pr) → (isRd : Is-ℝᵈ σ)
-            → LR σ isRd σ id (λ x → (x , sparse2dense))
+    → LR σ isRd σ id (λ x → (x , sparse2dense))
 identityInLR Un isRd = (λ _ → refl) , (λ _ → refl , λ _ → refl)
 identityInLR R isRd = λ x → refl , ans x 
   where ans : (x : Float) → _
@@ -239,39 +241,7 @@ LR-ctg-zero σ (τ1 :* τ2) isRd f f' ((l , r , l' , r') , (pl , pr) , p) x noth
   = p .snd x .snd nothing
 LR-ctg-zero σ (τ1 :+ τ2) isRd f f' p x ctg w = {!   !}
 LR-ctg-zero σ (τ1 :-> τ2) isRd F F' ((f , f') , p) x ctg w
-  = let g  = const (zeroRep τ1)
-        g' = constZeroRep' {σ} {τ1}
-        pg = const-zeroRep-inLR σ τ1 isRd
-        (ph , (_ , p')) = p g g' pg
-        ih-g = LR-ctg-zero σ τ1 isRd g g' pg
-        ih-h = LR-ctg-zero σ τ2 isRd _ _ ph
-        v1 = g' x .fst
-        ctg2 = zerov (D2τ' τ2) .fst
-        ctg1 = f' x .fst v1 .snd ctg2 .snd
-        -- foo : (f' x .snd ctg) ≡ zerovDense (D2τ' σ)
-        -- foo = {! f' x .snd    !}
-        -- biz : f' x .snd (f' x .fst v1 .snd ctg2 .fst) ≡ zerovDense (D2τ' σ)
-        -- biz = trans (sym (plusvDense-zeroR' {{sndConstZeroRep≡zerovDense x ctg1}})) 
-        --       (ih-h x ctg2 (zerov-equiv-zerovDense (D2τ' τ2)))
-        -- f'-is-zero : (c : Maybe (Σ LTyp LinRep)) → (w : {!   !}) 
-        --       → f' x .snd c ≡ zerovDense (D2τ' σ)
-        -- f'-is-zero =  {!   !}
-          -- sym (trans (sym (ih-h x ctg2 (zerov-equiv-zerovDense (D2τ' τ2)))) 
-                          -- (trans (plusvDense-zeroR' {{sndConstZeroRep≡zerovDense x ctg1}}) 
-                          -- (trans₂ refl (sym biz) (sym foo))))
-        f'-is-lin : (c : Maybe (Σ LTyp LinRep)) → ((t : LTyp) → sparse2dense {Dyn} c t ≡ zerovDense Dyn t)
-              → (f' x .snd c ≡ zerovDense (D2τ' σ))
-        f'-is-lin = λ c w → {! ih-h  !}
-    in trans (sym (p' x v1 .fst ctg)) {! ih-h x ctg2    !}
--- LR-ctg-zero σ (τ1 :-> τ2) isRd F F' ((f , f') , p) x (just (τ3 , ctg)) w
---   = let g  = const (zeroRep τ1)
---         g' = constZeroRep' {σ} {τ1}
---         pg = const-zeroRep-inLR σ τ1 isRd
---         (ph , (_ , p')) = p g g' pg
---         ih-g = LR-ctg-zero σ τ1 isRd g g' pg
---         ih-h = LR-ctg-zero σ τ2 isRd _ _ ph
---     in ?
-    -- trans (sym (p' x v1 .fst ctg)) {!   !}
+  = ? -- left as future work
 
 LR-ctg-plus : (σ τ : Typ Pr) → (isRd : Is-ℝᵈ σ)
     → (f : Rep σ → Rep τ)
@@ -296,7 +266,7 @@ LR-ctg-plus σ (τ1 :* τ2) isRd f f' P@((l , (r , (l' , r'))) , ((pl , pr), (_ 
                         plusv (D2τ' τ2) (ctg1 .snd) (ctg2 .snd) .fst))
         ih-l = LR-ctg-plus σ τ1 isRd l l' pl x (fst ctg1) (fst ctg2)
         ih-r = LR-ctg-plus σ τ2 isRd r r' pr x (snd ctg1) (snd ctg2)
-        -- If only we could have used a tactic for this part. Its not complex, just tedious
+        -- If only we could have used a tactic for this part. It is not complex, just tedious
         plus = plusvDense (D2τ' σ); assoc = plusvDense-assoc (D2τ' σ); comm = plusvDense-comm (D2τ' σ)
         a = (l' x .snd (fst ctg1)); b = (l' x .snd (fst ctg2)); c = (r' x .snd (snd ctg1)); d = (r' x .snd (snd ctg2))
         lemma-assoc : plus (plus a b) (plus c d)
@@ -326,32 +296,4 @@ LR-ctg-plus σ (τ1 :-> τ2) isRd F F' P@((f , f') , p) x nothing (just c2)
   = let F-zero = LR-ctg-zero σ (τ1 :-> τ2) isRd F F' P x nothing refl
     in sym (plusvDense-zeroL' {{ F-zero}})
 LR-ctg-plus σ (τ1 :-> τ2) isRd F F' P@((f , f') , p) x (just c1) (just c2) 
-  = let g  = const (zeroRep τ1)
-        g' = constZeroRep' {σ} {τ1}
-        pg = const-zeroRep-inLR σ τ1 isRd
-        (ph , (_ , p')) = p g g' pg
-        -- y = {!   !}
-
-
-
-        ctg1L = {!   !}
-        ctg1R = {!   !}
-        ctg2L = {!   !}
-        ctg2R = {!   !}
-        ih-g = LR-ctg-plus σ τ1 isRd g g' pg x ctg1L ctg1R
-        ih-h = LR-ctg-plus σ τ2 isRd _ _ ph x ctg2L ctg2R
-        -- v1 = g' x .fst
-        -- ctg2 = zerov (D2τ' τ2) .fst
-        -- ctg1 = f' x .fst v1 .snd ctg2 .snd
-        -- lin-f : (f' x .fst v1 .snd ctg2 .fst ≡ nothing) 
-        --        × (sparse2dense ctg1 ≡ zerovDense (D2τ' τ1))
-        -- lin-f = let isLin = p' x v1 .snd .snd .snd
-        --         in isLin .fst ctg2 (zerov-equiv-zerovDense (D2τ' τ2))
-        -- f'-is-zero : f' x .snd nothing ≡ zerovDense (D2τ' σ)
-        -- f'-is-zero =  trans₂
-        --                 (trans₂ (ih-h x ctg2 (zerov-equiv-zerovDense (D2τ' τ2))) 
-        --                         (plusvDense-zeroR' {{ih-g x ctg1 (snd lin-f)}}) refl) 
-        --                 (cong (f' x .snd) (fst lin-f)) refl
-    in {! p' x y   !}
-  --   -- trans (sym (p' x v1 .fst nothing )) 
-  --             -- f'-is-zero  
+  = ? -- left as future work

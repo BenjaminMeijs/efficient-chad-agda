@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module HO-correctness.lemmas.value-compatibility-lemmas where
 
 open import Agda.Builtin.Equality using (_≡_; refl)

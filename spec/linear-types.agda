@@ -1,4 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
 module spec.linear-types where
 
 open import Agda.Builtin.Float using (Float; primFloatPlus)
@@ -55,11 +54,6 @@ LETs (τ ∷ Γ) = LinRep τ × LETs Γ
 LEτLtyp : LEnv -> LTyp
 LEτLtyp [] = LUn
 LEτLtyp (τ ∷ Γ) = τ :*! LEτLtyp Γ
-
--- =====================
--- END Of MUTUAL RECURSION
--- =====================
-
 
 -- An index into a typing environment
 data Idx {n} {typ : Set n} : List typ -> typ -> Set n where

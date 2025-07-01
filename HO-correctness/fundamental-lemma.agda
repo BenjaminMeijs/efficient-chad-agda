@@ -112,7 +112,6 @@ FL-f'-val {Γ} q p x =
     let f a y = (y .fst .snd x .fst)
         env = HL-map f p
     -- Note that this is just a bijeciton between two equivalent sets
-    -- TODO use HL-chain
     in ET-to-val (HL-to-ET (lemma-D1Γ₁ q env))
 
 

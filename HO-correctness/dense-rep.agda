@@ -123,7 +123,6 @@ module value-compatibility where
     _≃τ_ {σ :+ τ} (just (inj₁ x)) (inj₂ y) = ⊥
     _≃τ_ {σ :+ τ} (just (inj₂ x)) (inj₂ y) = x ≃τ y
     _≃τ_ {σ :+ τ} nothing _ = ⊤
-    -- TODO: Figure out what compatible functions with Dyn should be
     _≃τ_ {σ :-> τ} x f = ⊤
 
 
@@ -147,7 +146,6 @@ module value-compatibility where
     Compatible-LinReps {σ :+! τ} (just x) nothing = ⊤
     Compatible-LinReps {σ :+! τ} nothing (just x) = ⊤
     Compatible-LinReps {σ :+! τ} nothing nothing = ⊤
-    -- TODO: figure out what Compatible-LinReps means for Dyn
     Compatible-LinReps {Dyn} _ _ = ⊤
 
     Compatible-idx-LETs : {Γ : Env Pr} {τ : Typ Pr} → ((Idx Γ τ) × (LinRep (D2τ' τ)))  → (LETs (map D2τ' Γ) ) → Set
