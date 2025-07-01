@@ -28,7 +28,7 @@ open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality using (trans; subst; cong; sym)
 
 open import spec
-open import setup
+open import cost.setup
 open import eval-sink-commute
 open import chad-preserves-primal
 open import cost.lemmas

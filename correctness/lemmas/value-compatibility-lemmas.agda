@@ -25,18 +25,20 @@ open import correctness.spec
 ≃τ-zerov ( σ :* τ ) _ = tt
 ≃τ-zerov ( σ :+ τ ) _ = tt
 
-≃τ-congL : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
-        → x ≡ y → x ≃τ z → y ≃τ z
+≃τ-congL : ( τ : Typ Pr )
+    → ( x : LinRep (D2τ' τ) ) → ( y : LinRep (D2τ' τ) ) → ( z : Rep τ )
+    → x ≡ y → x ≃τ z → y ≃τ z
 ≃τ-congL τ x y z refl w2 = w2
 
-≃τ-congR : ( τ : Typ Pr ) → ( x : LinRep (D2τ' τ) ) → ( y : Rep τ ) → ( z : Rep τ )
-        → y ≡ z → x ≃τ y → x ≃τ z
+≃τ-congR : ( τ : Typ Pr )
+    → ( x : LinRep (D2τ' τ) ) → ( y : Rep τ ) → ( z : Rep τ )
+    → y ≡ z → x ≃τ y → x ≃τ z
 ≃τ-congR τ x y z refl w = w
 
 ≃Γ-intro-zero : {Γ : Env Pr} {τ : Typ Pr}
-            → (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
-            → evIn ≃Γ val
-            → (zerov (D2τ' τ) .fst , evIn) ≃Γ push x val
+    → (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ) (x : Rep τ)
+    → evIn ≃Γ val
+    → (zerov (D2τ' τ) .fst , evIn) ≃Γ push x val
 ≃Γ-intro-zero {Γ} {τ} evIn val x w = ≃τ-zerov τ x , w
 
 -- ===============================

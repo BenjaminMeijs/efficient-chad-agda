@@ -80,7 +80,8 @@ module DSyn-defined-implies-DSem-defined where
         ... | inj₂ _ = refl
 
     ∃DSyn→∃DSem : {Γ : Env Pr} {τ : Typ Pr}  ( a : Rep (ET Pr Γ) ) → ( t : Term Pr Γ τ ) 
-        → DSyn-ExistsP (ET-to-val a) t → (Is-just (DSemᵀ {ET Pr Γ} {τ} (interp t ∘ ET-to-val) a))
+        → DSyn-ExistsP (ET-to-val a) t
+        → (Is-just (DSemᵀ {ET Pr Γ} {τ} (interp t ∘ ET-to-val) a))
     ∃DSyn→∃DSem {Γ} {τ} a ( unit ) w = DSemᵀ-exists-unit a
     ∃DSyn→∃DSem {Γ} {τ} a ( var idx ) w = DSemᵀ-var a idx (zerovDense (D2τ' τ)) .fst
     ∃DSyn→∃DSem {Γ} {τ} a ( pair l r ) w = DSemᵀ-exists-lemma-pair₂ (interp l ∘ ET-to-val) (interp r ∘ ET-to-val) a (∃DSyn→∃DSem a l (w .fst) , ∃DSyn→∃DSem a r (w .snd))

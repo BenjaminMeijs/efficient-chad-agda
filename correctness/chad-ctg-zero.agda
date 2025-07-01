@@ -19,24 +19,24 @@ open import correctness.chad-preserves-compatibility
 open import chad-preserves-primal
 
 addLEτ-ctg-zero : {Γ : Env Pr} {τ : Typ Pr}
-                → (idx : Idx Γ τ)
-                  (evIn : LETs (map D2τ' Γ) )
-                  (ctg : LinRep (D2τ' τ))
-                → ( Compatible-idx-LETs (idx , ctg) evIn )
-                → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) )
-                → LETs2d (addLEτ (convIdx D2τ' idx) ctg evIn)
-                  ≡ LETs2d evIn
+    → (idx : Idx Γ τ)
+      (evIn : LETs (map D2τ' Γ) )
+      (ctg : LinRep (D2τ' τ))
+    → ( Compatible-idx-LETs (idx , ctg) evIn )
+    → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) )
+    → LETs2d (addLEτ (convIdx D2τ' idx) ctg evIn)
+      ≡ LETs2d evIn
 addLEτ-ctg-zero {Γ} Z evIn ctg w≃ w = cong₂ _,_ (trans (plusv-equiv-plusvDense ctg (evIn .fst) w≃) (plusvDense-zeroL' {{w}})) refl
 addLEτ-ctg-zero {Γ} (S idx) evIn ctg w≃ w = cong₂ _,_ refl (addLEτ-ctg-zero idx (evIn .snd) ctg w≃ w)
 
 dprim'-ctg-zero : {σ τ : Typ Pr}
-                → (x : Rep σ)
-                → (ctg : LinRep (D2τ' τ))
-                → (sparse2dense ctg ≡ zerovDense (D2τ' τ))
-                → let d-op-env = (push ctg (push (primal σ x) empty)) in
-                  (op : Primop Pr σ τ )
-                →  sparse2dense (interp (dprim' op) d-op-env)
-                   ≡ zerovDense (D2τ' σ)
+    → (x : Rep σ)
+    → (ctg : LinRep (D2τ' τ))
+    → (sparse2dense ctg ≡ zerovDense (D2τ' τ))
+    → let d-op-env = (push ctg (push (primal σ x) empty)) in
+        (op : Primop Pr σ τ )
+    →  sparse2dense (interp (dprim' op) d-op-env)
+        ≡ zerovDense (D2τ' σ)
 dprim'-ctg-zero x ctg refl ADD = refl
 dprim'-ctg-zero x ctg refl MUL = cong₂ _,_ (primFloatTimes-identityL (x .snd)) (primFloatTimes-identityL (x .fst))
 dprim'-ctg-zero x ctg refl NEG = primFloatNegativeZero
@@ -47,16 +47,16 @@ dprim'-ctg-zero x ctg w INEG = w
 dprim'-ctg-zero x ctg w SIGN = refl
 
 chad-ctg-zero : {Γ : Env Pr} {τ : Typ Pr} 
-                  → let LΓ = map D2τ' Γ in
-                  (val : Val Pr Γ) -- input of function
-                  (evIn : LETs LΓ ) -- incoming LETs
-                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
-                  (t : Term Pr Γ τ) -- primal function
-                → ( ctg  ≃τ (interp t val)) -- compatible incoming cotangent
-                → ( evIn ≃Γ val ) -- compatible incoming LETs
-                → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) ) -- a witness to the fact that the cotangent is semantically a zero value
-                →   LETs2d {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
-                  ≡ LETs2d {LΓ} evIn
+    →  let LΓ = map D2τ' Γ
+    in (val : Val Pr Γ) -- input of function
+    → (evIn : LETs LΓ ) -- incoming LETs
+    → (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+    → (t : Term Pr Γ τ) -- primal function
+    → ( ctg  ≃τ (interp t val)) -- compatible incoming cotangent
+    → ( evIn ≃Γ val ) -- compatible incoming LETs
+    → ( sparse2dense ctg ≡ zerovDense (D2τ' τ) ) -- a witness to the fact that the cotangent is semantically a zero value
+    →   LETs2d {LΓ} (LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn)
+        ≡ LETs2d {LΓ} evIn
 chad-ctg-zero {Γ} val evIn ctg unit _ _ _
   rewrite LACMexec-pure tt evIn
   = refl

@@ -14,9 +14,10 @@ open import Data.Sum using (inj₁; inj₂)
 open import Function.Base using (_∘_)
 open import Relation.Binary.PropositionalEquality
 
-open import setup
 open import spec
 
+private variable
+  tag : PDTag
 
 forall-fin : {n : ℕ} -> (Fin n -> Set) -> Set
 forall-fin {ℕ.zero} f = ⊤

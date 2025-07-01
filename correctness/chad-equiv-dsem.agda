@@ -32,12 +32,12 @@ private
   gnoc refl f = refl
 
 evalprim-equiv-DSem : {σ τ : Typ Pr}
-                      → (a : Rep σ)
-                      → (ctg : LinRep (D2τ' τ))
-                      → (op : Primop Pr σ τ )
-                      → (d-op : Is-just $ DSemᵀ {σ} {τ} (evalprim op) a)
-                      → sparse2dense (interp (dprim' op) (push ctg (push (primal σ a) empty)))
-                        ≡ (to-witness d-op $ sparse2dense ctg)
+    → (a : Rep σ)
+    → (ctg : LinRep (D2τ' τ))
+    → (op : Primop Pr σ τ )
+    → (d-op : Is-just $ DSemᵀ {σ} {τ} (evalprim op) a)
+    → sparse2dense (interp (dprim' op) (push ctg (push (primal σ a) empty)))
+      ≡ (to-witness d-op $ sparse2dense ctg)
 evalprim-equiv-DSem (x , y) ctg ADD d-op
   = let (d-op2 , rule) = DSemᵀ-prim-floatPlus (x , y) ctg
         ext = DSemᵀ-extensionality _ (evalprim {tag = Pr} ADD) (λ _ → refl) (x , y) d-op2 d-op ctg 
@@ -57,18 +57,18 @@ evalprim-equiv-DSem x  ctg IMUL    d-op = refl
 evalprim-equiv-DSem x  ctg INEG    d-op = refl
 
 chad-equiv-DSemᵀ : {Γ : Env Pr} {τ : Typ Pr} 
-                  → let σ  = ET Pr Γ 
-                        LΓ = map D2τ' Γ in
-                  (a : Rep σ) -- input of function
-                  (evIn : LETs LΓ ) -- incoming LETs
-                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
-                  (t : Term Pr Γ τ) -- primal function
-                → ctg  ≃τ (interp t (ET-to-val a)) -- compatible incoming cotangent
-                → evIn ≃Γ ET-to-val a -- compatible incoming LETs
-                → (∃-dsyn : DSyn-Exists (ET-to-val a) t) -- function is differentiable at input
-                → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
-                in (LETs2d {LΓ} (LACMexec (interp (chad t) (ET-to-val-primal a) .snd ctg .fst ) evIn)
-                  ≡ LRD-ET2LETd {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LETs2d {LΓ} evIn)
+  → let σ  = ET Pr Γ 
+        LΓ = map D2τ' Γ in
+    (a : Rep σ) -- input of function
+    (evIn : LETs LΓ ) -- incoming LETs
+    (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+    (t : Term Pr Γ τ) -- primal function
+  → ctg  ≃τ (interp t (ET-to-val a)) -- compatible incoming cotangent
+  → evIn ≃Γ ET-to-val a -- compatible incoming LETs
+  → (∃-dsyn : DSyn-Exists (ET-to-val a) t) -- function is differentiable at input
+  → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
+  in (LETs2d {LΓ} (LACMexec (interp (chad t) (ET-to-val-primal a) .snd ctg .fst ) evIn)
+    ≡ LRD-ET2LETd {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LETs2d {LΓ} evIn)
 -- Cases where ctg is (semantically) zero
 chad-equiv-DSemᵀ {Γ} a evIn tt unit ~τ ~Γ (∃dsyn dsyn) 
   rewrite chad-ctg-zero (ET-to-val a) evIn tt unit tt ~Γ refl
@@ -285,16 +285,15 @@ LETs-zero [] = tt
 LETs-zero (τ ∷ Γ) = (zerov τ .fst) , (LETs-zero Γ)
 
 chad-equiv-DSemᵀ₂ : {Γ : Env Pr} {τ : Typ Pr} 
-                  → let σ  = ET Pr Γ 
-                        LΓ = map D2τ' Γ in
-                  (a : Rep σ) -- input of function
-                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
-                  (t : Term Pr Γ τ) -- primal function
-                → ctg  ≃τ (interp t (ET-to-val a)) -- compatible incoming cotangent
-                → (∃-dsyn : DSyn-Exists (ET-to-val a) t) -- function is differentiable at input
-                → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
-                in (LETs2d {LΓ} (LACMexec (interp (chad t) (ET-to-val-primal a) .snd ctg .fst ) (LETs-zero LΓ))
-                  ≡ LRD-ET2LETd {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LETs2d {LΓ} (LETs-zero LΓ))
+    → let LΓ = map D2τ' Γ in
+      (a : Rep (ET Pr Γ)) -- input of function
+      (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+      (t : Term Pr Γ τ) -- primal function
+    → ctg  ≃τ (interp t (ET-to-val a)) -- compatible incoming cotangent
+    → (∃-dsyn : DSyn-Exists (ET-to-val a) t) -- function is differentiable at input
+    → let dsem = DSyn-Exists→DSem-Exists a t ∃-dsyn
+    in (LETs2d {LΓ} (LACMexec (interp (chad t) (ET-to-val-primal a) .snd ctg .fst ) (LETs-zero LΓ))
+       ≡ LRD-ET2LETd {Γ} ( to-witness dsem (sparse2dense ctg)) ev+ LETs2d {LΓ} (LETs-zero LΓ))
 chad-equiv-DSemᵀ₂ {Γ} a ctg t ~τ dsyn =
   chad-equiv-DSemᵀ a (LETs-zero (map D2τ' Γ)) ctg t ~τ (LETs-zero-is-compatible (ET-to-val a)) dsyn
   where LETs-zero-is-compatible : { G : Env Pr } → (val : Val Pr G) → LETs-zero (map D2τ' G) ≃Γ val

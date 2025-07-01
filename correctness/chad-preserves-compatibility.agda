@@ -40,9 +40,9 @@ plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₁ _) w1 w2 w3 = tt
 plusv-preserves-≃τ {σ :+ τ} nothing nothing (inj₂ _) w1 w2 w3 = tt
 
 addLEτ-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr}
-            → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ)
-            → (evIn ≃Γ val) → (Compatible-idx-LETs (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
-            → addLEτ (convIdx D2τ' idx) ctg evIn ≃Γ val
+    → (idx : Idx Γ τ) (ctg : LinRep (D2τ' τ)) (evIn : LETs (map D2τ' Γ)) (val : Val Pr Γ)
+    → (evIn ≃Γ val) → (Compatible-idx-LETs (idx , ctg) evIn) → (Compatible-idx-val (idx , ctg) val)
+    → addLEτ (convIdx D2τ' idx) ctg evIn ≃Γ val
 addLEτ-preserves-≃Γ {τ ∷ Γ} Z       ctg (x , xs) (push y val) w1 w2 w3 = plusv-preserves-≃τ {τ} ctg x y w2 w3 (w1 .fst) , w1 .snd
 addLEτ-preserves-≃Γ {τ ∷ Γ} (S idx) ctg (x , xs) (push y val) w1 w2 w3 = w1 .fst , addLEτ-preserves-≃Γ idx ctg xs val (w1 .snd) w2 w3
 
@@ -64,13 +64,13 @@ dprim'-preserves-≃τ val ctg SIGN t w = tt
 -- CHAD preserves compatibility
 -- ===============================
 chad-preserves-≃Γ : {Γ : Env Pr} {τ : Typ Pr} 
-                → (val : Val Pr Γ) -- input of function
-                  (evIn : LETs (map D2τ' Γ) ) -- incoming LETs
-                  (ctg : LinRep (D2τ' τ)) -- incoming cotangent
-                  (t : Term Pr Γ τ) -- primal function
-                → ctg ≃τ (interp t val) -- precondition incoming cotangent
-                → evIn ≃Γ val -- precondition incoming LETs
-                → LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn ≃Γ val
+    → (val : Val Pr Γ) -- input of function
+      (evIn : LETs (map D2τ' Γ) ) -- incoming LETs
+      (ctg : LinRep (D2τ' τ)) -- incoming cotangent
+      (t : Term Pr Γ τ) -- primal function
+    → ctg ≃τ (interp t val) -- precondition incoming cotangent
+    → evIn ≃Γ val -- precondition incoming LETs
+    → LACMexec (interp (chad t) (primalVal val) .snd ctg .fst ) evIn ≃Γ val
 chad-preserves-≃Γ _ evIn _ unit _ w2
   rewrite LACMexec-pure tt evIn
   = w2

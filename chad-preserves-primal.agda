@@ -6,10 +6,12 @@ open import Function.Base using (_∘_)
 open import Data.Sum using (inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality
 
-open import setup
+open import cost.setup using (eval-d1prim)
 open import spec
 open import eval-sink-commute
 
+private variable
+  tag : PDTag
 
 chad-preserves-primal : {Γ : Env Pr} {τ : Typ Pr}
                      -> (env : Val Pr Γ) (e : Term Pr Γ τ)
