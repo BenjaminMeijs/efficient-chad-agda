@@ -1,9 +1,8 @@
 .PHONY: check html-render
 
-# TODO: update makefile
-
 check:
-	agda --safe --without-K chad-cost.agda
+	agda --safe --without-K ./cost/chad-cost.agda
+	agda --without-K ./correctness/chad-equiv-dsem.agda
 
 html-render:
 	agda --html --safe spec.agda
